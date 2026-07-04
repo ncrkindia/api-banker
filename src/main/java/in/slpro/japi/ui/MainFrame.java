@@ -28,6 +28,7 @@ public class MainFrame extends JFrame {
     private int currentFontSize = 16;
 
     private static final int MAX_HISTORY = 500;
+    public static final String OTHERS_COLLECTION_ID = "__others__";
 
     public MainFrame() {
         this.storage = StorageManager.getInstance();
@@ -65,6 +66,8 @@ public class MainFrame extends JFrame {
         });
 
         initUI();
+        ensureOthersCollection();
+        sidebarPanel.refreshCollections(collections);
         setupZoom();
         applyTheme();
         updateFontSize(currentFontSize);
@@ -270,6 +273,56 @@ public class MainFrame extends JFrame {
         return collections;
     }
 
+    private void ensureOthersCollection() {
+        for (CollectionModel col : collections) {
+            if (OTHERS_COLLECTION_ID.equals(col.getId())) return;
+        }
+        CollectionModel others = new CollectionModel(OTHERS_COLLECTION_ID, "Others");
+        others.setRequests(new ArrayList<>());
+        collections.add(0, others);
+        saveCollections();
+    }
+
+    public CollectionModel getOrCreateOthersCollection() {
+        for (CollectionModel col : collections) {
+            if (OTHERS_COLLECTION_ID.equals(col.getId())) return col;
+        }
+        ensureOthersCollection();
+        return collections.get(0);
+    }
+
+    public CollectionModel askTargetCollection(String prompt) {
+        List<CollectionModel> cols = getCollections();
+        if (cols.isEmpty()) {
+            ensureOthersCollection();
+            cols = getCollections();
+        }
+        CollectionModel others = getOrCreateOthersCollection();
+        return (CollectionModel) JOptionPane.showInputDialog(this,
+                prompt, "Select Collection", JOptionPane.PLAIN_MESSAGE,
+                null, cols.toArray(), others);
+    }
+
+    public void moveRequestToCollection(RequestModel req) {
+        // Find current collection
+        CollectionModel sourceCol = null;
+        for (CollectionModel col : collections) {
+            if (col.getRequests().contains(req)) {
+                sourceCol = col;
+                break;
+            }
+        }
+        List<CollectionModel> cols = getCollections();
+        CollectionModel target = (CollectionModel) JOptionPane.showInputDialog(this,
+                "Move '" + req.getName() + "' to:", "Move to Collection", JOptionPane.PLAIN_MESSAGE,
+                null, cols.toArray(), cols.get(0));
+        if (target == null || target == sourceCol) return;
+        if (sourceCol != null) sourceCol.getRequests().remove(req);
+        target.getRequests().add(req);
+        saveCollections();
+        sidebarPanel.refreshCollections(collections);
+    }
+
     public void refreshCollections(List<CollectionModel> collections) {
         sidebarPanel.refreshCollections(collections);
     }
@@ -283,6 +336,10 @@ public class MainFrame extends JFrame {
     }
 
     public void deleteCollection(CollectionModel col) {
+        if (OTHERS_COLLECTION_ID.equals(col.getId())) {
+            JOptionPane.showMessageDialog(this, "Cannot delete the 'Others' collection.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
         collections.remove(col);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
@@ -333,6 +390,17 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRequest(comp);
+    }
+
+    public void addMockServerToCollection(CollectionModel col) {
+        RequestModel mock = new RequestModel();
+        mock.setName(col.getName() + " Mock Server");
+        mock.setType("mockserver");
+        mock.setMethod("MOCK");
+        col.getRequests().add(mock);
+        saveCollections();
+        sidebarPanel.refreshCollections(collections);
+        openMockServer(mock);
     }
 
     public RequestModel duplicateRequestModel(RequestModel req) {
@@ -399,6 +467,8 @@ public class MainFrame extends JFrame {
                 model = crp.getRequestModel();
             } else if (c instanceof DataComparatorPanel dcp) {
                 model = dcp.getRequestModel();
+            } else if (c instanceof MockServerPanel msp) {
+                model = msp.getRequestModel();
             }
 
             if (model != null && model.getId().equals(req.getId())) {
@@ -459,6 +529,11 @@ public class MainFrame extends JFrame {
             workspaceTabs.addTab(req.getName(), panel);
             workspaceTabs.setTabComponentAt(idx, buildTabHeader(req.getName(), idx, panel));
             workspaceTabs.setSelectedIndex(idx);
+            return;
+        }
+
+        if ("mockserver".equals(req.getType())) {
+            openMockServer(req);
             return;
         }
 
@@ -589,6 +664,10 @@ public class MainFrame extends JFrame {
     private void openNewRequest() {
         RequestModel req = new RequestModel();
         req.setName("Untitled Request");
+        CollectionModel others = getOrCreateOthersCollection();
+        others.getRequests().add(req);
+        saveCollections();
+        sidebarPanel.refreshCollections(collections);
         openRequest(req);
     }
 
@@ -614,20 +693,29 @@ public class MainFrame extends JFrame {
     }
 
     public void openDataComparator() {
-        RequestModel req = new RequestModel();
-        req.setName("Data Comparator");
-        DataComparatorPanel panel = new DataComparatorPanel(this, req);
-        int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("Data Comparator", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Data Comparator", idx, panel));
-        workspaceTabs.setSelectedIndex(idx);
+        CollectionModel col = askTargetCollection("Save Data Comparator to:");
+        if (col == null) return;
+        addComparatorToCollection(col);
     }
 
     public void openMockServer() {
-        MockServerPanel panel = new MockServerPanel(this);
+        CollectionModel col = askTargetCollection("Save Mock Server to:");
+        if (col == null) return;
+        addMockServerToCollection(col);
+    }
+
+    public void openMockServer(RequestModel req) {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c instanceof MockServerPanel msp && msp.getRequestModel().getId().equals(req.getId())) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+        MockServerPanel panel = new MockServerPanel(this, req);
         int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("Mock Server", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Mock Server", idx, panel));
+        workspaceTabs.addTab(req.getName(), panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader(req.getName(), idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -658,6 +746,10 @@ public class MainFrame extends JFrame {
                 saveCollections();
             } else if (tabContent instanceof LogConsolePanel lcp) {
                 lcp.removeListener();
+            } else if (tabContent instanceof MockServerPanel msp) {
+                msp.stopServerIfRunning();
+                msp.updateModel();
+                saveCollections();
             }
             workspaceTabs.removeTabAt(idx);
         }
@@ -676,7 +768,8 @@ public class MainFrame extends JFrame {
 
         boolean renameable = (tabContent instanceof RequestPanel) ||
                 (tabContent instanceof CollectionRunnerPanel) ||
-                (tabContent instanceof DataComparatorPanel);
+                (tabContent instanceof DataComparatorPanel) ||
+                (tabContent instanceof MockServerPanel);
 
         final JTextField editField;
         final Runnable startEdit;
@@ -1146,6 +1239,8 @@ public class MainFrame extends JFrame {
                     cp.updateFontSize(size);
                 } else if (tab instanceof CollectionRunnerPanel crp) {
                     crp.updateFontSize(size);
+                } else if (tab instanceof MockServerPanel msp) {
+                    msp.updateFontSize(size);
                 }
 
                 Component tabComp = workspaceTabs.getTabComponentAt(i);
@@ -1167,7 +1262,7 @@ public class MainFrame extends JFrame {
     }
 
     private void onClose() {
-        // Save open requests
+        // Save open requests and stop mock servers
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             Component c = workspaceTabs.getComponentAt(i);
             if (c instanceof RequestPanel rp) {
@@ -1176,6 +1271,9 @@ public class MainFrame extends JFrame {
                 crp.saveConfig();
             } else if (c instanceof DataComparatorPanel cp) {
                 cp.getRequestModel(); // triggers collect
+            } else if (c instanceof MockServerPanel msp) {
+                msp.stopServerIfRunning();
+                msp.updateModel(); // triggers collect
             }
         }
         saveCollections();
@@ -1201,8 +1299,9 @@ public class MainFrame extends JFrame {
                 type = "jwt";
             } else if (c instanceof JsonToolPanel) {
                 type = "json";
-            } else if (c instanceof MockServerPanel) {
+            } else if (c instanceof MockServerPanel msp) {
                 type = "mockserver";
+                reqId = msp.getRequestModel().getId();
             } else if (c instanceof DataToolsPanel) {
                 type = "datatools";
             } else if (c instanceof LogConsolePanel) {
@@ -1278,7 +1377,12 @@ public class MainFrame extends JFrame {
         } else if ("json".equals(ts.getType())) {
             openJsonTool();
         } else if ("mockserver".equals(ts.getType())) {
-            openMockServer();
+            RequestModel req = findRequestModel(ts.getRequestModelId());
+            if (req != null) {
+                openMockServer(req);
+            } else {
+                openMockServer();
+            }
         } else if ("datatools".equals(ts.getType())) {
             openDataTools();
         } else if ("logconsole".equals(ts.getType())) {

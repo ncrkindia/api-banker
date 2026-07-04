@@ -194,6 +194,8 @@ public class SidebarPanel extends JPanel {
             addJwtItem.addActionListener(e -> mainFrame.openJwtDecoder());
             JMenuItem addCompItem = new JMenuItem("Add Data Comparator");
             addCompItem.addActionListener(e -> mainFrame.addComparatorToCollection(col));
+            JMenuItem addMockItem = new JMenuItem("Add Mock Server");
+            addMockItem.addActionListener(e -> mainFrame.addMockServerToCollection(col));
             JMenuItem addJsonItem = new JMenuItem("Add JSON Formatter");
             addJsonItem.addActionListener(e -> mainFrame.openJsonTool());
             
@@ -201,6 +203,7 @@ public class SidebarPanel extends JPanel {
             addMenu.add(addRunnerItem);
             addMenu.add(addJwtItem);
             addMenu.add(addCompItem);
+            addMenu.add(addMockItem);
             addMenu.add(addJsonItem);
 
             JMenuItem delete = new JMenuItem("Delete Collection");
@@ -213,13 +216,17 @@ public class SidebarPanel extends JPanel {
             JMenuItem exportCol = new JMenuItem("Export Collection...");
             exportCol.addActionListener(e -> mainFrame.exportCollection(col));
             
+            boolean isOthers = MainFrame.OTHERS_COLLECTION_ID.equals(col.getId());
+
             menu.add(rename);
+            if (isOthers) rename.setEnabled(false);
             menu.add(addMenu);
             menu.addSeparator();
             menu.add(importCol);
             menu.add(exportCol);
             menu.addSeparator();
             menu.add(delete);
+            if (isOthers) delete.setEnabled(false);
         } else if (node.getUserObject() instanceof RequestModel req) {
             JMenuItem open = new JMenuItem("Open");
             open.addActionListener(e -> mainFrame.openRequest(req));
@@ -231,12 +238,15 @@ public class SidebarPanel extends JPanel {
             duplicate.addActionListener(e -> mainFrame.duplicateRequest(req));
             JMenuItem saveAs = new JMenuItem("Save As...");
             saveAs.addActionListener(e -> mainFrame.saveRequestAs(req));
+            JMenuItem moveTo = new JMenuItem("Move to Collection...");
+            moveTo.addActionListener(e -> mainFrame.moveRequestToCollection(req));
             JMenuItem delete = new JMenuItem("Delete");
             delete.addActionListener(e -> mainFrame.deleteRequest(req));
             menu.add(open);
             menu.add(rename);
             menu.add(duplicate);
             menu.add(saveAs);
+            menu.add(moveTo);
             menu.addSeparator();
             menu.add(delete);
         }
@@ -357,6 +367,9 @@ public class SidebarPanel extends JPanel {
                     } else if ("comparator".equals(req.getType())) {
                         Color compColor = new Color(142, 68, 173); // Purple
                         setText("<html><span style='color:" + toHex(compColor) + ";font-weight:bold;'>COMPARE</span> " + req.getName() + "</html>");
+                    } else if ("mockserver".equals(req.getType())) {
+                        Color mockColor = new Color(41, 128, 185); // Blue
+                        setText("<html><span style='color:" + toHex(mockColor) + ";font-weight:bold;'>MOCK</span> " + req.getName() + "</html>");
                     } else {
                         String method = req.getMethod() != null ? req.getMethod() : "GET";
                         Color methodColor = getMethodColor(method);
