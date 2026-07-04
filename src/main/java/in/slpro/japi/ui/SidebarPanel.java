@@ -10,7 +10,6 @@ import java.awt.event.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
@@ -31,7 +30,7 @@ public class SidebarPanel extends JPanel {
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(240, 0));
-        setBackground(new Color(248, 249, 250));
+        setBackground(UIManager.getColor("Sidebar.background"));
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -46,12 +45,12 @@ public class SidebarPanel extends JPanel {
 
     private JPanel buildCollectionsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(248, 249, 250));
+        panel.setBackground(UIManager.getColor("Sidebar.background"));
 
         // Toolbar
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 4));
-        toolbar.setBackground(new Color(240, 241, 242));
-        toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(210, 210, 210)));
+        toolbar.setBackground(UIManager.getColor("Sidebar.toolbarBackground"));
+        toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Sidebar.borderColor")));
 
         JButton newCollBtn = new JButton("+ Collection");
         newCollBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
@@ -89,7 +88,7 @@ public class SidebarPanel extends JPanel {
         collectionsTree = new JTree(collectionsTreeModel);
         collectionsTree.setRootVisible(false);
         collectionsTree.setShowsRootHandles(true);
-        collectionsTree.setBackground(new Color(248, 249, 250));
+        collectionsTree.setBackground(UIManager.getColor("Sidebar.treeBackground"));
         collectionsTree.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         collectionsTree.setRowHeight(28);
         collectionsTree.setCellRenderer(new CollectionTreeRenderer());
@@ -193,8 +192,8 @@ public class SidebarPanel extends JPanel {
             addRunnerItem.addActionListener(e -> mainFrame.addRunnerToCollection(col));
             JMenuItem addJwtItem = new JMenuItem("Add JWT");
             addJwtItem.addActionListener(e -> mainFrame.openJwtDecoder());
-            JMenuItem addCompItem = new JMenuItem("Add Comparator");
-            addCompItem.addActionListener(e -> mainFrame.openComparator());
+            JMenuItem addCompItem = new JMenuItem("Add Data Comparator");
+            addCompItem.addActionListener(e -> mainFrame.addComparatorToCollection(col));
             JMenuItem addJsonItem = new JMenuItem("Add JSON Formatter");
             addJsonItem.addActionListener(e -> mainFrame.openJsonTool());
             
@@ -230,11 +229,14 @@ public class SidebarPanel extends JPanel {
             });
             JMenuItem duplicate = new JMenuItem("Duplicate");
             duplicate.addActionListener(e -> mainFrame.duplicateRequest(req));
-            JMenuItem delete = new JMenuItem("Delete Request");
+            JMenuItem saveAs = new JMenuItem("Save As...");
+            saveAs.addActionListener(e -> mainFrame.saveRequestAs(req));
+            JMenuItem delete = new JMenuItem("Delete");
             delete.addActionListener(e -> mainFrame.deleteRequest(req));
             menu.add(open);
             menu.add(rename);
             menu.add(duplicate);
+            menu.add(saveAs);
             menu.addSeparator();
             menu.add(delete);
         }
@@ -245,11 +247,11 @@ public class SidebarPanel extends JPanel {
 
     private JPanel buildHistoryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(248, 249, 250));
+        panel.setBackground(UIManager.getColor("Sidebar.background"));
 
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 4));
-        toolbar.setBackground(new Color(240, 241, 242));
-        toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(210, 210, 210)));
+        toolbar.setBackground(UIManager.getColor("Sidebar.toolbarBackground"));
+        toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Sidebar.borderColor")));
         JButton clearBtn = new JButton("Clear All");
         clearBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         clearBtn.addActionListener(e -> {
@@ -264,7 +266,7 @@ public class SidebarPanel extends JPanel {
         historyTree = new JTree(historyTreeModel);
         historyTree.setRootVisible(false);
         historyTree.setShowsRootHandles(true);
-        historyTree.setBackground(new Color(248, 249, 250));
+        historyTree.setBackground(UIManager.getColor("Sidebar.treeBackground"));
         historyTree.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         historyTree.setRowHeight(26);
         historyTree.setCellRenderer(new HistoryTreeRenderer());
@@ -352,6 +354,9 @@ public class SidebarPanel extends JPanel {
                     if ("runner".equals(req.getType())) {
                         Color runnerColor = new Color(255, 108, 55); // Postman Orange
                         setText("<html><span style='color:" + toHex(runnerColor) + ";font-weight:bold;'>RUNNER</span> " + req.getName() + "</html>");
+                    } else if ("comparator".equals(req.getType())) {
+                        Color compColor = new Color(142, 68, 173); // Purple
+                        setText("<html><span style='color:" + toHex(compColor) + ";font-weight:bold;'>COMPARE</span> " + req.getName() + "</html>");
                     } else {
                         String method = req.getMethod() != null ? req.getMethod() : "GET";
                         Color methodColor = getMethodColor(method);
@@ -361,7 +366,7 @@ public class SidebarPanel extends JPanel {
                     setFont(getFont().deriveFont(Font.PLAIN));
                 }
             }
-            setBackground(selected ? new Color(210, 230, 255) : new Color(248, 249, 250));
+            setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground") : UIManager.getColor("Sidebar.treeBackground"));
             setOpaque(true);
             return this;
         }
@@ -414,7 +419,7 @@ public class SidebarPanel extends JPanel {
                     setToolTipText(null);
                 }
             }
-            setBackground(selected ? new Color(210, 230, 255) : new Color(248, 249, 250));
+            setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground") : UIManager.getColor("Sidebar.treeBackground"));
             setOpaque(true);
             return this;
         }

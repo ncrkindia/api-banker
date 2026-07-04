@@ -260,7 +260,7 @@ public class EnvironmentManagerDialog extends JDialog {
             root.add("values", values);
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            JOptionPane.showMessageDialog(this, "Exported successfully.");
+            MainFrame.showToast(this, "Exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }

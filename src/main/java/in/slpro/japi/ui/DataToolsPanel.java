@@ -2,6 +2,10 @@ package in.slpro.japi.ui;
 
 import com.google.gson.*;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -22,12 +26,10 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 public class DataToolsPanel extends JPanel {
-    private final MainFrame mainFrame;
 
     public DataToolsPanel(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UIManager.getColor("Panel.background"));
 
         JTabbedPane toolsTab = new JTabbedPane();
         toolsTab.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -45,13 +47,14 @@ public class DataToolsPanel extends JPanel {
     private JPanel buildSchemaValidator() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topBar.setBackground(Color.WHITE);
+        topBar.setBackground(UIManager.getColor("Panel.background"));
         JComboBox<String> schemaType = new JComboBox<>(new String[]{"JSON Schema (Draft 4/7 basic)", "XML XSD (Basic Check)"});
         JButton validateBtn = new JButton("Validate Against Schema");
-        validateBtn.setBackground(new Color(52, 152, 219));
+        Color accent = UIManager.getColor("AccentColor");
+        validateBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         validateBtn.setForeground(Color.WHITE);
         topBar.add(new JLabel("Type:"));
         topBar.add(schemaType);
@@ -61,17 +64,35 @@ public class DataToolsPanel extends JPanel {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         split.setResizeWeight(0.5);
 
-        JTextArea dataArea = new JTextArea();
+        RSyntaxTextArea dataArea = new RSyntaxTextArea();
+        dataArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         dataArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         dataArea.setText("{\n  \"id\": 101,\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\"\n}");
-        JScrollPane dataScroll = new JScrollPane(dataArea);
+        dataArea.setLineWrap(true);
+        dataArea.setAntiAliasingEnabled(true);
+        dataArea.setHighlightCurrentLine(false);
+        RTextScrollPane dataScroll = new RTextScrollPane(dataArea);
         dataScroll.setBorder(BorderFactory.createTitledBorder("Payload (JSON or XML)"));
 
-        JTextArea schemaArea = new JTextArea();
+        RSyntaxTextArea schemaArea = new RSyntaxTextArea();
+        schemaArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         schemaArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         schemaArea.setText("{\n  \"required\": [\"id\", \"name\", \"email\"],\n  \"properties\": {\n    \"id\": {\"type\": \"number\"},\n    \"name\": {\"type\": \"string\"},\n    \"email\": {\"type\": \"string\"}\n  }\n}");
-        JScrollPane schemaScroll = new JScrollPane(schemaArea);
+        schemaArea.setLineWrap(true);
+        schemaArea.setAntiAliasingEnabled(true);
+        schemaArea.setHighlightCurrentLine(false);
+        RTextScrollPane schemaScroll = new RTextScrollPane(schemaArea);
         schemaScroll.setBorder(BorderFactory.createTitledBorder("Schema (JSON Schema or XSD rules)"));
+
+        schemaType.addActionListener(e -> {
+            if (schemaType.getSelectedIndex() == 0) {
+                dataArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                schemaArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+            } else {
+                dataArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                schemaArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+            }
+        });
 
         split.setLeftComponent(dataScroll);
         split.setRightComponent(schemaScroll);
@@ -164,10 +185,10 @@ public class DataToolsPanel extends JPanel {
     private JPanel buildDataMasker() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        topBar.setBackground(Color.WHITE);
+        topBar.setBackground(UIManager.getColor("Panel.background"));
 
         JTextField maskKeysField = new JTextField("password,email,card,phone,ssn,secret", 25);
         JButton maskBtn = new JButton("Mask Data");
@@ -187,17 +208,26 @@ public class DataToolsPanel extends JPanel {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         split.setResizeWeight(0.5);
 
-        JTextArea inputArea = new JTextArea();
+        RSyntaxTextArea inputArea = new RSyntaxTextArea();
+        inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         inputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         inputArea.setText("{\n  \"username\": \"admin\",\n  \"password\": \"superSecret123!\",\n  \"email\": \"user@company.com\",\n  \"phone\": \"+1-555-0199\",\n  \"secretCode\": \"X-992-K\"\n}");
-        JScrollPane inScroll = new JScrollPane(inputArea);
+        inputArea.setLineWrap(true);
+        inputArea.setAntiAliasingEnabled(true);
+        inputArea.setHighlightCurrentLine(false);
+        RTextScrollPane inScroll = new RTextScrollPane(inputArea);
         inScroll.setBorder(BorderFactory.createTitledBorder("Input JSON / XML"));
 
-        JTextArea outputArea = new JTextArea();
+        RSyntaxTextArea outputArea = new RSyntaxTextArea();
+        outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         outputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         outputArea.setEditable(false);
-        outputArea.setBackground(new Color(248, 249, 250));
-        JScrollPane outScroll = new JScrollPane(outputArea);
+        outputArea.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        outputArea.setLineWrap(true);
+        outputArea.setCodeFoldingEnabled(true);
+        outputArea.setAntiAliasingEnabled(true);
+        outputArea.setHighlightCurrentLine(false);
+        RTextScrollPane outScroll = new RTextScrollPane(outputArea);
         outScroll.setBorder(BorderFactory.createTitledBorder("Masked / Anonymized Output"));
 
         split.setLeftComponent(inScroll);
@@ -207,12 +237,19 @@ public class DataToolsPanel extends JPanel {
         maskBtn.addActionListener(e -> {
             String text = inputArea.getText().trim();
             String[] keys = maskKeysField.getText().split(",");
+            boolean isXml = text.startsWith("<");
+            if (isXml) {
+                inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+            } else {
+                inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+            }
             try {
                 JsonElement elem = JsonParser.parseString(text);
                 maskJsonElement(elem, keys, false);
                 outputArea.setText(new GsonBuilder().setPrettyPrinting().create().toJson(elem));
             } catch (Exception ex) {
-                // fallback to regex masking
                 String masked = text;
                 for (String key : keys) {
                     Pattern p = Pattern.compile("(\"" + key.trim() + "\"\\s*:\\s*\")([^\"]+)(\")", Pattern.CASE_INSENSITIVE);
@@ -226,6 +263,14 @@ public class DataToolsPanel extends JPanel {
         anonymizeBtn.addActionListener(e -> {
             String text = inputArea.getText().trim();
             String[] keys = maskKeysField.getText().split(",");
+            boolean isXml = text.startsWith("<");
+            if (isXml) {
+                inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+            } else {
+                inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+            }
             try {
                 JsonElement elem = JsonParser.parseString(text);
                 maskJsonElement(elem, keys, true);
@@ -272,15 +317,16 @@ public class DataToolsPanel extends JPanel {
     private JPanel buildDataGenerator() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 5));
-        topBar.setBackground(Color.WHITE);
+        topBar.setBackground(UIManager.getColor("Panel.background"));
 
         JComboBox<String> schemaTemplate = new JComboBox<>(new String[]{"Users List", "Products Catalog", "Transactions", "Custom Config"});
         JTextField countField = new JTextField("10", 4);
         JButton generateBtn = new JButton("Generate Data");
-        generateBtn.setBackground(new Color(52, 152, 219));
+        Color accent = UIManager.getColor("AccentColor");
+        generateBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         generateBtn.setForeground(Color.WHITE);
 
         topBar.add(new JLabel("Template:"));
@@ -290,9 +336,16 @@ public class DataToolsPanel extends JPanel {
         topBar.add(generateBtn);
         panel.add(topBar, BorderLayout.NORTH);
 
-        JTextArea outputArea = new JTextArea();
+        RSyntaxTextArea outputArea = new RSyntaxTextArea();
+        outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         outputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
-        JScrollPane scroll = new JScrollPane(outputArea);
+        outputArea.setEditable(false);
+        outputArea.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        outputArea.setLineWrap(true);
+        outputArea.setCodeFoldingEnabled(true);
+        outputArea.setAntiAliasingEnabled(true);
+        outputArea.setHighlightCurrentLine(false);
+        RTextScrollPane scroll = new RTextScrollPane(outputArea);
         scroll.setBorder(BorderFactory.createTitledBorder("Generated Mock Output (JSON)"));
         panel.add(scroll, BorderLayout.CENTER);
 
@@ -344,10 +397,10 @@ public class DataToolsPanel extends JPanel {
     private JPanel buildDataTransformer() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
-        topBar.setBackground(Color.WHITE);
+        topBar.setBackground(UIManager.getColor("Panel.background"));
 
         JButton jsonToXmlBtn = new JButton("Transform JSON to XML");
         jsonToXmlBtn.setBackground(new Color(230, 126, 34));
@@ -364,17 +417,26 @@ public class DataToolsPanel extends JPanel {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         split.setResizeWeight(0.5);
 
-        JTextArea inputArea = new JTextArea();
+        RSyntaxTextArea inputArea = new RSyntaxTextArea();
+        inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         inputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         inputArea.setText("{\n  \"user\": {\n    \"id\": 12,\n    \"name\": \"Nitesh\",\n    \"role\": \"developer\"\n  }\n}");
-        JScrollPane inScroll = new JScrollPane(inputArea);
+        inputArea.setLineWrap(true);
+        inputArea.setAntiAliasingEnabled(true);
+        inputArea.setHighlightCurrentLine(false);
+        RTextScrollPane inScroll = new RTextScrollPane(inputArea);
         inScroll.setBorder(BorderFactory.createTitledBorder("Input Format"));
 
-        JTextArea outputArea = new JTextArea();
+        RSyntaxTextArea outputArea = new RSyntaxTextArea();
+        outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
         outputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         outputArea.setEditable(false);
-        outputArea.setBackground(new Color(248, 249, 250));
-        JScrollPane outScroll = new JScrollPane(outputArea);
+        outputArea.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        outputArea.setLineWrap(true);
+        outputArea.setCodeFoldingEnabled(true);
+        outputArea.setAntiAliasingEnabled(true);
+        outputArea.setHighlightCurrentLine(false);
+        RTextScrollPane outScroll = new RTextScrollPane(outputArea);
         outScroll.setBorder(BorderFactory.createTitledBorder("Transformed Output"));
 
         split.setLeftComponent(inScroll);
@@ -383,6 +445,8 @@ public class DataToolsPanel extends JPanel {
 
         jsonToXmlBtn.addActionListener(e -> {
             String text = inputArea.getText().trim();
+            inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+            outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
             try {
                 JsonElement elem = JsonParser.parseString(text);
                 StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\n");
@@ -390,14 +454,15 @@ public class DataToolsPanel extends JPanel {
                 xml.append("</root>");
                 outputArea.setText(xml.toString());
             } catch (Exception ex) {
-                outputArea.setText("Transformation error: " + ex.getMessage());
+                outputArea.setText("Error: " + ex.getMessage());
             }
         });
 
         xmlToJsonBtn.addActionListener(e -> {
             String text = inputArea.getText().trim();
+            inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+            outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
             try {
-                // Basic XML to JSON parser (simple regex match to mimic tags)
                 JsonObject obj = new JsonObject();
                 Pattern tagPattern = Pattern.compile("<([^>]+)>([^<]*)</\\1>");
                 Matcher m = tagPattern.matcher(text);
@@ -410,7 +475,7 @@ public class DataToolsPanel extends JPanel {
                     outputArea.setText(new GsonBuilder().setPrettyPrinting().create().toJson(obj));
                 }
             } catch (Exception ex) {
-                outputArea.setText("Transformation error: " + ex.getMessage());
+                outputArea.setText("Error: " + ex.getMessage());
             }
         });
 
@@ -447,13 +512,14 @@ public class DataToolsPanel extends JPanel {
     private JPanel buildFormatValidate() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
-        topBar.setBackground(Color.WHITE);
+        topBar.setBackground(UIManager.getColor("Panel.background"));
 
         JButton formatJsonBtn = new JButton("Format JSON");
-        formatJsonBtn.setBackground(new Color(52, 152, 219));
+        Color accent = UIManager.getColor("AccentColor");
+        formatJsonBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         formatJsonBtn.setForeground(Color.WHITE);
 
         JButton formatXmlBtn = new JButton("Format XML");
@@ -467,17 +533,26 @@ public class DataToolsPanel extends JPanel {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         split.setResizeWeight(0.5);
 
-        JTextArea inputArea = new JTextArea();
+        RSyntaxTextArea inputArea = new RSyntaxTextArea();
+        inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         inputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         inputArea.setText("{\"user\":\"test\",\"role\":\"admin\",\"tags\":[\"dev\",\"qa\"]}");
-        JScrollPane inScroll = new JScrollPane(inputArea);
+        inputArea.setLineWrap(true);
+        inputArea.setAntiAliasingEnabled(true);
+        inputArea.setHighlightCurrentLine(false);
+        RTextScrollPane inScroll = new RTextScrollPane(inputArea);
         inScroll.setBorder(BorderFactory.createTitledBorder("Raw Text"));
 
-        JTextArea outputArea = new JTextArea();
+        RSyntaxTextArea outputArea = new RSyntaxTextArea();
+        outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         outputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         outputArea.setEditable(false);
-        outputArea.setBackground(new Color(248, 249, 250));
-        JScrollPane outScroll = new JScrollPane(outputArea);
+        outputArea.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        outputArea.setLineWrap(true);
+        outputArea.setCodeFoldingEnabled(true);
+        outputArea.setAntiAliasingEnabled(true);
+        outputArea.setHighlightCurrentLine(false);
+        RTextScrollPane outScroll = new RTextScrollPane(outputArea);
         outScroll.setBorder(BorderFactory.createTitledBorder("Formatted View"));
 
         split.setLeftComponent(inScroll);
@@ -485,17 +560,19 @@ public class DataToolsPanel extends JPanel {
         panel.add(split, BorderLayout.CENTER);
 
         formatJsonBtn.addActionListener(e -> {
+            inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+            outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
             try {
                 JsonElement elem = JsonParser.parseString(inputArea.getText());
                 outputArea.setText(new GsonBuilder().setPrettyPrinting().create().toJson(elem));
-                outputArea.setForeground(new Color(33, 33, 33));
             } catch (Exception ex) {
                 outputArea.setText("Invalid JSON: " + ex.getMessage());
-                outputArea.setForeground(Color.RED);
             }
         });
 
         formatXmlBtn.addActionListener(e -> {
+            inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+            outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
             try {
                 String xml = inputArea.getText().trim();
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -510,10 +587,8 @@ public class DataToolsPanel extends JPanel {
                 StringWriter sw = new StringWriter();
                 transformer.transform(new DOMSource(doc), new StreamResult(sw));
                 outputArea.setText(sw.toString());
-                outputArea.setForeground(new Color(33, 33, 33));
             } catch (Exception ex) {
                 outputArea.setText("Invalid XML: " + ex.getMessage());
-                outputArea.setForeground(Color.RED);
             }
         });
 

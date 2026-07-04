@@ -20,6 +20,8 @@ public class MainFrame extends JFrame {
 
     private SidebarPanel sidebarPanel;
     private JTabbedPane workspaceTabs;
+    private JPanel workspacePanel;
+    private CardLayout workspaceCardLayout;
     private JComboBox<String> envCombo;
     private JLabel envIndicator;
 
@@ -34,15 +36,38 @@ public class MainFrame extends JFrame {
         this.history = storage.loadHistory();
 
         setTitle("JAPI - Offline API Client");
-        setSize(1300, 800);
+
+        // Read saved font size
+        int savedFontSize = storage.getSettings().getFontSize();
+        if (savedFontSize >= 10 && savedFontSize <= 30) {
+            currentFontSize = savedFontSize;
+        }
+
+        // Read saved window settings
+        int width = storage.getSettings().getWindowWidth();
+        int height = storage.getSettings().getWindowHeight();
+        if (width > 200 && height > 200) {
+            setSize(width, height);
+        } else {
+            setSize(1300, 800);
+        }
+
+        if (storage.getSettings().isWindowMaximized()) {
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+        }
+
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
-            @Override public void windowClosing(WindowEvent e) { onClose(); }
+            @Override
+            public void windowClosing(WindowEvent e) {
+                onClose();
+            }
         });
 
         initUI();
         setupZoom();
         applyTheme();
+        updateFontSize(currentFontSize);
     }
 
     private void initUI() {
@@ -54,22 +79,42 @@ public class MainFrame extends JFrame {
 
         // Sidebar
         sidebarPanel = new SidebarPanel(this);
-        mainPanel.add(sidebarPanel, BorderLayout.WEST);
 
         // Workspace
         workspaceTabs = new JTabbedPane();
         workspaceTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        mainPanel.add(workspaceTabs, BorderLayout.CENTER);
+
+        workspaceCardLayout = new CardLayout();
+        workspacePanel = new JPanel(workspaceCardLayout);
+
+        JPanel welcomePanel = buildWelcomePanel();
+        workspacePanel.add(welcomePanel, "welcome");
+        workspacePanel.add(workspaceTabs, "tabs");
+
+        workspaceCardLayout.show(workspacePanel, "welcome");
+
+        workspaceTabs.addContainerListener(new java.awt.event.ContainerListener() {
+            @Override
+            public void componentAdded(java.awt.event.ContainerEvent e) {
+                updateWorkspaceVisibility();
+            }
+
+            @Override
+            public void componentRemoved(java.awt.event.ContainerEvent e) {
+                updateWorkspaceVisibility();
+            }
+        });
+
+        // JSplitPane to make sidebar adjustable in size
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, workspacePanel);
+        splitPane.setDividerLocation(300);
+        splitPane.setBorder(null);
+        mainPanel.add(splitPane, BorderLayout.CENTER);
 
         // Bottom status bar
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        if ("dark".equals(storage.getSettings().getTheme())) {
-            statusBar.setBackground(new Color(40, 44, 52));
-            statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 64, 72)));
-        } else {
-            statusBar.setBackground(new Color(243, 243, 243));
-            statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
-        }
+        statusBar.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("Workspace.borderColor")));
         statusBar.add(buildEnvSelector());
         mainPanel.add(statusBar, BorderLayout.SOUTH);
 
@@ -79,8 +124,23 @@ public class MainFrame extends JFrame {
         sidebarPanel.refreshCollections(collections);
         sidebarPanel.refreshHistory(history);
 
-        // Open welcome tab
-        openWelcomeTab();
+        // Restore opened tabs
+        List<AppSettings.OpenTabState> openTabs = storage.getSettings().getOpenTabs();
+        if (openTabs != null && !openTabs.isEmpty()) {
+            for (AppSettings.OpenTabState ts : openTabs) {
+                restoreTab(ts);
+            }
+            int savedIndex = storage.getSettings().getSelectedTabIndex();
+            if (savedIndex >= 0 && savedIndex < workspaceTabs.getTabCount()) {
+                workspaceTabs.setSelectedIndex(savedIndex);
+            }
+            // If nothing was successfully restored, open the welcome tab
+            if (workspaceTabs.getTabCount() == 0) {
+                openWelcomeTab();
+            }
+        } else {
+            openWelcomeTab();
+        }
     }
 
     private JMenuBar buildMenuBar() {
@@ -120,8 +180,8 @@ public class MainFrame extends JFrame {
         jwtItem.addActionListener(e -> openJwtDecoder());
         JMenuItem jsonItem = new JMenuItem("JSON Tool");
         jsonItem.addActionListener(e -> openJsonTool());
-        JMenuItem compareItem = new JMenuItem("Text Comparator");
-        compareItem.addActionListener(e -> openComparator());
+        JMenuItem compareItem = new JMenuItem("Data Comparator");
+        compareItem.addActionListener(e -> openDataComparator());
         JMenuItem mockServerItem = new JMenuItem("Mock Server");
         mockServerItem.addActionListener(e -> openMockServer());
         JMenuItem dataToolsItem = new JMenuItem("Data Tools");
@@ -191,20 +251,24 @@ public class MainFrame extends JFrame {
         int selIdx = 0;
         for (int i = 0; i < environments.size(); i++) {
             envCombo.addItem(environments.get(i).getName());
-            if (environments.get(i).getId().equals(activeId)) selIdx = i + 1;
+            if (environments.get(i).getId().equals(activeId))
+                selIdx = i + 1;
         }
         envCombo.setSelectedIndex(selIdx);
     }
 
     public EnvironmentModel getActiveEnvironment() {
         int idx = envCombo.getSelectedIndex();
-        if (idx > 0 && idx - 1 < environments.size()) return environments.get(idx - 1);
+        if (idx > 0 && idx - 1 < environments.size())
+            return environments.get(idx - 1);
         return null;
     }
 
     // ─── Collections ─────────────────────────────────────────────────────────
 
-    public List<CollectionModel> getCollections() { return collections; }
+    public List<CollectionModel> getCollections() {
+        return collections;
+    }
 
     public void refreshCollections(List<CollectionModel> collections) {
         sidebarPanel.refreshCollections(collections);
@@ -260,25 +324,61 @@ public class MainFrame extends JFrame {
         }
     }
 
+    public void addComparatorToCollection(CollectionModel col) {
+        RequestModel comp = new RequestModel();
+        comp.setName(col.getName() + " Comparator");
+        comp.setType("comparator");
+        comp.setMethod("COMPARE");
+        col.getRequests().add(comp);
+        saveCollections();
+        sidebarPanel.refreshCollections(collections);
+        openRequest(comp);
+    }
+
+    public RequestModel duplicateRequestModel(RequestModel req) {
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        String json = gson.toJson(req);
+        RequestModel dup = gson.fromJson(json, RequestModel.class);
+        dup.setId(UUID.randomUUID().toString());
+        return dup;
+    }
+
     public void duplicateRequest(RequestModel req) {
         for (CollectionModel col : collections) {
-            if (col.getRequests().contains(req)) {
-                RequestModel dup = new RequestModel();
+            int index = col.getRequests().indexOf(req);
+            if (index >= 0) {
+                RequestModel dup = duplicateRequestModel(req);
                 dup.setName(req.getName() + " Copy");
-                dup.setMethod(req.getMethod());
-                dup.setUrl(req.getUrl());
-                dup.setHeaders(new ArrayList<>(req.getHeaders()));
-                dup.setParams(new ArrayList<>(req.getParams()));
-                dup.setBodyType(req.getBodyType());
-                dup.setBodyRawContent(req.getBodyRawContent());
-                dup.setBodyRawType(req.getBodyRawType());
-                col.getRequests().add(col.getRequests().indexOf(req) + 1, dup);
+                col.getRequests().add(index + 1, dup);
                 saveCollections();
                 sidebarPanel.refreshCollections(collections);
                 openRequest(dup);
                 break;
             }
         }
+    }
+
+    public void saveRequestAs(RequestModel req) {
+        String newName = JOptionPane.showInputDialog(this, "Save As name:", req.getName());
+        if (newName == null || newName.isBlank())
+            return;
+        List<CollectionModel> cols = getCollections();
+        if (cols.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No collections available.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        CollectionModel targetCol = (CollectionModel) JOptionPane.showInputDialog(this,
+                "Select destination collection:", "Save As", JOptionPane.PLAIN_MESSAGE,
+                null, cols.toArray(), cols.get(0));
+        if (targetCol == null)
+            return;
+
+        RequestModel dup = duplicateRequestModel(req);
+        dup.setName(newName.trim());
+        targetCol.getRequests().add(dup);
+        saveCollections();
+        sidebarPanel.refreshCollections(collections);
+        openRequest(dup);
     }
 
     public void saveCollections() {
@@ -292,8 +392,34 @@ public class MainFrame extends JFrame {
     public void updateTabTitle(RequestModel req) {
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             Component c = workspaceTabs.getComponentAt(i);
-            if (c instanceof RequestPanel rp && rp.getRequestModel().getId().equals(req.getId())) {
+            RequestModel model = null;
+            if (c instanceof RequestPanel rp) {
+                model = rp.getRequestModel();
+            } else if (c instanceof CollectionRunnerPanel crp) {
+                model = crp.getRequestModel();
+            } else if (c instanceof DataComparatorPanel dcp) {
+                model = dcp.getRequestModel();
+            }
+
+            if (model != null && model.getId().equals(req.getId())) {
                 workspaceTabs.setTitleAt(i, req.getName());
+                Component tabComp = workspaceTabs.getTabComponentAt(i);
+                if (tabComp instanceof TabHeaderPanel header) {
+                    header.title = req.getName();
+                    for (Component child : header.getComponents()) {
+                        if (child instanceof JLabel titleLabel) {
+                            String displayTitle = req.getName();
+                            if (displayTitle.length() > 16) {
+                                displayTitle = displayTitle.substring(0, 13) + "...";
+                            }
+                            titleLabel.setText(displayTitle);
+                            titleLabel.setToolTipText(req.getName());
+                        }
+                        if (child instanceof JTextField editField) {
+                            editField.setText(req.getName());
+                        }
+                    }
+                }
                 break;
             }
         }
@@ -311,12 +437,29 @@ public class MainFrame extends JFrame {
                         break;
                     }
                 }
-                if (parentCol != null) break;
+                if (parentCol != null)
+                    break;
             }
             if (parentCol != null) {
                 openRunner(parentCol, req);
                 return;
             }
+        }
+
+        if ("comparator".equals(req.getType())) {
+            for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+                Component c = workspaceTabs.getComponentAt(i);
+                if (c instanceof DataComparatorPanel dcp && dcp.getRequestModel().getId().equals(req.getId())) {
+                    workspaceTabs.setSelectedIndex(i);
+                    return;
+                }
+            }
+            DataComparatorPanel panel = new DataComparatorPanel(this, req);
+            int idx = workspaceTabs.getTabCount();
+            workspaceTabs.addTab(req.getName(), panel);
+            workspaceTabs.setTabComponentAt(idx, buildTabHeader(req.getName(), idx, panel));
+            workspaceTabs.setSelectedIndex(idx);
+            return;
         }
 
         // Check if already open
@@ -367,13 +510,80 @@ public class MainFrame extends JFrame {
     }
 
     private void openWelcomeTab() {
+        workspaceTabs.removeAll();
+        updateWorkspaceVisibility();
+    }
+
+    private void updateWorkspaceVisibility() {
+        if (workspaceTabs.getTabCount() == 0) {
+            workspaceCardLayout.show(workspacePanel, "welcome");
+        } else {
+            workspaceCardLayout.show(workspacePanel, "tabs");
+        }
+    }
+
+    private JPanel buildWelcomePanel() {
         JPanel welcome = new JPanel(new BorderLayout());
-        welcome.setBackground(Color.WHITE);
-        JLabel lbl = new JLabel("<html><center><h2>Welcome to JAPI</h2><p>Select a request from the sidebar or create a new one.</p></center></html>", SwingConstants.CENTER);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lbl.setForeground(new Color(100, 100, 100));
-        welcome.add(lbl, BorderLayout.CENTER);
-        workspaceTabs.addTab("Welcome", welcome);
+        welcome.setBackground(UIManager.getColor("Panel.background"));
+
+        JTextPane welcomePane = new JTextPane();
+        welcomePane.setContentType("text/html");
+        welcomePane.setEditable(false);
+        welcomePane.setBackground(UIManager.getColor("Panel.background"));
+
+        String accentHex = "#FF6C37"; // Postman orange
+        String textHex = "#555555";
+        String cardBgHex = "#FFFFFF";
+
+        boolean isDark = com.formdev.flatlaf.FlatLaf.isLafDark();
+        if (isDark) {
+            textHex = "#CCCCCC";
+            cardBgHex = "#2B2B2B";
+        }
+
+        String html = "<html><body style='font-family:\"Segoe UI\",sans-serif; margin:30px; color:" + textHex + ";'>"
+                + "<div style='text-align:center; margin-bottom:30px;'>"
+                + "  <h1 style='color:" + accentHex + "; font-size:36px; margin:0;'>Japi</h1>"
+                + "  <h2 style='font-weight:normal; font-size:18px; margin:5px 0 15px 0;'>The Ultimate Offline API Client & Collection Runner</h2>"
+                + "  <div style='font-size:12px; color:#888;'>Version 1.0.0 | Secured Offline-First Architecture | From SL Pro</div>"
+                + "</div>"
+                + "<hr style='margin-bottom:30px;'>"
+                + "<table width='100%' cellpadding='10' cellspacing='10'>"
+                + "  <tr>"
+                + "    <td width='50%' valign='top' style='background:" + cardBgHex
+                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>🚀 Collection Runner</h3>"
+                + "      <p style='font-size:13px; line-height:1.5;'>Execute whole API suites concurrently with configurable virtual users and delay. Monitor real-time logs, view live multiline analytics charts (for response codes and latency percentiles), and export polished PDF or Excel summary reports.</p>"
+                + "    </td>"
+                + "    <td width='50%' valign='top' style='background:" + cardBgHex
+                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>⚙️ Environment Management</h3>"
+                + "      <p style='font-size:13px; line-height:1.5;'>Create, import, export, and switch environments instantly. Dynamically substitute double-brace variables (e.g. <code>{{url}}</code>) across headers, parameters, and bodies.</p>"
+                + "    </td>"
+                + "  </tr>"
+                + "  <tr>"
+                + "    <td width='50%' valign='top' style='background:" + cardBgHex
+                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>🛠️ Rhino Scripting sandbox</h3>"
+                + "      <p style='font-size:13px; line-height:1.5;'>Write custom JavaScript code inside Pre-request and Post-request tabs to build dynamic workflows, manipulate variables, and chain requests.</p>"
+                + "    </td>"
+                + "    <td width='50%' valign='top' style='background:" + cardBgHex
+                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>⚡ Integrated Tool Suite</h3>"
+                + "      <p style='font-size:13px; line-height:1.5;'>Includes a built-in JWT Decoder, Data Comparator, mock JSON editor, native JMeter (.jmx) imports/exports, and offline local Mock Server.</p>"
+                + "    </td>"
+                + "  </tr>"
+                + "</table>"
+                + "<div style='margin-top:30px; text-align:center; font-size:12px; color:#888;'>"
+                + "  © 2026 JAPI by SLPRO. All Rights Reserved."
+                + "</div>"
+                + "</body></html>";
+
+        welcomePane.setText(html);
+        JScrollPane scroll = new JScrollPane(welcomePane);
+        scroll.setBorder(null);
+        welcome.add(scroll, BorderLayout.CENTER);
+        return welcome;
     }
 
     private void openNewRequest() {
@@ -403,13 +613,13 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
-    public void openComparator() {
+    public void openDataComparator() {
         RequestModel req = new RequestModel();
-        req.setName("Comparator");
-        ComparatorPanel panel = new ComparatorPanel(this, req);
+        req.setName("Data Comparator");
+        DataComparatorPanel panel = new DataComparatorPanel(this, req);
         int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("Comparator", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Comparator", idx, panel));
+        workspaceTabs.addTab("Data Comparator", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Data Comparator", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -437,41 +647,170 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
+    private void closeTab(Component tabContent) {
+        int idx = workspaceTabs.indexOfComponent(tabContent);
+        if (idx >= 0) {
+            if (tabContent instanceof RequestPanel rp) {
+                rp.getRequestModel(); // triggers collect
+                saveCollections();
+            } else if (tabContent instanceof CollectionRunnerPanel crp) {
+                crp.saveConfig();
+                saveCollections();
+            } else if (tabContent instanceof LogConsolePanel lcp) {
+                lcp.removeListener();
+            }
+            workspaceTabs.removeTabAt(idx);
+        }
+    }
+
     private JPanel buildTabHeader(String title, int tabIndex, Component tabContent) {
-        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        header.setOpaque(false);
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        TabHeaderPanel header = new TabHeaderPanel(title);
+
+        String displayTitle = title;
+        if (displayTitle.length() > 16) {
+            displayTitle = displayTitle.substring(0, 13) + "...";
+        }
+        JLabel titleLabel = new JLabel(displayTitle);
+        titleLabel.setToolTipText(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, currentFontSize));
+
+        boolean renameable = (tabContent instanceof RequestPanel) ||
+                (tabContent instanceof CollectionRunnerPanel) ||
+                (tabContent instanceof DataComparatorPanel);
+
+        final JTextField editField;
+        final Runnable startEdit;
+
+        if (renameable) {
+            final JTextField tf = new JTextField(title);
+            tf.setFont(titleLabel.getFont());
+            tf.setPreferredSize(new Dimension(140, currentFontSize + 8));
+            tf.setVisible(false);
+            editField = tf;
+
+            startEdit = () -> {
+                tf.setText(header.title);
+                titleLabel.setVisible(false);
+                tf.setVisible(true);
+                header.revalidate();
+                header.repaint();
+                tf.requestFocusInWindow();
+                tf.selectAll();
+            };
+
+            Runnable saveRename = new Runnable() {
+                private boolean processing = false;
+
+                @Override
+                public void run() {
+                    if (processing)
+                        return;
+                    processing = true;
+                    try {
+                        String newName = tf.getText().trim();
+                        if (!newName.isEmpty() && !newName.equals(header.title)) {
+                            header.title = newName;
+                            if (tabContent instanceof RequestPanel rp) {
+                                rp.getRequestModel().setName(newName);
+                                sidebarPanel.refreshCollections(collections);
+                                sidebarPanel.refreshHistory(history);
+                            } else if (tabContent instanceof CollectionRunnerPanel crp) {
+                                crp.getRequestModel().setName(newName);
+                                sidebarPanel.refreshCollections(collections);
+                            } else if (tabContent instanceof DataComparatorPanel cp) {
+                                cp.getRequestModel().setName(newName);
+                            }
+                            saveCollections();
+
+                            // Update the label and tooltip
+                            String newDisplay = newName;
+                            if (newDisplay.length() > 16) {
+                                newDisplay = newDisplay.substring(0, 13) + "...";
+                            }
+                            titleLabel.setText(newDisplay);
+                            titleLabel.setToolTipText(newName);
+                        }
+                    } finally {
+                        tf.setVisible(false);
+                        titleLabel.setVisible(true);
+                        header.revalidate();
+                        header.repaint();
+                        processing = false;
+                    }
+                }
+            };
+
+            tf.addActionListener(ae -> saveRename.run());
+            tf.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusLost(FocusEvent fe) {
+                    saveRename.run();
+                }
+            });
+        } else {
+            editField = null;
+            startEdit = null;
+        }
+
+        final Runnable startEditAction = startEdit;
+        MouseAdapter tabMouseListener = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    JPopupMenu menu = new JPopupMenu();
+                    if (renameable && startEditAction != null) {
+                        JMenuItem renameItem = new JMenuItem("Rename");
+                        renameItem.addActionListener(ae -> startEditAction.run());
+                        menu.add(renameItem);
+                    }
+                    JMenuItem closeItem = new JMenuItem("Close");
+                    closeItem.addActionListener(ae -> closeTab(tabContent));
+                    menu.add(closeItem);
+                    menu.show(header, e.getX(), e.getY());
+                } else if (e.getClickCount() == 2 && renameable && startEditAction != null) {
+                    startEditAction.run();
+                }
+            }
+        };
+        header.addMouseListener(tabMouseListener);
+        titleLabel.addMouseListener(tabMouseListener);
+
         JButton closeBtn = new JButton("×");
-        closeBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        closeBtn.setFont(new Font("Segoe UI", Font.PLAIN, currentFontSize));
         closeBtn.setBorderPainted(false);
         closeBtn.setContentAreaFilled(false);
         closeBtn.setFocusPainted(false);
-        closeBtn.setPreferredSize(new Dimension(18, 18));
-        closeBtn.addActionListener(e -> {
-            int idx = workspaceTabs.indexOfComponent(tabContent);
-            if (idx >= 0) {
-                // Save before closing if it's a request
-                if (tabContent instanceof RequestPanel rp) {
-                    rp.getRequestModel(); // triggers collect
-                    saveCollections();
-                } else if (tabContent instanceof CollectionRunnerPanel crp) {
-                    crp.saveConfig();
-                    saveCollections();
-                } else if (tabContent instanceof LogConsolePanel lcp) {
-                    lcp.removeListener();
-                }
-                workspaceTabs.removeTabAt(idx);
+        closeBtn.setBorder(null);
+        closeBtn.setMargin(new Insets(0, 0, 0, 0));
+        closeBtn.setPreferredSize(new Dimension(currentFontSize + 6, currentFontSize + 6));
+        closeBtn.setToolTipText("Close tab");
+        closeBtn.setForeground(Color.GRAY);
+        closeBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                closeBtn.setForeground(Color.RED);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                closeBtn.setForeground(Color.GRAY);
             }
         });
+        closeBtn.addActionListener(e -> closeTab(tabContent));
+
         header.add(titleLabel);
+        if (renameable && editField != null) {
+            header.add(editField);
+        }
         header.add(closeBtn);
         return header;
     }
 
     // ─── Environments ─────────────────────────────────────────────────────────
 
-    public List<EnvironmentModel> getEnvironments() { return environments; }
+    public List<EnvironmentModel> getEnvironments() {
+        return environments;
+    }
 
     public void setEnvironments(List<EnvironmentModel> envs) {
         this.environments = envs;
@@ -513,7 +852,8 @@ public class MainFrame extends JFrame {
         historyItem.setActualUrl(req.getActualUrl());
 
         history.add(0, historyItem);
-        if (history.size() > MAX_HISTORY) history = new ArrayList<>(history.subList(0, MAX_HISTORY));
+        if (history.size() > MAX_HISTORY)
+            history = new ArrayList<>(history.subList(0, MAX_HISTORY));
         storage.saveHistory(history);
         sidebarPanel.refreshHistory(history);
     }
@@ -528,7 +868,8 @@ public class MainFrame extends JFrame {
     public void importPostmanCollection() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Import Postman Collection (.json)");
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
         try {
             String json = java.nio.file.Files.readString(chooser.getSelectedFile().toPath());
             com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
@@ -536,7 +877,8 @@ public class MainFrame extends JFrame {
             col.setId(UUID.randomUUID().toString());
 
             com.google.gson.JsonObject info = root.has("info") ? root.getAsJsonObject("info") : null;
-            col.setName(info != null && info.has("name") ? info.get("name").getAsString() : chooser.getSelectedFile().getName());
+            col.setName(info != null && info.has("name") ? info.get("name").getAsString()
+                    : chooser.getSelectedFile().getName());
 
             List<RequestModel> reqs = new ArrayList<>();
             if (root.has("item") && root.get("item").isJsonArray()) {
@@ -546,7 +888,8 @@ public class MainFrame extends JFrame {
             collections.add(col);
             saveCollections();
             sidebarPanel.refreshCollections(collections);
-            JOptionPane.showMessageDialog(this, "Imported " + reqs.size() + " requests into \"" + col.getName() + "\".");
+            JOptionPane.showMessageDialog(this,
+                    "Imported " + reqs.size() + " requests into \"" + col.getName() + "\".");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Import failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -568,7 +911,8 @@ public class MainFrame extends JFrame {
                 if (reqObj.has("url")) {
                     com.google.gson.JsonElement urlEl = reqObj.get("url");
                     if (urlEl.isJsonObject()) {
-                        req.setUrl(urlEl.getAsJsonObject().has("raw") ? urlEl.getAsJsonObject().get("raw").getAsString() : "");
+                        req.setUrl(urlEl.getAsJsonObject().has("raw") ? urlEl.getAsJsonObject().get("raw").getAsString()
+                                : "");
                     } else {
                         req.setUrl(urlEl.getAsString());
                     }
@@ -595,7 +939,9 @@ public class MainFrame extends JFrame {
                         if (body.has("options")) {
                             com.google.gson.JsonObject opts = body.getAsJsonObject("options");
                             if (opts.has("raw")) {
-                                String lang = opts.getAsJsonObject("raw").has("language") ? opts.getAsJsonObject("raw").get("language").getAsString() : "json";
+                                String lang = opts.getAsJsonObject("raw").has("language")
+                                        ? opts.getAsJsonObject("raw").get("language").getAsString()
+                                        : "json";
                                 req.setBodyRawType(lang.toUpperCase());
                             }
                         } else {
@@ -612,7 +958,8 @@ public class MainFrame extends JFrame {
         JFileChooser chooser = new JFileChooser();
         chooser.setSelectedFile(new File(col.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + ".json"));
         chooser.setDialogTitle("Export Collection");
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
         try {
             com.google.gson.JsonObject root = new com.google.gson.JsonObject();
             com.google.gson.JsonObject info = new com.google.gson.JsonObject();
@@ -621,7 +968,8 @@ public class MainFrame extends JFrame {
             root.add("info", info);
             com.google.gson.JsonArray items = new com.google.gson.JsonArray();
             for (RequestModel req : col.getRequests()) {
-                if ("runner".equals(req.getType())) continue;
+                if ("runner".equals(req.getType()))
+                    continue;
                 com.google.gson.JsonObject item = new com.google.gson.JsonObject();
                 item.addProperty("name", req.getName());
                 com.google.gson.JsonObject reqObj = new com.google.gson.JsonObject();
@@ -635,7 +983,7 @@ public class MainFrame extends JFrame {
             root.add("item", items);
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            JOptionPane.showMessageDialog(this, "Collection exported successfully.");
+            showToast(this, "Collection exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -654,9 +1002,16 @@ public class MainFrame extends JFrame {
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0; panel.add(new JLabel("Data Directory:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1; JTextField dirField = new JTextField(storage.getSettings().getDataDirectory()); panel.add(dirField, gbc);
-        gbc.gridx = 2; gbc.weightx = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Data Directory:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField dirField = new JTextField(storage.getSettings().getDataDirectory());
+        panel.add(dirField, gbc);
+        gbc.gridx = 2;
+        gbc.weightx = 0;
         JButton browseBtn = new JButton("Browse");
         browseBtn.addActionListener(e -> {
             JFileChooser fc = new JFileChooser(storage.getSettings().getDataDirectory());
@@ -668,14 +1023,22 @@ public class MainFrame extends JFrame {
         });
         panel.add(browseBtn, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0; panel.add(new JLabel("Theme:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1;
-        JComboBox<String> themeCombo = new JComboBox<>(new String[]{"light", "dark"});
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Theme:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JComboBox<String> themeCombo = new JComboBox<>(new String[] { "light", "dark" });
         themeCombo.setSelectedItem(storage.getSettings().getTheme());
         panel.add(themeCombo, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; panel.add(new JLabel("Enable Request Logging:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Enable Request Logging:"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
         JCheckBox loggingCheck = new JCheckBox();
         loggingCheck.setSelected(storage.getSettings().isEnableLogging());
         panel.add(loggingCheck, gbc);
@@ -688,7 +1051,7 @@ public class MainFrame extends JFrame {
             storage.getSettings().setEnableLogging(loggingCheck.isSelected());
             storage.saveSettings();
             dialog.dispose();
-            JOptionPane.showMessageDialog(this, "Settings saved. Restart for theme changes.", "Settings", JOptionPane.INFORMATION_MESSAGE);
+            showToast(this, "Settings saved. Restart for theme changes.");
         });
         JButton cancelBtn = new JButton("Cancel");
         cancelBtn.addActionListener(e -> dialog.dispose());
@@ -703,9 +1066,9 @@ public class MainFrame extends JFrame {
     private void showAbout() {
         JOptionPane.showMessageDialog(this,
                 "<html><center><b>JAPI - Offline API Client</b><br>" +
-                "Version 1.0.0<br><br>" +
-                "A fast, modern, and completely offline API testing tool.<br><br>" +
-                "Built with Java + Swing</center></html>",
+                        "Version 1.0.0<br><br>" +
+                        "A fast, modern, and completely offline API testing tool.<br><br>" +
+                        "Built with Java + Swing</center></html>",
                 "About JAPI", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -714,36 +1077,45 @@ public class MainFrame extends JFrame {
         try {
             App.setupTheme(theme, currentFontSize);
             SwingUtilities.updateComponentTreeUI(this);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private void setupZoom() {
         JComponent root = getRootPane();
-        
+
         // Zoom In (Ctrl + EQUALS / Ctrl + ADD)
         root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK), "zoomIn");
+                KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK), "zoomIn");
         root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            KeyStroke.getKeyStroke(KeyEvent.VK_ADD, InputEvent.CTRL_DOWN_MASK), "zoomIn");
-            
+                KeyStroke.getKeyStroke(KeyEvent.VK_ADD, InputEvent.CTRL_DOWN_MASK), "zoomIn");
+
         // Zoom Out (Ctrl + MINUS / Ctrl + SUBTRACT)
         root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, InputEvent.CTRL_DOWN_MASK), "zoomOut");
+                KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, InputEvent.CTRL_DOWN_MASK), "zoomOut");
         root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, InputEvent.CTRL_DOWN_MASK), "zoomOut");
-            
+                KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, InputEvent.CTRL_DOWN_MASK), "zoomOut");
+
         root.getActionMap().put("zoomIn", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { zoom(1); }
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                zoom(1);
+            }
         });
         root.getActionMap().put("zoomOut", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { zoom(-1); }
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                zoom(-1);
+            }
         });
     }
 
     private void zoom(int increment) {
         currentFontSize += increment;
-        if (currentFontSize < 10) currentFontSize = 10;
-        if (currentFontSize > 24) currentFontSize = 24;
+        if (currentFontSize < 10)
+            currentFontSize = 10;
+        if (currentFontSize > 24)
+            currentFontSize = 24;
 
         Font currentDefaultFont = UIManager.getFont("defaultFont");
         if (currentDefaultFont == null) {
@@ -770,14 +1142,28 @@ public class MainFrame extends JFrame {
                     jp.updateFontSize(size);
                 } else if (tab instanceof JsonToolPanel jtp) {
                     jtp.updateFontSize(size);
-                } else if (tab instanceof ComparatorPanel cp) {
+                } else if (tab instanceof DataComparatorPanel cp) {
                     cp.updateFontSize(size);
                 } else if (tab instanceof CollectionRunnerPanel crp) {
                     crp.updateFontSize(size);
                 }
+
+                Component tabComp = workspaceTabs.getTabComponentAt(i);
+                if (tabComp != null) {
+                    FontScaleHelper.scaleFonts(tabComp, size);
+                    if (tabComp instanceof JPanel header) {
+                        for (Component child : header.getComponents()) {
+                            if (child instanceof JButton closeBtn) {
+                                closeBtn.setPreferredSize(new Dimension(size + 6, size + 6));
+                            }
+                        }
+                    }
+                }
             }
         }
         FontScaleHelper.scaleFonts(this, size);
+        revalidate();
+        repaint();
     }
 
     private void onClose() {
@@ -788,10 +1174,182 @@ public class MainFrame extends JFrame {
                 rp.getRequestModel(); // triggers collectModel
             } else if (c instanceof CollectionRunnerPanel crp) {
                 crp.saveConfig();
+            } else if (c instanceof DataComparatorPanel cp) {
+                cp.getRequestModel(); // triggers collect
             }
         }
         saveCollections();
         storage.saveHistory(history);
+
+        // Save sequence and state of open tabs
+        List<AppSettings.OpenTabState> tabStates = new ArrayList<>();
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            String type = null;
+            String reqId = null;
+
+            if (c instanceof RequestPanel rp) {
+                type = "request";
+                reqId = rp.getRequestModel().getId();
+            } else if (c instanceof CollectionRunnerPanel crp) {
+                type = "runner";
+                reqId = crp.getRequestModel().getId();
+            } else if (c instanceof DataComparatorPanel cp) {
+                type = "comparator";
+                reqId = cp.getRequestModel().getId();
+            } else if (c instanceof JwtDecoderPanel) {
+                type = "jwt";
+            } else if (c instanceof JsonToolPanel) {
+                type = "json";
+            } else if (c instanceof MockServerPanel) {
+                type = "mockserver";
+            } else if (c instanceof DataToolsPanel) {
+                type = "datatools";
+            } else if (c instanceof LogConsolePanel) {
+                type = "logconsole";
+            } else {
+                String title = workspaceTabs.getTitleAt(i);
+                if ("Welcome".equals(title)) {
+                    type = "welcome";
+                }
+            }
+
+            if (type != null) {
+                tabStates.add(new AppSettings.OpenTabState(type, reqId));
+            }
+        }
+        storage.getSettings().setOpenTabs(tabStates);
+        storage.getSettings().setSelectedTabIndex(workspaceTabs.getSelectedIndex());
+
+        // Save zoom and window settings
+        storage.getSettings().setFontSize(currentFontSize);
+        boolean maximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) != 0;
+        storage.getSettings().setWindowMaximized(maximized);
+        if (!maximized) {
+            storage.getSettings().setWindowWidth(getWidth());
+            storage.getSettings().setWindowHeight(getHeight());
+        }
+        storage.saveSettings();
+
         System.exit(0);
+    }
+
+    private RequestModel findRequestModel(String id) {
+        if (id == null)
+            return null;
+        for (CollectionModel col : collections) {
+            for (RequestModel req : col.getRequests()) {
+                if (id.equals(req.getId())) {
+                    return req;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void restoreTab(AppSettings.OpenTabState ts) {
+        if ("request".equals(ts.getType())) {
+            RequestModel req = findRequestModel(ts.getRequestModelId());
+            if (req != null)
+                openRequest(req);
+        } else if ("runner".equals(ts.getType())) {
+            RequestModel runner = findRequestModel(ts.getRequestModelId());
+            if (runner != null) {
+                CollectionModel parentCol = null;
+                for (CollectionModel col : collections) {
+                    if (col.getRequests().contains(runner)) {
+                        parentCol = col;
+                        break;
+                    }
+                }
+                if (parentCol != null) {
+                    openRunner(parentCol, runner);
+                }
+            }
+        } else if ("comparator".equals(ts.getType())) {
+            RequestModel req = findRequestModel(ts.getRequestModelId());
+            if (req != null) {
+                openRequest(req);
+            } else {
+                openDataComparator();
+            }
+        } else if ("jwt".equals(ts.getType())) {
+            openJwtDecoder();
+        } else if ("json".equals(ts.getType())) {
+            openJsonTool();
+        } else if ("mockserver".equals(ts.getType())) {
+            openMockServer();
+        } else if ("datatools".equals(ts.getType())) {
+            openDataTools();
+        } else if ("logconsole".equals(ts.getType())) {
+            openLogConsole();
+        } else if ("welcome".equals(ts.getType())) {
+            openWelcomeTab();
+        }
+    }
+
+    public static void showToast(Component parent, String message) {
+        Window window = SwingUtilities.getWindowAncestor(parent);
+        if (window == null) {
+            Frame[] frames = Frame.getFrames();
+            for (Frame f : frames) {
+                if (f.isVisible()) {
+                    window = f;
+                    break;
+                }
+            }
+        }
+        if (window == null)
+            return;
+
+        JWindow toast = new JWindow(window);
+        toast.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(33, 33, 33, 220));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                g2.dispose();
+            }
+        };
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+
+        JLabel label = new JLabel(message);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        panel.add(label, BorderLayout.CENTER);
+        toast.add(panel);
+        toast.pack();
+
+        Point parentPos = window.getLocationOnScreen();
+        int x = parentPos.x + (window.getWidth() - toast.getWidth()) / 2;
+        int y = parentPos.y + window.getHeight() - toast.getHeight() - 80;
+        toast.setLocation(x, y);
+
+        toast.setVisible(true);
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(2500);
+            } catch (InterruptedException e) {
+            }
+            SwingUtilities.invokeLater(() -> {
+                toast.dispose();
+            });
+        }).start();
+    }
+
+    private static class TabHeaderPanel extends JPanel {
+        String title;
+
+        TabHeaderPanel(String title) {
+            super(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            this.title = title;
+            setOpaque(false);
+        }
     }
 }

@@ -28,6 +28,10 @@ public class RequestModel {
     private Long timestamp;
     private Integer responseStatus;
     private String actualUrl;
+    // Comparator metadata
+    private String comparatorTextA = "";
+    private String comparatorTextB = "";
+    private int comparatorMode = 0;
 
     public RequestModel() {
         this.id = java.util.UUID.randomUUID().toString();
@@ -84,6 +88,13 @@ public class RequestModel {
     public void setResponseStatus(Integer responseStatus) { this.responseStatus = responseStatus; }
     public String getActualUrl() { return actualUrl; }
     public void setActualUrl(String actualUrl) { this.actualUrl = actualUrl; }
+
+    public String getComparatorTextA() { return comparatorTextA; }
+    public void setComparatorTextA(String comparatorTextA) { this.comparatorTextA = comparatorTextA; }
+    public String getComparatorTextB() { return comparatorTextB; }
+    public void setComparatorTextB(String comparatorTextB) { this.comparatorTextB = comparatorTextB; }
+    public int getComparatorMode() { return comparatorMode; }
+    public void setComparatorMode(int comparatorMode) { this.comparatorMode = comparatorMode; }
 
     @Override
     public String toString() {

@@ -64,16 +64,23 @@ public class RequestPanel extends JPanel {
         this.mainFrame = mainFrame;
         this.requestModel = requestModel;
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UIManager.getColor("Panel.background"));
         buildUI();
         loadModel();
+
+        Font defaultFont = UIManager.getFont("defaultFont");
+        if (defaultFont != null) {
+            updateFontSize(defaultFont.getSize());
+        } else {
+            updateFontSize(16);
+        }
     }
 
     private void buildUI() {
         // Top: URL bar
         JPanel urlBar = new JPanel(new BorderLayout(6, 0));
         urlBar.setBorder(new EmptyBorder(8, 10, 8, 10));
-        urlBar.setBackground(Color.WHITE);
+        urlBar.setBackground(UIManager.getColor("Panel.background"));
 
         methodCombo = new JComboBox<>(METHODS);
         methodCombo.setPreferredSize(new Dimension(90, 32));
@@ -85,7 +92,8 @@ public class RequestPanel extends JPanel {
         JPanel rightBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         rightBtns.setOpaque(false);
         sendBtn = new JButton("Send");
-        sendBtn.setBackground(new Color(52, 152, 219));
+        Color accent = UIManager.getColor("AccentColor");
+        sendBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         sendBtn.setForeground(Color.WHITE);
         sendBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         sendBtn.setPreferredSize(new Dimension(80, 32));
@@ -138,6 +146,7 @@ public class RequestPanel extends JPanel {
         bodyArea.setCodeFoldingEnabled(true);
         bodyArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         bodyArea.setAntiAliasingEnabled(true);
+        bodyArea.setHighlightCurrentLine(false);
         bodyCards.add(new JPanel(), "none");
         bodyCards.add(new RTextScrollPane(bodyArea), "raw");
         formDataModel = buildKVModel();
@@ -165,9 +174,9 @@ public class RequestPanel extends JPanel {
         // Auth tab
         authPanel = new JPanel(new BorderLayout(0, 8));
         authPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        authPanel.setBackground(Color.WHITE);
+        authPanel.setBackground(UIManager.getColor("Panel.background"));
         JPanel authTypeBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        authTypeBar.setBackground(Color.WHITE);
+        authTypeBar.setBackground(UIManager.getColor("Panel.background"));
         authTypeCombo = new JComboBox<>(new String[]{"none", "bearer", "basic", "apiKey"});
         authTypeBar.add(new JLabel("Auth Type:"));
         authTypeBar.add(authTypeCombo);
@@ -175,14 +184,14 @@ public class RequestPanel extends JPanel {
 
         authCardLayout = new CardLayout();
         authCardPanel = new JPanel(authCardLayout);
-        authCardPanel.setBackground(Color.WHITE);
+        authCardPanel.setBackground(UIManager.getColor("Panel.background"));
         authCardPanel.add(new JPanel(), "none");
 
         JPanel bearerPanel = buildLabeledField("Token:", bearerTokenField = new JTextField());
         authCardPanel.add(bearerPanel, "bearer");
 
         JPanel basicPanel = new JPanel(new GridBagLayout());
-        basicPanel.setBackground(Color.WHITE);
+        basicPanel.setBackground(UIManager.getColor("Panel.background"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -193,7 +202,7 @@ public class RequestPanel extends JPanel {
         authCardPanel.add(basicPanel, "basic");
 
         JPanel apiKeyPanel = new JPanel(new GridBagLayout());
-        apiKeyPanel.setBackground(Color.WHITE);
+        apiKeyPanel.setBackground(UIManager.getColor("Panel.background"));
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -227,7 +236,7 @@ public class RequestPanel extends JPanel {
 
     private JPanel buildLabeledField(String label, JTextField field) {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -242,6 +251,7 @@ public class RequestPanel extends JPanel {
         area.setCodeFoldingEnabled(true);
         area.setAntiAliasingEnabled(true);
         area.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        area.setHighlightCurrentLine(false);
         return area;
     }
 
@@ -262,9 +272,9 @@ public class RequestPanel extends JPanel {
 
     private JPanel buildKVPanel(JTable table, DefaultTableModel model) {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(UIManager.getColor("Panel.background"));
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        btns.setBackground(Color.WHITE);
+        btns.setBackground(UIManager.getColor("Panel.background"));
         JButton addBtn = new JButton("+ Add Row");
         JButton delBtn = new JButton("Delete");
         addBtn.addActionListener(e -> model.addRow(new Object[]{true, "", "", ""}));
@@ -411,7 +421,14 @@ public class RequestPanel extends JPanel {
     }
 
     public void updateFontSize(int size) {
+        int height = Math.max(32, size + 16);
+        if (methodCombo != null) methodCombo.setPreferredSize(new Dimension(Math.max(90, size * 7), height));
+        if (urlField != null) urlField.setPreferredSize(new Dimension(0, height));
+        if (sendBtn != null) sendBtn.setPreferredSize(new Dimension(Math.max(80, size * 6), height));
+        if (saveBtn != null) saveBtn.setPreferredSize(new Dimension(Math.max(70, size * 5), height));
         FontScaleHelper.scaleFonts(this, size);
+        revalidate();
+        repaint();
     }
 
     public void setRequestModel(RequestModel model) {

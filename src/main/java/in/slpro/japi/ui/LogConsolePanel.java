@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener {
-    private final MainFrame mainFrame;
     private final List<LogEntry> displayedEntries = new ArrayList<>();
     private final DefaultTableModel tableModel;
     private final JTable logTable;
@@ -31,14 +30,13 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
     private final JTextField sizeFilterField;
 
     public LogConsolePanel(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
-        setBackground(Color.WHITE);
+        setBackground(UIManager.getColor("Panel.background"));
 
         // --- TOP PANEL: Filtering & Exporter ---
         JPanel topPanel = new JPanel(new GridBagLayout());
-        topPanel.setBackground(Color.WHITE);
+        topPanel.setBackground(UIManager.getColor("Panel.background"));
         topPanel.setBorder(BorderFactory.createTitledBorder("Log Filters & Exporter"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
@@ -76,9 +74,10 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
 
         gbc.gridx = 4;
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        btnPanel.setBackground(Color.WHITE);
+        btnPanel.setBackground(UIManager.getColor("Panel.background"));
         JButton filterBtn = new JButton("Apply Filters");
-        filterBtn.setBackground(new Color(52, 152, 219));
+        Color accent = UIManager.getColor("AccentColor");
+        filterBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         filterBtn.setForeground(Color.WHITE);
         filterBtn.addActionListener(e -> applyFilters());
         JButton clearFiltersBtn = new JButton("Reset");
@@ -97,7 +96,7 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
 
         gbc.gridx = 6; gbc.gridy = 0; gbc.gridheight = 2; gbc.gridwidth = 1;
         JPanel exportPanel = new JPanel(new GridLayout(3, 1, 2, 2));
-        exportPanel.setBackground(Color.WHITE);
+        exportPanel.setBackground(UIManager.getColor("Panel.background"));
         JButton exportCsvBtn = new JButton("Export to CSV");
         JButton exportHtmlBtn = new JButton("Export to HTML");
         JButton exportTxtBtn = new JButton("Export to TXT");
@@ -118,7 +117,7 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
         detailViewer = new JTextArea();
         detailViewer.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         detailViewer.setEditable(false);
-        detailViewer.setBackground(new Color(248, 249, 250));
+        detailViewer.setBackground(UIManager.getColor("Workspace.panelBackground"));
 
         tableModel = new DefaultTableModel(new String[]{"Timestamp", "Level", "Method", "URL", "Status", "Latency (ms)", "Size (bytes)"}, 0) {
             @Override
@@ -308,7 +307,7 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
                         pw.println("=================================================\n");
                     }
                 }
-                JOptionPane.showMessageDialog(this, "Logs successfully exported!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                MainFrame.showToast(this, "Logs successfully exported!");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error exporting: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }

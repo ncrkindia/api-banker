@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MockServerPanel extends JPanel {
-    private final MainFrame mainFrame;
     private HttpServer server;
     private boolean isRunning = false;
 
@@ -53,14 +52,13 @@ public class MockServerPanel extends JPanel {
     private final List<MockRule> rulesList = new ArrayList<>();
 
     public MockServerPanel(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
-        setBackground(Color.WHITE);
+        setBackground(UIManager.getColor("Panel.background"));
 
         // --- TOP BAR: Server Controls ---
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
-        topPanel.setBackground(Color.WHITE);
+        topPanel.setBackground(UIManager.getColor("Panel.background"));
 
         topPanel.add(new JLabel("Mock Server Port:"));
         portField = new JTextField("8085", 6);
@@ -86,7 +84,7 @@ public class MockServerPanel extends JPanel {
 
         // Left Component: Rules Editor & Table
         JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
-        leftPanel.setBackground(Color.WHITE);
+        leftPanel.setBackground(UIManager.getColor("Panel.background"));
 
         rulesModel = new DefaultTableModel(new String[]{"Method", "Path", "Status Code", "Content-Type"}, 0) {
             @Override
@@ -103,7 +101,7 @@ public class MockServerPanel extends JPanel {
 
         // Rule Form Panel
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setBackground(UIManager.getColor("Panel.background"));
         formPanel.setBorder(BorderFactory.createTitledBorder("Rule Editor"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
@@ -146,7 +144,7 @@ public class MockServerPanel extends JPanel {
 
         gbc.gridy = 6; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weighty = 0.0;
         JPanel formButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        formButtons.setBackground(Color.WHITE);
+        formButtons.setBackground(UIManager.getColor("Panel.background"));
         JButton addRuleBtn = new JButton("Add/Save Rule");
         addRuleBtn.addActionListener(e -> addRule());
         JButton deleteRuleBtn = new JButton("Delete Selected");
@@ -160,12 +158,12 @@ public class MockServerPanel extends JPanel {
 
         // Right Component: Live logs
         JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
-        rightPanel.setBackground(Color.WHITE);
+        rightPanel.setBackground(UIManager.getColor("Panel.background"));
 
         serverLogArea = new JTextArea();
         serverLogArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         serverLogArea.setEditable(false);
-        serverLogArea.setBackground(new Color(248, 249, 250));
+        serverLogArea.setBackground(UIManager.getColor("Workspace.panelBackground"));
         JScrollPane logScroll = new JScrollPane(serverLogArea);
         logScroll.setBorder(BorderFactory.createTitledBorder("Mock Server Live Traffic Log"));
         rightPanel.add(logScroll, BorderLayout.CENTER);

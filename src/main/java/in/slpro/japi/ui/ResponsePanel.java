@@ -6,7 +6,6 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
@@ -23,12 +22,12 @@ public class ResponsePanel extends JPanel {
 
     public ResponsePanel() {
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UIManager.getColor("Panel.background"));
 
         // Status bar
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
-        statusBar.setBackground(new Color(248, 249, 250));
-        statusBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
+        statusBar.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        statusBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Workspace.borderColor")));
 
         statusLabel = new JLabel("—");
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -61,12 +60,13 @@ public class ResponsePanel extends JPanel {
         bodyArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         bodyArea.setCodeFoldingEnabled(true);
         bodyArea.setAntiAliasingEnabled(true);
+        bodyArea.setHighlightCurrentLine(false);
         RTextScrollPane bodyScroll = new RTextScrollPane(bodyArea);
         bodyScroll.setBorder(null);
 
         JPanel bodyPanel = new JPanel(new BorderLayout());
         JPanel bodyToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
-        bodyToolbar.setBackground(Color.WHITE);
+        bodyToolbar.setBackground(UIManager.getColor("Panel.background"));
         JButton copyBtn = new JButton("Copy");
         copyBtn.addActionListener(e -> {
             java.awt.datatransfer.StringSelection sel = new java.awt.datatransfer.StringSelection(bodyArea.getText());
@@ -90,7 +90,7 @@ public class ResponsePanel extends JPanel {
 
         // Empty state
         JPanel emptyPanel = new JPanel(new BorderLayout());
-        emptyPanel.setBackground(Color.WHITE);
+        emptyPanel.setBackground(UIManager.getColor("Panel.background"));
         JLabel emptyLabel = new JLabel("Send a request to see the response", SwingConstants.CENTER);
         emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         emptyLabel.setForeground(new Color(150, 150, 150));

@@ -11,12 +11,20 @@ import java.awt.*;
 public class App {
     public static void main(String[] args) {
         try {
+            // Force light theme on startup to ensure the white Postman theme is active
+            // in.slpro.japi.storage.StorageManager.getInstance().getSettings().setTheme("light");
+            // in.slpro.japi.storage.StorageManager.getInstance().saveSettings();
+
+            int fontSize = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getFontSize();
+            if (fontSize < 10)
+                fontSize = 16;
             String theme = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getTheme();
-            setupTheme(theme, 16);
+            setupTheme(theme, fontSize);
         } catch (Exception e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         SwingUtilities.invokeLater(() -> {
@@ -34,29 +42,47 @@ public class App {
         try {
             if ("dark".equals(theme)) {
                 FlatDarkLaf.setup();
-                UIManager.put("Button.arc", 8);
-                UIManager.put("Component.arc", 8);
-                UIManager.put("TextComponent.arc", 8);
-                UIManager.put("ProgressBar.arc", 8);
-                
+                UIManager.put("Button.arc", 4);
+                UIManager.put("Component.arc", 4);
+                UIManager.put("TextComponent.arc", 4);
+                UIManager.put("ProgressBar.arc", 4);
+
                 UIManager.put("TabbedPane.showTabSeparators", true);
-                UIManager.put("TabbedPane.tabHeight", 32);
+                UIManager.put("TabbedPane.tabHeight", 34);
                 UIManager.put("TabbedPane.selectedBackground", new Color(45, 48, 52));
                 UIManager.put("TabbedPane.hoverColor", new Color(60, 63, 67));
+
+                Color darkBg = new Color(30, 30, 30);
+                Color panelBg = new Color(40, 44, 52);
+                Color selectBg = new Color(50, 54, 62);
+                Color borderColor = new Color(60, 64, 72);
+                Color metricBg = new Color(43, 47, 55);
+
+                UIManager.put("Workspace.background", darkBg);
+                UIManager.put("Workspace.panelBackground", panelBg);
+                UIManager.put("Workspace.borderColor", borderColor);
+                UIManager.put("Workspace.metricCardBackground", metricBg);
+
+                UIManager.put("Sidebar.background", panelBg);
+                UIManager.put("Sidebar.treeBackground", panelBg);
+                UIManager.put("Sidebar.toolbarBackground", new Color(35, 39, 47));
+                UIManager.put("Sidebar.borderColor", borderColor);
+                UIManager.put("Sidebar.selectionBackground", selectBg);
             } else {
                 FlatLightLaf.setup();
-                
+
                 Color postmanOrange = new Color(255, 108, 55); // #FF6C37
                 Color lightBg = new Color(255, 255, 255);
                 Color panelBg = new Color(248, 249, 250);
                 Color darkText = new Color(33, 33, 33);
                 Color selectBg = new Color(236, 236, 236);
                 Color borderColor = new Color(228, 228, 228);
+                Color metricBg = new Color(245, 247, 250);
 
-                UIManager.put("Button.arc", 8);
-                UIManager.put("Component.arc", 8);
-                UIManager.put("TextComponent.arc", 8);
-                UIManager.put("ProgressBar.arc", 8);
+                UIManager.put("Button.arc", 4);
+                UIManager.put("Component.arc", 4);
+                UIManager.put("TextComponent.arc", 4);
+                UIManager.put("ProgressBar.arc", 4);
 
                 // Accent
                 UIManager.put("AccentColor", postmanOrange);
@@ -99,8 +125,30 @@ public class App {
                 UIManager.put("ScrollBar.thumbArc", 999);
                 UIManager.put("ScrollBar.thumb", new Color(200, 200, 200));
                 UIManager.put("ScrollBar.thumbHover", new Color(150, 150, 150));
+
+                // General window backgrounds to be white as Postman
+                UIManager.put("Panel.background", lightBg);
+                UIManager.put("control", lightBg);
+                UIManager.put("window", lightBg);
+                UIManager.put("ScrollPane.background", lightBg);
+                UIManager.put("Viewport.background", lightBg);
+                UIManager.put("SplitPane.background", lightBg);
+                UIManager.put("MenuBar.background", panelBg);
+                UIManager.put("ToolBar.background", lightBg);
+
+                // Custom keys for light theme
+                UIManager.put("Workspace.background", lightBg);
+                UIManager.put("Workspace.panelBackground", panelBg);
+                UIManager.put("Workspace.borderColor", borderColor);
+                UIManager.put("Workspace.metricCardBackground", metricBg);
+
+                UIManager.put("Sidebar.background", panelBg);
+                UIManager.put("Sidebar.treeBackground", panelBg);
+                UIManager.put("Sidebar.toolbarBackground", new Color(240, 241, 242));
+                UIManager.put("Sidebar.borderColor", new Color(210, 210, 210));
+                UIManager.put("Sidebar.selectionBackground", selectBg);
             }
-            
+
             UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, fontSize));
         } catch (Exception e) {
             System.err.println("Failed to initialize theme: " + e.getMessage());
