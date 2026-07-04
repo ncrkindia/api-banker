@@ -1,0 +1,48 @@
+package in.slpro.japi.ui;
+
+import in.slpro.japi.model.EnvironmentModel;
+import in.slpro.japi.model.KeyValueItem;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+
+public class EnvVarUIHelper {
+
+    public static String resolveVariables(String input, EnvironmentModel environment) {
+        if (input == null || environment == null) return input;
+        List<KeyValueItem> vars = environment.getVariables();
+        if (vars == null) return input;
+        String result = input;
+        for (KeyValueItem kv : vars) {
+            if (kv.isEnabled() && kv.getKey() != null) {
+                result = result.replace("{{" + kv.getKey() + "}}", kv.getValue() != null ? kv.getValue() : "");
+            }
+        }
+        return result;
+    }
+
+    public static void highlightVariables(JTextPane textPane, String text, EnvironmentModel environment) {
+        // Simple implementation - just sets the text
+        textPane.setText(text);
+    }
+
+    public static void addVariableAutoComplete(JTextField field, EnvironmentModel environment) {
+        // Placeholder for autocomplete support
+    }
+
+    public static JPanel createEnvVarBadge(String varName, EnvironmentModel environment) {
+        JPanel badge = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        badge.setOpaque(false);
+        JLabel label = new JLabel("{{" + varName + "}}");
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+
+        boolean resolved = environment != null && environment.getVariables() != null &&
+                environment.getVariables().stream()
+                        .anyMatch(kv -> kv.isEnabled() && varName.equals(kv.getKey()));
+
+        label.setForeground(resolved ? new Color(39, 174, 96) : new Color(192, 57, 43));
+        badge.add(label);
+        return badge;
+    }
+}
