@@ -8,6 +8,19 @@ public class CollectionModel {
     private String name;
     private List<RequestModel> requests = new ArrayList<>();
 
+    // Collection level configurations
+    private String readme = "";
+    private String authType = "none"; // none, bearer, basic, apiKey
+    private String authToken = "";
+    private String authUsername = "";
+    private String authPassword = "";
+    private String authApiKeyName = "";
+    private String authApiKeyValue = "";
+    private String authApiKeyIn = "header"; // header or query
+    private List<KeyValueItem> variables = new ArrayList<>();
+    private String preRequestScript = "";
+    private String postRequestScript = "";
+
     public CollectionModel() {}
 
     public CollectionModel(String id, String name) {
@@ -21,6 +34,29 @@ public class CollectionModel {
     public void setName(String name) { this.name = name; }
     public List<RequestModel> getRequests() { return requests; }
     public void setRequests(List<RequestModel> requests) { this.requests = requests; }
+
+    public String getReadme() { return readme; }
+    public void setReadme(String readme) { this.readme = readme; }
+    public String getAuthType() { return authType; }
+    public void setAuthType(String authType) { this.authType = authType; }
+    public String getAuthToken() { return authToken; }
+    public void setAuthToken(String authToken) { this.authToken = authToken; }
+    public String getAuthUsername() { return authUsername; }
+    public void setAuthUsername(String authUsername) { this.authUsername = authUsername; }
+    public String getAuthPassword() { return authPassword; }
+    public void setAuthPassword(String authPassword) { this.authPassword = authPassword; }
+    public String getAuthApiKeyName() { return authApiKeyName; }
+    public void setAuthApiKeyName(String authApiKeyName) { this.authApiKeyName = authApiKeyName; }
+    public String getAuthApiKeyValue() { return authApiKeyValue; }
+    public void setAuthApiKeyValue(String authApiKeyValue) { this.authApiKeyValue = authApiKeyValue; }
+    public String getAuthApiKeyIn() { return authApiKeyIn; }
+    public void setAuthApiKeyIn(String authApiKeyIn) { this.authApiKeyIn = authApiKeyIn; }
+    public List<KeyValueItem> getVariables() { return variables; }
+    public void setVariables(List<KeyValueItem> variables) { this.variables = variables; }
+    public String getPreRequestScript() { return preRequestScript; }
+    public void setPreRequestScript(String preRequestScript) { this.preRequestScript = preRequestScript; }
+    public String getPostRequestScript() { return postRequestScript; }
+    public void setPostRequestScript(String postRequestScript) { this.postRequestScript = postRequestScript; }
 
     @Override
     public String toString() {

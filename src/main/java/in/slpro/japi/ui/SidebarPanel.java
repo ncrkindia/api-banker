@@ -110,13 +110,16 @@ public class SidebarPanel extends JPanel {
                 if (path == null) return;
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 
-                if (e.getClickCount() == 2) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    showCollectionContextMenu(e.getX(), e.getY(), node);
+                } else if (e.getClickCount() == 2) {
                     if (node.getUserObject() instanceof RequestModel req) {
                         mainFrame.openRequest(req);
                     }
-                }
-                if (SwingUtilities.isRightMouseButton(e)) {
-                    showCollectionContextMenu(e.getX(), e.getY(), node);
+                } else if (e.getClickCount() == 1) {
+                    if (node.getUserObject() instanceof CollectionModel col) {
+                        mainFrame.openCollection(col);
+                    }
                 }
             }
         });

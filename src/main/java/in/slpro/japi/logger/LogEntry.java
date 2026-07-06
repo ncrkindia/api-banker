@@ -1,5 +1,8 @@
 package in.slpro.japi.logger;
 
+import java.util.List;
+import java.util.Map;
+
 public class LogEntry {
     public enum Level { REQUEST, RESPONSE, ERROR, INFO }
 
@@ -11,8 +14,17 @@ public class LogEntry {
     private final String method;
     private final String url;
     private final long responseSize;
+    private final String source; // e.g., "Request", "Pre-request", "Test", "System"
 
-    public LogEntry(Level level, String message, int statusCode, long durationMs, String method, String url, long responseSize) {
+    // Raw HTTP details for Request/Response
+    private final Map<String, List<String>> requestHeaders;
+    private final String requestBody;
+    private final Map<String, List<String>> responseHeaders;
+    private final String responseBody;
+
+    public LogEntry(Level level, String message, int statusCode, long durationMs, String method, String url, long responseSize, String source,
+                    Map<String, List<String>> requestHeaders, String requestBody,
+                    Map<String, List<String>> responseHeaders, String responseBody) {
         this.level = level;
         this.message = message;
         this.timestamp = System.currentTimeMillis();
@@ -21,6 +33,19 @@ public class LogEntry {
         this.method = method;
         this.url = url;
         this.responseSize = responseSize;
+        this.source = source != null ? source : "System";
+        this.requestHeaders = requestHeaders;
+        this.requestBody = requestBody;
+        this.responseHeaders = responseHeaders;
+        this.responseBody = responseBody;
+    }
+
+    public LogEntry(Level level, String message, int statusCode, long durationMs, String method, String url, long responseSize, String source) {
+        this(level, message, statusCode, durationMs, method, url, responseSize, source, null, null, null, null);
+    }
+
+    public LogEntry(Level level, String message, int statusCode, long durationMs, String method, String url, long responseSize) {
+        this(level, message, statusCode, durationMs, method, url, responseSize, (url != null) ? "Request" : "System");
     }
 
     public Level getLevel() { return level; }
@@ -31,4 +56,10 @@ public class LogEntry {
     public String getMethod() { return method; }
     public String getUrl() { return url; }
     public long getResponseSize() { return responseSize; }
+    public String getSource() { return source; }
+
+    public Map<String, List<String>> getRequestHeaders() { return requestHeaders; }
+    public String getRequestBody() { return requestBody; }
+    public Map<String, List<String>> getResponseHeaders() { return responseHeaders; }
+    public String getResponseBody() { return responseBody; }
 }

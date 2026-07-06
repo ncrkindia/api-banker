@@ -822,18 +822,17 @@ public class CollectionRunnerPanel extends JPanel {
         if (!logsFolder.exists())
             logsFolder.mkdirs();
 
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         String cleanColl = sanitizeFilename(collection.getName());
         String cleanRunner = sanitizeFilename(runnerModel.getName());
+        String dirName = cleanColl + "-" + cleanRunner;
+        File runDir = new File(logsFolder, dirName);
+        if (!runDir.exists()) {
+            runDir.mkdirs();
+        }
 
-        int inc = 1;
-        File file;
-        do {
-            file = new File(logsFolder, String.format("%s-%s-%s-%d.log", dateStr, cleanColl, cleanRunner, inc));
-            inc++;
-        } while (file.exists());
-
-        return file;
+        LocalDateTime start = (startTime != null) ? startTime : LocalDateTime.now();
+        String fileStr = start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
+        return new File(runDir, fileStr + ".log");
     }
 
     private EnvironmentModel resolveSelectedEnvironment() {
@@ -1605,8 +1604,14 @@ public class CollectionRunnerPanel extends JPanel {
 
             pw.println("<h3>Performance Analytics Charts</h3>");
             pw.println("<div style='display:flex; gap:15px; margin-bottom:20px;'>");
-            pw.println("<div class='card' style='text-align:center;'><h4>HTTP Status Codes</h4><img src='data:image/png;base64," + codeBase64 + "' style='max-width:100%; border:1px solid #eee; border-radius:4px;'/></div>");
-            pw.println("<div class='card' style='text-align:center;'><h4>Response Latency</h4><img src='data:image/png;base64," + latencyBase64 + "' style='max-width:100%; border:1px solid #eee; border-radius:4px;'/></div>");
+            pw.println(
+                    "<div class='card' style='text-align:center;'><h4>HTTP Status Codes</h4><img src='data:image/png;base64,"
+                            + codeBase64
+                            + "' style='max-width:100%; border:1px solid #eee; border-radius:4px;'/></div>");
+            pw.println(
+                    "<div class='card' style='text-align:center;'><h4>Response Latency</h4><img src='data:image/png;base64,"
+                            + latencyBase64
+                            + "' style='max-width:100%; border:1px solid #eee; border-radius:4px;'/></div>");
             pw.println("</div>");
 
             pw.println("<h3>Aggregate Summary</h3>");
@@ -1732,11 +1737,12 @@ public class CollectionRunnerPanel extends JPanel {
 
     public static void showToast(Component parent, String message) {
         Window window = SwingUtilities.getWindowAncestor(parent);
-        if (window == null) return;
-        
+        if (window == null)
+            return;
+
         JWindow toast = new JWindow(window);
         toast.setLayout(new BorderLayout());
-        
+
         JPanel panel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -1749,25 +1755,26 @@ public class CollectionRunnerPanel extends JPanel {
         };
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
+
         JLabel label = new JLabel(message);
         label.setForeground(Color.WHITE);
         label.setFont(new Font("Segoe UI", Font.BOLD, 13));
         panel.add(label, BorderLayout.CENTER);
         toast.add(panel);
         toast.pack();
-        
+
         Point parentPos = window.getLocationOnScreen();
         int x = parentPos.x + (window.getWidth() - toast.getWidth()) / 2;
         int y = parentPos.y + window.getHeight() - toast.getHeight() - 80;
         toast.setLocation(x, y);
-        
+
         toast.setVisible(true);
-        
+
         new Thread(() -> {
             try {
                 Thread.sleep(2500);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
             SwingUtilities.invokeLater(() -> {
                 toast.dispose();
             });

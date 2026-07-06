@@ -14,6 +14,11 @@ public class AppSettings {
 
     private int selectedTabIndex = -1;
 
+    private int consoleWidth = 950;
+    private int consoleHeight = 600;
+    private int consoleX = -1;
+    private int consoleY = -1;
+
     public AppSettings() {
         String userHome = System.getProperty("user.home");
         this.dataDirectory = userHome + "/.japi/data";
@@ -39,6 +44,15 @@ public class AppSettings {
     public void setSelectedTabIndex(int selectedTabIndex) { this.selectedTabIndex = selectedTabIndex; }
     public java.util.List<OpenTabState> getOpenTabs() { return openTabs; }
     public void setOpenTabs(java.util.List<OpenTabState> openTabs) { this.openTabs = openTabs; }
+
+    public int getConsoleWidth() { return consoleWidth; }
+    public void setConsoleWidth(int consoleWidth) { this.consoleWidth = consoleWidth; }
+    public int getConsoleHeight() { return consoleHeight; }
+    public void setConsoleHeight(int consoleHeight) { this.consoleHeight = consoleHeight; }
+    public int getConsoleX() { return consoleX; }
+    public void setConsoleX(int consoleX) { this.consoleX = consoleX; }
+    public int getConsoleY() { return consoleY; }
+    public void setConsoleY(int consoleY) { this.consoleY = consoleY; }
 
     public static class OpenTabState {
         private String type;

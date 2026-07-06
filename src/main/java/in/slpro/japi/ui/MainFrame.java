@@ -23,14 +23,38 @@ public class MainFrame extends JFrame {
     private JPanel workspacePanel;
     private CardLayout workspaceCardLayout;
     private JComboBox<String> envCombo;
-    private JLabel envIndicator;
+    private JButton envManageBtn;
+    private JPanel envSelectorPanel;
 
     private int currentFontSize = 16;
 
     private static final int MAX_HISTORY = 500;
     public static final String OTHERS_COLLECTION_ID = "__others__";
 
+    private static MainFrame instance;
+    public static MainFrame getInstance() {
+        return instance;
+    }
+
+    public CollectionModel getParentCollection(RequestModel req) {
+        if (req == null) return null;
+        for (CollectionModel col : collections) {
+            for (RequestModel r : col.getRequests()) {
+                if (r.getId() != null && r.getId().equals(req.getId())) {
+                    return col;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static CollectionModel findParentCollection(RequestModel req) {
+        MainFrame frame = getInstance();
+        return frame != null ? frame.getParentCollection(req) : null;
+    }
+
     public MainFrame() {
+        instance = this;
         this.storage = StorageManager.getInstance();
         this.collections = storage.loadCollections();
         this.environments = storage.loadEnvironments();
@@ -69,6 +93,7 @@ public class MainFrame extends JFrame {
         ensureOthersCollection();
         sidebarPanel.refreshCollections(collections);
         setupZoom();
+        setupSaveHotkey();
         applyTheme();
         updateFontSize(currentFontSize);
     }
@@ -86,6 +111,7 @@ public class MainFrame extends JFrame {
         // Workspace
         workspaceTabs = new JTabbedPane();
         workspaceTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        workspaceTabs.putClientProperty("JTabbedPane.trailingComponent", buildEnvSelector());
 
         workspaceCardLayout = new CardLayout();
         workspacePanel = new JPanel(workspaceCardLayout);
@@ -99,12 +125,12 @@ public class MainFrame extends JFrame {
         workspaceTabs.addContainerListener(new java.awt.event.ContainerListener() {
             @Override
             public void componentAdded(java.awt.event.ContainerEvent e) {
-                updateWorkspaceVisibility();
+                SwingUtilities.invokeLater(() -> updateWorkspaceVisibility());
             }
 
             @Override
             public void componentRemoved(java.awt.event.ContainerEvent e) {
-                updateWorkspaceVisibility();
+                SwingUtilities.invokeLater(() -> updateWorkspaceVisibility());
             }
         });
 
@@ -113,13 +139,6 @@ public class MainFrame extends JFrame {
         splitPane.setDividerLocation(300);
         splitPane.setBorder(null);
         mainPanel.add(splitPane, BorderLayout.CENTER);
-
-        // Bottom status bar
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(UIManager.getColor("Workspace.panelBackground"));
-        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("Workspace.borderColor")));
-        statusBar.add(buildEnvSelector());
-        mainPanel.add(statusBar, BorderLayout.SOUTH);
 
         setContentPane(mainPanel);
 
@@ -209,21 +228,12 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel buildEnvSelector() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        panel.setOpaque(false);
-
-        JLabel label = new JLabel("Environment:");
-        if ("dark".equals(storage.getSettings().getTheme())) {
-            label.setForeground(Color.WHITE);
-        } else {
-            label.setForeground(new Color(33, 33, 33));
-        }
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        panel.add(label);
+        envSelectorPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        envSelectorPanel.setOpaque(false);
+        envSelectorPanel.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 10));
 
         envCombo = new JComboBox<>();
-        envCombo.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        envCombo.setPreferredSize(new Dimension(180, 22));
+        envCombo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         refreshEnvCombo();
 
         envCombo.addActionListener(e -> {
@@ -235,16 +245,25 @@ public class MainFrame extends JFrame {
                 storage.getSettings().setActiveEnvironmentId(null);
                 storage.saveSettings();
             }
+            triggerVariableRepaintAll();
         });
 
-        panel.add(envCombo);
+        envSelectorPanel.add(envCombo);
 
-        JButton managBtn = new JButton("Manage");
-        managBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        managBtn.addActionListener(e -> openEnvManager());
-        panel.add(managBtn);
+        envManageBtn = new JButton("⚙");
+        envManageBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        envManageBtn.setToolTipText("Manage Environments");
+        envManageBtn.setFocusPainted(false);
+        envManageBtn.addActionListener(e -> openEnvManager());
+        envSelectorPanel.add(envManageBtn);
 
-        return panel;
+        // Adjust initial dimensions based on currentFontSize
+        int height = Math.max(26, currentFontSize + 10);
+        int width = Math.max(140, currentFontSize * 9);
+        envCombo.setPreferredSize(new Dimension(width, height));
+        envManageBtn.setPreferredSize(new Dimension(height, height));
+
+        return envSelectorPanel;
     }
 
     public void refreshEnvCombo() {
@@ -567,6 +586,21 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
+    public void openCollection(CollectionModel col) {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c instanceof CollectionPanel cp && cp.getCollectionModel().getId().equals(col.getId())) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+        CollectionPanel panel = new CollectionPanel(this, col);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab(col.getName(), panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader(col.getName(), idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
     public void openHistoryRequest(RequestModel req) {
         // Create a temporary copy for viewing
         RequestModel copy = new RequestModel();
@@ -735,11 +769,42 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
-    private void closeTab(Component tabContent) {
+    private boolean closeTab(Component tabContent) {
         int idx = workspaceTabs.indexOfComponent(tabContent);
         if (idx >= 0) {
             if (tabContent instanceof RequestPanel rp) {
-                rp.getRequestModel(); // triggers collect
+                if (rp.hasUnsavedChanges()) {
+                    int option = JOptionPane.showConfirmDialog(
+                        this,
+                        "Request \"" + rp.getRequestModel().getName() + "\" has unsaved changes. Save them?",
+                        "Save Changes?",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    if (option == JOptionPane.YES_OPTION) {
+                        rp.save();
+                    } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
+                        return false;
+                    }
+                } else {
+                    rp.getRequestModel(); // triggers collect
+                }
+                saveCollections();
+            } else if (tabContent instanceof CollectionPanel cp) {
+                if (cp.hasUnsavedChanges()) {
+                    int option = JOptionPane.showConfirmDialog(
+                        this,
+                        "Collection \"" + cp.getCollectionModel().getName() + "\" has unsaved changes. Save them?",
+                        "Save Changes?",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    if (option == JOptionPane.YES_OPTION) {
+                        cp.save();
+                    } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
+                        return false;
+                    }
+                }
                 saveCollections();
             } else if (tabContent instanceof CollectionRunnerPanel crp) {
                 crp.saveConfig();
@@ -752,6 +817,106 @@ public class MainFrame extends JFrame {
                 saveCollections();
             }
             workspaceTabs.removeTabAt(idx);
+            return true;
+        }
+        return false;
+    }
+
+    private void togglePinTab(Component tabContent) {
+        int idx = workspaceTabs.indexOfComponent(tabContent);
+        if (idx < 0) return;
+
+        JComponent comp = (JComponent) tabContent;
+        boolean isPinned = Boolean.TRUE.equals(comp.getClientProperty("pinned"));
+        comp.putClientProperty("pinned", !isPinned);
+
+        String currentTitle = workspaceTabs.getTitleAt(idx);
+
+        if (!isPinned) {
+            // Pinning: move to index among pinned tabs
+            int firstNonPinnedIdx = 0;
+            for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+                Component c = workspaceTabs.getComponentAt(i);
+                if (c != tabContent && Boolean.TRUE.equals(((JComponent) c).getClientProperty("pinned"))) {
+                    firstNonPinnedIdx++;
+                }
+            }
+            if (idx != firstNonPinnedIdx) {
+                workspaceTabs.removeTabAt(idx);
+                workspaceTabs.insertTab(currentTitle, null, tabContent, null, firstNonPinnedIdx);
+                idx = firstNonPinnedIdx;
+            }
+        }
+
+        // Rebuild all tab headers to ensure index bounds and pin labels are correct
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component tc = workspaceTabs.getComponentAt(i);
+            workspaceTabs.setTabComponentAt(i, buildTabHeader(workspaceTabs.getTitleAt(i), i, tc));
+        }
+        workspaceTabs.setSelectedComponent(tabContent);
+    }
+
+    private void closeOthers(Component tabContent) {
+        List<Component> tabsToRemove = new ArrayList<>();
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c != tabContent && !Boolean.TRUE.equals(((JComponent) c).getClientProperty("pinned"))) {
+                tabsToRemove.add(c);
+            }
+        }
+        for (Component c : tabsToRemove) {
+            if (!closeTab(c)) {
+                break;
+            }
+        }
+    }
+
+    private void closeToLeft(Component tabContent) {
+        int targetIdx = workspaceTabs.indexOfComponent(tabContent);
+        if (targetIdx < 0) return;
+        List<Component> tabsToRemove = new ArrayList<>();
+        for (int i = 0; i < targetIdx; i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (!Boolean.TRUE.equals(((JComponent) c).getClientProperty("pinned"))) {
+                tabsToRemove.add(c);
+            }
+        }
+        for (Component c : tabsToRemove) {
+            if (!closeTab(c)) {
+                break;
+            }
+        }
+    }
+
+    private void closeToRight(Component tabContent) {
+        int targetIdx = workspaceTabs.indexOfComponent(tabContent);
+        if (targetIdx < 0) return;
+        List<Component> tabsToRemove = new ArrayList<>();
+        for (int i = targetIdx + 1; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (!Boolean.TRUE.equals(((JComponent) c).getClientProperty("pinned"))) {
+                tabsToRemove.add(c);
+            }
+        }
+        for (Component c : tabsToRemove) {
+            if (!closeTab(c)) {
+                break;
+            }
+        }
+    }
+
+    private void closeAllTabs() {
+        List<Component> tabsToRemove = new ArrayList<>();
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (!Boolean.TRUE.equals(((JComponent) c).getClientProperty("pinned"))) {
+                tabsToRemove.add(c);
+            }
+        }
+        for (Component c : tabsToRemove) {
+            if (!closeTab(c)) {
+                break;
+            }
         }
     }
 
@@ -769,7 +934,8 @@ public class MainFrame extends JFrame {
         boolean renameable = (tabContent instanceof RequestPanel) ||
                 (tabContent instanceof CollectionRunnerPanel) ||
                 (tabContent instanceof DataComparatorPanel) ||
-                (tabContent instanceof MockServerPanel);
+                (tabContent instanceof MockServerPanel) ||
+                (tabContent instanceof CollectionPanel);
 
         final JTextField editField;
         final Runnable startEdit;
@@ -812,6 +978,9 @@ public class MainFrame extends JFrame {
                                 sidebarPanel.refreshCollections(collections);
                             } else if (tabContent instanceof DataComparatorPanel cp) {
                                 cp.getRequestModel().setName(newName);
+                            } else if (tabContent instanceof CollectionPanel cp) {
+                                cp.getCollectionModel().setName(newName);
+                                sidebarPanel.refreshCollections(collections);
                             }
                             saveCollections();
 
@@ -856,10 +1025,35 @@ public class MainFrame extends JFrame {
                         renameItem.addActionListener(ae -> startEditAction.run());
                         menu.add(renameItem);
                     }
+
+                    boolean isPinned = Boolean.TRUE.equals(((JComponent) tabContent).getClientProperty("pinned"));
+                    JMenuItem pinItem = new JMenuItem(isPinned ? "Unpin Tab" : "Pin Tab");
+                    pinItem.addActionListener(ae -> togglePinTab(tabContent));
+                    menu.add(pinItem);
+
+                    menu.addSeparator();
+
                     JMenuItem closeItem = new JMenuItem("Close");
                     closeItem.addActionListener(ae -> closeTab(tabContent));
                     menu.add(closeItem);
-                    menu.show(header, e.getX(), e.getY());
+
+                    JMenuItem closeOthersItem = new JMenuItem("Close Others");
+                    closeOthersItem.addActionListener(ae -> closeOthers(tabContent));
+                    menu.add(closeOthersItem);
+
+                    JMenuItem closeLeftItem = new JMenuItem("Close to Left");
+                    closeLeftItem.addActionListener(ae -> closeToLeft(tabContent));
+                    menu.add(closeLeftItem);
+
+                    JMenuItem closeRightItem = new JMenuItem("Close to Right");
+                    closeRightItem.addActionListener(ae -> closeToRight(tabContent));
+                    menu.add(closeRightItem);
+
+                    JMenuItem closeAllItem = new JMenuItem("Close All");
+                    closeAllItem.addActionListener(ae -> closeAllTabs());
+                    menu.add(closeAllItem);
+
+                    menu.show(e.getComponent(), e.getX(), e.getY());
                 } else if (e.getClickCount() == 2 && renameable && startEditAction != null) {
                     startEditAction.run();
                 }
@@ -895,7 +1089,16 @@ public class MainFrame extends JFrame {
         if (renameable && editField != null) {
             header.add(editField);
         }
-        header.add(closeBtn);
+
+        boolean isPinned = Boolean.TRUE.equals(((JComponent) tabContent).getClientProperty("pinned"));
+        if (isPinned) {
+            JLabel pinLabel = new JLabel("📌");
+            pinLabel.setFont(new Font("Segoe UI", Font.PLAIN, currentFontSize - 2));
+            pinLabel.addMouseListener(tabMouseListener);
+            header.add(pinLabel);
+        } else {
+            header.add(closeBtn);
+        }
         return header;
     }
 
@@ -914,6 +1117,18 @@ public class MainFrame extends JFrame {
     private void openEnvManager() {
         new EnvironmentManagerDialog(this).setVisible(true);
         sidebarPanel.refreshCollections(collections); // refresh in case env changed
+        triggerVariableRepaintAll();
+    }
+
+    public void triggerVariableRepaintAll() {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c instanceof RequestPanel rp) {
+                rp.triggerVariableRepaint();
+            } else if (c instanceof CollectionPanel cp) {
+                cp.triggerVariableRepaint();
+            }
+        }
     }
 
     // ─── History ─────────────────────────────────────────────────────────────
@@ -1142,6 +1357,7 @@ public class MainFrame extends JFrame {
             storage.updateDataDirectory(dirField.getText().trim());
             storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
             storage.getSettings().setEnableLogging(loggingCheck.isSelected());
+            in.slpro.japi.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
             storage.saveSettings();
             dialog.dispose();
             showToast(this, "Settings saved. Restart for theme changes.");
@@ -1156,13 +1372,27 @@ public class MainFrame extends JFrame {
         dialog.setVisible(true);
     }
 
+    public void openWelcomeTabAsTab() {
+        if (workspaceTabs.getTabCount() == 0) {
+            return; // Already showing welcome page
+        }
+
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if ("Welcome".equals(workspaceTabs.getTitleAt(i))) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+
+        JPanel welcomePanel = buildWelcomePanel();
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Welcome", welcomePanel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Welcome", idx, welcomePanel));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
     private void showAbout() {
-        JOptionPane.showMessageDialog(this,
-                "<html><center><b>JAPI - Offline API Client</b><br>" +
-                        "Version 1.0.0<br><br>" +
-                        "A fast, modern, and completely offline API testing tool.<br><br>" +
-                        "Built with Java + Swing</center></html>",
-                "About JAPI", JOptionPane.INFORMATION_MESSAGE);
+        openWelcomeTabAsTab();
     }
 
     private void applyTheme() {
@@ -1201,6 +1431,31 @@ public class MainFrame extends JFrame {
                 zoom(-1);
             }
         });
+    }
+
+    private void setupSaveHotkey() {
+        JComponent root = getRootPane();
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK), "saveActiveTab");
+        root.getActionMap().put("saveActiveTab", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveActiveTab();
+            }
+        });
+    }
+
+    private void saveActiveTab() {
+        Component c = workspaceTabs.getSelectedComponent();
+        if (c instanceof RequestPanel rp) {
+            if (rp.hasUnsavedChanges()) {
+                rp.save();
+            }
+        } else if (c instanceof CollectionPanel cp) {
+            if (cp.hasUnsavedChanges()) {
+                cp.save();
+            }
+        }
     }
 
     private void zoom(int increment) {
@@ -1256,12 +1511,60 @@ public class MainFrame extends JFrame {
                 }
             }
         }
+        if (envCombo != null && envManageBtn != null) {
+            int height = Math.max(26, size + 10);
+            int width = Math.max(140, size * 9);
+            envCombo.setPreferredSize(new Dimension(width, height));
+            envManageBtn.setPreferredSize(new Dimension(height, height));
+            if (envSelectorPanel != null) {
+                envSelectorPanel.revalidate();
+                envSelectorPanel.repaint();
+            }
+        }
         FontScaleHelper.scaleFonts(this, size);
         revalidate();
         repaint();
     }
 
     private void onClose() {
+        // First check for unsaved changes on all tabs
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c instanceof RequestPanel rp) {
+                if (rp.hasUnsavedChanges()) {
+                    workspaceTabs.setSelectedIndex(i);
+                    int option = JOptionPane.showConfirmDialog(
+                        this,
+                        "Request \"" + rp.getRequestModel().getName() + "\" has unsaved changes. Save them?",
+                        "Save Changes?",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    if (option == JOptionPane.YES_OPTION) {
+                        rp.save();
+                    } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
+                        return; // Cancel closing the app
+                    }
+                }
+            } else if (c instanceof CollectionPanel cp) {
+                if (cp.hasUnsavedChanges()) {
+                    workspaceTabs.setSelectedIndex(i);
+                    int option = JOptionPane.showConfirmDialog(
+                        this,
+                        "Collection \"" + cp.getCollectionModel().getName() + "\" has unsaved changes. Save them?",
+                        "Save Changes?",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    if (option == JOptionPane.YES_OPTION) {
+                        cp.save();
+                    } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
+                        return; // Cancel closing the app
+                    }
+                }
+            }
+        }
+
         // Save open requests and stop mock servers
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             Component c = workspaceTabs.getComponentAt(i);

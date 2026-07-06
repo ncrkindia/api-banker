@@ -57,6 +57,7 @@ public class StorageManager {
             saveSettings();
         }
         ensureDataDirExists();
+        ConsoleLogger.getInstance().setEnableLogging(settings.isEnableLogging());
     }
 
     public void saveSettings() {

@@ -1,11 +1,13 @@
 package in.slpro.japi.ui;
 
 import in.slpro.japi.model.ResponseModel;
+import in.slpro.japi.model.ScriptResult;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
@@ -19,6 +21,12 @@ public class ResponsePanel extends JPanel {
     private final DefaultTableModel headersModel;
     private final JTabbedPane tabs;
     private final JPanel contentCard;
+
+    // Test Results tab components
+    private final JLabel testSummaryLabel;
+    private final DefaultTableModel testResultsModel;
+    private final JTextArea consoleLogArea;
+    private final JPanel testResultsPanel;
 
     public ResponsePanel() {
         setLayout(new BorderLayout());
@@ -87,6 +95,73 @@ public class ResponsePanel extends JPanel {
         JTable headersTable = new JTable(headersModel);
         headersTable.setRowHeight(24);
         tabs.addTab("Headers", new JScrollPane(headersTable));
+
+        // Test Results tab
+        testResultsPanel = new JPanel(new BorderLayout(0, 0));
+        testResultsPanel.setBackground(UIManager.getColor("Panel.background"));
+
+        // Summary bar at the top of test results
+        testSummaryLabel = new JLabel("No tests run");
+        testSummaryLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        testSummaryLabel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        testSummaryLabel.setOpaque(true);
+        testSummaryLabel.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        testResultsPanel.add(testSummaryLabel, BorderLayout.NORTH);
+
+        // Assertion results table
+        testResultsModel = new DefaultTableModel(new String[]{"Status", "Test Name", "Details"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable testTable = new JTable(testResultsModel);
+        testTable.setRowHeight(28);
+        testTable.getColumnModel().getColumn(0).setMaxWidth(80);
+        testTable.getColumnModel().getColumn(0).setMinWidth(60);
+
+        // Custom renderer for status column (PASS/FAIL badges)
+        testTable.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                label.setHorizontalAlignment(SwingConstants.CENTER);
+                label.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                if ("PASS".equals(value)) {
+                    label.setForeground(new Color(39, 174, 96));
+                    if (!isSelected) label.setBackground(new Color(39, 174, 96, 30));
+                } else if ("FAIL".equals(value)) {
+                    label.setForeground(new Color(192, 57, 43));
+                    if (!isSelected) label.setBackground(new Color(192, 57, 43, 30));
+                }
+                label.setOpaque(true);
+                return label;
+            }
+        });
+
+        // Split: top = test table, bottom = console logs
+        consoleLogArea = new JTextArea();
+        consoleLogArea.setEditable(false);
+        consoleLogArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        consoleLogArea.setBackground(UIManager.getColor("Panel.background"));
+        consoleLogArea.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+
+        JPanel consolePanel = new JPanel(new BorderLayout());
+        consolePanel.setBackground(UIManager.getColor("Panel.background"));
+        JLabel consoleTitle = new JLabel("  Console Output");
+        consoleTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        consoleTitle.setForeground(new Color(120, 120, 120));
+        consoleTitle.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("Workspace.borderColor")),
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+        consolePanel.add(consoleTitle, BorderLayout.NORTH);
+        consolePanel.add(new JScrollPane(consoleLogArea), BorderLayout.CENTER);
+
+        JSplitPane testSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                new JScrollPane(testTable), consolePanel);
+        testSplit.setResizeWeight(0.65);
+        testSplit.setDividerSize(4);
+        testResultsPanel.add(testSplit, BorderLayout.CENTER);
+
+        tabs.addTab("Test Results", testResultsPanel);
 
         // Empty state
         JPanel emptyPanel = new JPanel(new BorderLayout());
@@ -164,6 +239,93 @@ public class ResponsePanel extends JPanel {
         cl.show(contentCard, "response");
     }
 
+    /**
+     * Shows test results from script execution in the "Test Results" tab.
+     * Displays pre-request script results and test script results with
+     * pass/fail badges, assertion details, and console log output.
+     */
+    public void showTestResults(ScriptResult preRequestResult, ScriptResult testResult) {
+        testResultsModel.setRowCount(0);
+        consoleLogArea.setText("");
+
+        int totalPassed = 0;
+        int totalFailed = 0;
+        StringBuilder consoleText = new StringBuilder();
+
+        // Pre-request script results
+        if (preRequestResult != null) {
+            if (preRequestResult.hasError()) {
+                testResultsModel.addRow(new Object[]{"FAIL", "Pre-request Script", preRequestResult.getError()});
+                totalFailed++;
+            }
+            for (String log : preRequestResult.getConsoleLogs()) {
+                consoleText.append("[Pre-request] ").append(log).append("\n");
+            }
+        }
+
+        // Test script results
+        if (testResult != null) {
+            if (testResult.hasError()) {
+                testResultsModel.addRow(new Object[]{"FAIL", "Test Script Error", testResult.getError()});
+                totalFailed++;
+            }
+
+            for (ScriptResult.TestAssertion assertion : testResult.getAssertions()) {
+                String status = assertion.isPassed() ? "PASS" : "FAIL";
+                String details = assertion.isPassed() ? "" : (assertion.getFailureMessage() != null ? assertion.getFailureMessage() : "");
+                testResultsModel.addRow(new Object[]{status, assertion.getName(), details});
+                if (assertion.isPassed()) totalPassed++;
+                else totalFailed++;
+            }
+
+            for (String log : testResult.getConsoleLogs()) {
+                consoleText.append("[Test] ").append(log).append("\n");
+            }
+        }
+
+        // Update summary label
+        int total = totalPassed + totalFailed;
+        if (total == 0) {
+            testSummaryLabel.setText("  No tests defined");
+            testSummaryLabel.setForeground(new Color(120, 120, 120));
+            testSummaryLabel.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        } else if (totalFailed == 0) {
+            testSummaryLabel.setText("  ✓ All " + totalPassed + " test" + (totalPassed != 1 ? "s" : "") + " passed");
+            testSummaryLabel.setForeground(new Color(39, 174, 96));
+            testSummaryLabel.setBackground(new Color(39, 174, 96, 25));
+        } else {
+            testSummaryLabel.setText("  ✗ " + totalFailed + " of " + total + " test" + (total != 1 ? "s" : "") + " failed  |  "
+                    + totalPassed + " passed");
+            testSummaryLabel.setForeground(new Color(192, 57, 43));
+            testSummaryLabel.setBackground(new Color(192, 57, 43, 25));
+        }
+
+        // Update console log area
+        if (consoleText.length() > 0) {
+            consoleLogArea.setText(consoleText.toString());
+        } else {
+            consoleLogArea.setText("  (no console output)");
+        }
+
+        // Update the Test Results tab title with pass/fail indicator
+        int testTabIdx = tabs.indexOfComponent(testResultsPanel);
+        if (testTabIdx >= 0) {
+            if (total > 0) {
+                String badge = totalFailed == 0 ? " (" + totalPassed + "/" + total + " ✓)" : " (" + totalPassed + "/" + total + " ✗)";
+                tabs.setTitleAt(testTabIdx, "Test Results" + badge);
+                tabs.setForegroundAt(testTabIdx, totalFailed == 0 ? new Color(39, 174, 96) : new Color(192, 57, 43));
+            } else {
+                tabs.setTitleAt(testTabIdx, "Test Results");
+                tabs.setForegroundAt(testTabIdx, null);
+            }
+        }
+
+        // Auto-switch to Test Results tab if tests were run and there are failures
+        if (totalFailed > 0) {
+            if (testTabIdx >= 0) tabs.setSelectedIndex(testTabIdx);
+        }
+    }
+
     public void updateFontSize(int size) {
         FontScaleHelper.scaleFonts(this, size);
     }
@@ -175,6 +337,18 @@ public class ResponsePanel extends JPanel {
         sizeLabel.setText("—");
         bodyArea.setText("");
         headersModel.setRowCount(0);
+
+        // Reset test results
+        testResultsModel.setRowCount(0);
+        consoleLogArea.setText("");
+        testSummaryLabel.setText("  No tests run");
+        testSummaryLabel.setForeground(new Color(120, 120, 120));
+        testSummaryLabel.setBackground(UIManager.getColor("Workspace.panelBackground"));
+        int testTabIdx = tabs.indexOfComponent(testResultsPanel);
+        if (testTabIdx >= 0) {
+            tabs.setTitleAt(testTabIdx, "Test Results");
+            tabs.setForegroundAt(testTabIdx, null);
+        }
 
         CardLayout cl = (CardLayout) contentCard.getLayout();
         cl.show(contentCard, "empty");

@@ -14,6 +14,7 @@ public class ConsoleLogger {
     private final List<LogEntry> entries = new CopyOnWriteArrayList<>();
     private final List<LogListener> listeners = new CopyOnWriteArrayList<>();
     private File logsDir;
+    private boolean enableLogging = true;
 
     public interface LogListener {
         void onLogEntry(LogEntry entry);
@@ -31,6 +32,14 @@ public class ConsoleLogger {
     public void setLogsDirectory(File dir) {
         this.logsDir = dir;
         if (!dir.exists()) dir.mkdirs();
+    }
+
+    public boolean isEnableLogging() {
+        return enableLogging;
+    }
+
+    public void setEnableLogging(boolean enableLogging) {
+        this.enableLogging = enableLogging;
     }
 
     public void addListener(LogListener listener) {
@@ -62,16 +71,40 @@ public class ConsoleLogger {
 
         LogEntry.Level level = (statusCode >= 400 || statusCode == 0) ? LogEntry.Level.ERROR : LogEntry.Level.REQUEST;
         long responseSize = responseBody != null ? responseBody.getBytes(java.nio.charset.StandardCharsets.UTF_8).length : 0;
-        LogEntry entry = new LogEntry(level, sb.toString(), statusCode, durationMs, method, url, responseSize);
+        LogEntry entry = new LogEntry(level, sb.toString(), statusCode, durationMs, method, url, responseSize, "Request",
+                requestHeaders, requestBody, responseHeaders, responseBody);
         entries.add(entry);
         listeners.forEach(l -> l.onLogEntry(entry));
 
-        if (logsDir != null && in.slpro.japi.storage.StorageManager.getInstance().getSettings().isEnableLogging()) {
+        if (logsDir != null && enableLogging) {
             try {
                 String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                 File logFile = new File(logsDir, "japi_" + dateStr + ".log");
                 try (PrintWriter pw = new PrintWriter(new FileWriter(logFile, java.nio.charset.StandardCharsets.UTF_8, true))) {
                     pw.println("[" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] " + entry.getMessage());
+                    pw.println("---");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void logMessage(LogEntry.Level level, String message) {
+        logMessage(level, message, "System");
+    }
+
+    public void logMessage(LogEntry.Level level, String message, String source) {
+        LogEntry entry = new LogEntry(level, message, 0, 0, null, null, 0, source);
+        entries.add(entry);
+        listeners.forEach(l -> l.onLogEntry(entry));
+
+        if (logsDir != null && enableLogging) {
+            try {
+                String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                File logFile = new File(logsDir, "japi_" + dateStr + ".log");
+                try (PrintWriter pw = new PrintWriter(new FileWriter(logFile, java.nio.charset.StandardCharsets.UTF_8, true))) {
+                    pw.println("[" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "] [" + level + "] [" + source + "] " + entry.getMessage());
                     pw.println("---");
                 }
             } catch (Exception e) {

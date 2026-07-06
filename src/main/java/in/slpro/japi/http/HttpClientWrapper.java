@@ -5,9 +5,11 @@ import in.slpro.japi.model.EnvironmentModel;
 import in.slpro.japi.model.KeyValueItem;
 import in.slpro.japi.model.RequestModel;
 import in.slpro.japi.model.ResponseModel;
+import in.slpro.japi.model.ScriptResult;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
+import in.slpro.japi.model.CollectionModel;
+import in.slpro.japi.ui.MainFrame;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,11 +24,13 @@ import java.util.regex.Pattern;
 public class HttpClientWrapper {
     private final HttpClient httpClient;
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
+    private final ScriptExecutor scriptExecutor = new ScriptExecutor();
 
     private boolean silentMode = false;
 
     public void setSilentMode(boolean silentMode) {
         this.silentMode = silentMode;
+        this.scriptExecutor.setSilentMode(silentMode);
     }
 
     public HttpClientWrapper() {
@@ -36,41 +40,277 @@ public class HttpClientWrapper {
                 .build();
     }
 
-    private String resolveVariables(String input, EnvironmentModel environment) {
-        if (input == null || environment == null) return input;
-        if (environment.getVariables() == null) return input;
+    private String resolveVariables(String input, RequestModel requestModel, EnvironmentModel environment) {
+        if (input == null) return input;
+        CollectionModel collection = MainFrame.findParentCollection(requestModel);
         Matcher matcher = VAR_PATTERN.matcher(input);
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
             String varName = matcher.group(1).trim();
-            String value = environment.getVariables().stream()
-                    .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
-                    .map(KeyValueItem::getValue)
-                    .findFirst()
-                    .orElse(matcher.group(0));
+            String value = null;
+            if (environment != null && environment.getVariables() != null) {
+                value = environment.getVariables().stream()
+                        .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
+                        .map(KeyValueItem::getValue)
+                        .findFirst()
+                        .orElse(null);
+            }
+            if (value == null && collection != null && collection.getVariables() != null) {
+                value = collection.getVariables().stream()
+                        .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
+                        .map(KeyValueItem::getValue)
+                        .findFirst()
+                        .orElse(null);
+            }
+            if (value == null) {
+                value = matcher.group(0);
+            }
             matcher.appendReplacement(sb, Matcher.quoteReplacement(value));
         }
         matcher.appendTail(sb);
         return sb.toString();
     }
 
-    private void executeScript(String script, EnvironmentModel environment) {
-        if (script == null || script.trim().isEmpty()) return;
+    private ScriptResult mergeScriptResults(ScriptResult r1, ScriptResult r2) {
+        ScriptResult merged = new ScriptResult();
+        if (r1 != null) {
+            for (ScriptResult.TestAssertion a : r1.getAssertions()) {
+                merged.addAssertion(a.getName(), a.isPassed(), a.getFailureMessage());
+            }
+            for (String log : r1.getConsoleLogs()) {
+                merged.addConsoleLog(log);
+            }
+            if (r1.hasError()) {
+                merged.setError(r1.getError());
+            }
+        }
+        if (r2 != null) {
+            for (ScriptResult.TestAssertion a : r2.getAssertions()) {
+                merged.addAssertion(a.getName(), a.isPassed(), a.getFailureMessage());
+            }
+            for (String log : r2.getConsoleLogs()) {
+                merged.addConsoleLog(log);
+            }
+            if (r2.hasError()) {
+                if (merged.hasError()) {
+                    merged.setError(merged.getError() + "\n" + r2.getError());
+                } else {
+                    merged.setError(r2.getError());
+                }
+            }
+        }
+        return merged;
+    }
+
+    /**
+     * Result container for a request execution that includes script results.
+     */
+    public static class ExecutionResult {
+        private final ResponseModel response;
+        private final ScriptResult preRequestResult;
+        private final ScriptResult testResult;
+
+        public ExecutionResult(ResponseModel response, ScriptResult preRequestResult, ScriptResult testResult) {
+            this.response = response;
+            this.preRequestResult = preRequestResult;
+            this.testResult = testResult;
+        }
+
+        public ResponseModel getResponse() { return response; }
+        public ScriptResult getPreRequestResult() { return preRequestResult; }
+        public ScriptResult getTestResult() { return testResult; }
+    }
+
+    /**
+     * Executes the request with full pre-request and test script support,
+     * returning both the response and the script execution results.
+     */
+    public ExecutionResult executeWithScripts(RequestModel requestModel, EnvironmentModel environment) {
+        long startTime = System.currentTimeMillis();
+        String resolvedUrl = requestModel.getUrl();
+        String resolvedBodyStr = "";
+        CollectionModel collection = MainFrame.findParentCollection(requestModel);
+
+        // Execute pre-request scripts: Collection-level first, then Request-level
+        ScriptResult collPreResult = new ScriptResult();
+        if (collection != null && collection.getPreRequestScript() != null && !collection.getPreRequestScript().isBlank()) {
+            collPreResult = scriptExecutor.executePreRequestScript(
+                    collection.getPreRequestScript(), requestModel, environment);
+        }
+
+        ScriptResult reqPreResult = new ScriptResult();
+        if (requestModel.getPreRequestScript() != null && !requestModel.getPreRequestScript().isBlank()) {
+            reqPreResult = scriptExecutor.executePreRequestScript(
+                    requestModel.getPreRequestScript(), requestModel, environment);
+        }
+
+        ScriptResult preResult = mergeScriptResults(collPreResult, reqPreResult);
+
+        // If pre-request script had an error, we can still proceed with the request
+        // (Postman behavior — logs error but doesn't block request)
+
         try {
-            ScriptEngineManager manager = new ScriptEngineManager();
-            ScriptEngine engine = manager.getEngineByName("rhino");
-            if (engine == null) engine = manager.getEngineByName("javascript");
-            if (engine == null) return;
-            if (environment != null && environment.getVariables() != null) {
-                for (KeyValueItem kv : environment.getVariables()) {
-                    if (kv.isEnabled()) {
-                        engine.put(kv.getKey(), kv.getValue());
+            // 1. Resolve URL variables (after pre-request script may have modified env)
+            resolvedUrl = resolveVariables(requestModel.getUrl(), requestModel, environment);
+
+            // 2. Build URL with query params
+            StringBuilder urlBuilder = new StringBuilder(resolvedUrl);
+            List<KeyValueItem> params = requestModel.getParams();
+            if (params != null && !params.isEmpty()) {
+                boolean first = urlBuilder.indexOf("?") < 0;
+                for (KeyValueItem param : params) {
+                    if (!param.isEnabled() || param.getKey() == null || param.getKey().isBlank()) continue;
+                    urlBuilder.append(first ? "?" : "&")
+                            .append(java.net.URLEncoder.encode(resolveVariables(param.getKey(), requestModel, environment), StandardCharsets.UTF_8))
+                            .append("=")
+                            .append(java.net.URLEncoder.encode(resolveVariables(param.getValue() != null ? param.getValue() : "", requestModel, environment), StandardCharsets.UTF_8));
+                    first = false;
+                }
+            }
+            resolvedUrl = urlBuilder.toString();
+
+            // 3. Build request
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(resolvedUrl))
+                    .timeout(Duration.ofSeconds(30));
+
+            // 4. Add headers
+            String method = requestModel.getMethod();
+            if (requestModel.getHeaders() != null) {
+                for (KeyValueItem header : requestModel.getHeaders()) {
+                    if (!header.isEnabled() || header.getKey() == null || header.getKey().isBlank()) continue;
+                    try {
+                        reqBuilder.header(resolveVariables(header.getKey(), requestModel, environment),
+                                resolveVariables(header.getValue() != null ? header.getValue() : "", requestModel, environment));
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            // Auth
+            String authType = requestModel.getAuthType();
+            String authToken = requestModel.getAuthToken();
+            String authUsername = requestModel.getAuthUsername();
+            String authPassword = requestModel.getAuthPassword();
+            String authApiKeyName = requestModel.getAuthApiKeyName();
+            String authApiKeyValue = requestModel.getAuthApiKeyValue();
+            String authApiKeyIn = requestModel.getAuthApiKeyIn();
+
+            if ("inherit".equalsIgnoreCase(authType) || authType == null) {
+                if (collection != null) {
+                    authType = collection.getAuthType();
+                    authToken = collection.getAuthToken();
+                    authUsername = collection.getAuthUsername();
+                    authPassword = collection.getAuthPassword();
+                    authApiKeyName = collection.getAuthApiKeyName();
+                    authApiKeyValue = collection.getAuthApiKeyValue();
+                    authApiKeyIn = collection.getAuthApiKeyIn();
+                } else {
+                    authType = "none";
+                }
+            }
+
+            if ("bearer".equalsIgnoreCase(authType)) {
+                String token = resolveVariables(authToken, requestModel, environment);
+                if (token != null && !token.isBlank()) reqBuilder.header("Authorization", "Bearer " + token);
+            } else if ("basic".equalsIgnoreCase(authType)) {
+                String creds = authUsername + ":" + authPassword;
+                reqBuilder.header("Authorization", "Basic " + java.util.Base64.getEncoder().encodeToString(creds.getBytes(StandardCharsets.UTF_8)));
+            } else if ("apiKey".equalsIgnoreCase(authType)) {
+                String keyName = resolveVariables(authApiKeyName, requestModel, environment);
+                String keyValue = resolveVariables(authApiKeyValue, requestModel, environment);
+                if ("header".equalsIgnoreCase(authApiKeyIn)) {
+                    if (keyName != null && !keyName.isBlank()) reqBuilder.header(keyName, keyValue != null ? keyValue : "");
+                } else if ("query".equalsIgnoreCase(authApiKeyIn)) {
+                    if (keyName != null && !keyName.isBlank()) {
+                        String delim = resolvedUrl.contains("?") ? "&" : "?";
+                        resolvedUrl += delim + java.net.URLEncoder.encode(keyName, StandardCharsets.UTF_8) + "=" +
+                                java.net.URLEncoder.encode(keyValue != null ? keyValue : "", StandardCharsets.UTF_8);
+                        reqBuilder.uri(URI.create(resolvedUrl));
                     }
                 }
             }
-            engine.eval(script);
+            reqBuilder.header("User-Agent", "JAPI API Client");
+
+            // Body
+            HttpRequest.BodyPublisher bodyPublisher = HttpRequest.BodyPublishers.noBody();
+            if (!("GET".equals(method) || "DELETE".equals(method) || "HEAD".equals(method))) {
+                String bodyType = requestModel.getBodyType();
+                if ("raw".equalsIgnoreCase(bodyType)) {
+                    resolvedBodyStr = resolveVariables(requestModel.getBodyRawContent(), requestModel, environment);
+                    if (resolvedBodyStr == null) resolvedBodyStr = "";
+                    bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
+                    String rawType = requestModel.getBodyRawType();
+                    if ("JSON".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "application/json");
+                    else if ("XML".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "application/xml");
+                    else if ("HTML".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "text/html");
+                    else reqBuilder.header("Content-Type", "text/plain");
+                } else if ("form".equalsIgnoreCase(bodyType)) {
+                    StringBuilder formSb = new StringBuilder();
+                    if (requestModel.getFormData() != null) {
+                        for (KeyValueItem item : requestModel.getFormData()) {
+                            if (!item.isEnabled() || item.getKey() == null || item.getKey().isBlank()) continue;
+                            if (formSb.length() > 0) formSb.append("&");
+                            formSb.append(java.net.URLEncoder.encode(resolveVariables(item.getKey(), requestModel, environment), StandardCharsets.UTF_8))
+                                    .append("=")
+                                    .append(java.net.URLEncoder.encode(resolveVariables(item.getValue() != null ? item.getValue() : "", requestModel, environment), StandardCharsets.UTF_8));
+                        }
+                    }
+                    resolvedBodyStr = formSb.toString();
+                    bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
+                    reqBuilder.header("Content-Type", "application/x-www-form-urlencoded");
+                } else {
+                    bodyPublisher = HttpRequest.BodyPublishers.noBody();
+                }
+            }
+
+            reqBuilder.method(method, bodyPublisher);
+
+            // 5. Execute
+            HttpResponse<String> httpResponse = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            long executionTimeMs = System.currentTimeMillis() - startTime;
+            Map<String, List<String>> headers = httpResponse.headers().map();
+            String responseBody = httpResponse.body();
+            long sizeBytes = responseBody.getBytes(StandardCharsets.UTF_8).length;
+            int statusCode = httpResponse.statusCode();
+            String statusText = getStatusText(statusCode);
+
+            if (!silentMode && ConsoleLogger.getInstance().isEnableLogging()) {
+                Map<String, List<String>> reqHeaders = reqBuilder.build().headers().map();
+                ConsoleLogger.getInstance().logRequest(method, resolvedUrl, statusCode, executionTimeMs,
+                        reqHeaders, resolvedBodyStr, headers, responseBody);
+            }
+
+            ResponseModel response = new ResponseModel(statusCode, statusText, executionTimeMs, sizeBytes, responseBody, headers);
+            response.setActualUrl(resolvedUrl);
+
+            // Execute test scripts: Collection-level first, then Request-level
+            ScriptResult collTestResult = new ScriptResult();
+            if (collection != null && collection.getPostRequestScript() != null && !collection.getPostRequestScript().isBlank()) {
+                collTestResult = scriptExecutor.executeTestScript(
+                        collection.getPostRequestScript(), requestModel, response, environment);
+            }
+
+            ScriptResult reqTestResult = new ScriptResult();
+            if (requestModel.getPostRequestScript() != null && !requestModel.getPostRequestScript().isBlank()) {
+                reqTestResult = scriptExecutor.executeTestScript(
+                        requestModel.getPostRequestScript(), requestModel, response, environment);
+            }
+
+            ScriptResult testResult = mergeScriptResults(collTestResult, reqTestResult);
+
+            return new ExecutionResult(response, preResult, testResult);
+
         } catch (Exception e) {
-            System.err.println("Script error: " + e.getMessage());
+            long executionTimeMs = System.currentTimeMillis() - startTime;
+            String errorMsg = getErrorMessage(e);
+            if (!silentMode && ConsoleLogger.getInstance().isEnableLogging()) {
+                ConsoleLogger.getInstance().logRequest(requestModel.getMethod(), resolvedUrl, 0, executionTimeMs,
+                        Map.of(), resolvedBodyStr, Map.of(), errorMsg);
+            }
+            ResponseModel response = new ResponseModel(0, "Error", executionTimeMs,
+                    errorMsg.getBytes(StandardCharsets.UTF_8).length, errorMsg, Map.of());
+            response.setActualUrl(resolvedUrl);
+            return new ExecutionResult(response, preResult, new ScriptResult());
         }
     }
 
@@ -95,133 +335,12 @@ public class HttpClientWrapper {
         return e.getClass().getSimpleName() + ": " + e.getMessage();
     }
 
+    /**
+     * Backward-compatible execute method used by the Collection Runner.
+     * Delegates to executeWithScripts and returns only the response.
+     */
     public ResponseModel execute(RequestModel requestModel, EnvironmentModel environment) {
-        long startTime = System.currentTimeMillis();
-        String resolvedUrl = requestModel.getUrl();
-        String resolvedBodyStr = "";
-
-        try {
-            // 1. Resolve URL variables
-            resolvedUrl = resolveVariables(requestModel.getUrl(), environment);
-
-            // 2. Execute pre-request script
-            executeScript(requestModel.getPreRequestScript(), environment);
-
-            // 3. Build URL with query params
-            StringBuilder urlBuilder = new StringBuilder(resolvedUrl);
-            List<KeyValueItem> params = requestModel.getParams();
-            if (params != null && !params.isEmpty()) {
-                boolean first = urlBuilder.indexOf("?") < 0;
-                for (KeyValueItem param : params) {
-                    if (!param.isEnabled() || param.getKey() == null || param.getKey().isBlank()) continue;
-                    urlBuilder.append(first ? "?" : "&")
-                            .append(java.net.URLEncoder.encode(resolveVariables(param.getKey(), environment), StandardCharsets.UTF_8))
-                            .append("=")
-                            .append(java.net.URLEncoder.encode(resolveVariables(param.getValue() != null ? param.getValue() : "", environment), StandardCharsets.UTF_8));
-                    first = false;
-                }
-            }
-            resolvedUrl = urlBuilder.toString();
-
-            // 4. Build request
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(resolvedUrl))
-                    .timeout(Duration.ofSeconds(30));
-
-            // 5. Add headers
-            String method = requestModel.getMethod();
-            if (requestModel.getHeaders() != null) {
-                for (KeyValueItem header : requestModel.getHeaders()) {
-                    if (!header.isEnabled() || header.getKey() == null || header.getKey().isBlank()) continue;
-                    try {
-                        reqBuilder.header(resolveVariables(header.getKey(), environment),
-                                resolveVariables(header.getValue() != null ? header.getValue() : "", environment));
-                    } catch (Exception ignored) {}
-                }
-            }
-
-            // Auth
-            String authType = requestModel.getAuthType();
-            if ("bearer".equalsIgnoreCase(authType)) {
-                String token = resolveVariables(requestModel.getAuthToken(), environment);
-                if (token != null && !token.isBlank()) reqBuilder.header("Authorization", "Bearer " + token);
-            } else if ("basic".equalsIgnoreCase(authType)) {
-                String creds = requestModel.getAuthUsername() + ":" + requestModel.getAuthPassword();
-                reqBuilder.header("Authorization", "Basic " + java.util.Base64.getEncoder().encodeToString(creds.getBytes(StandardCharsets.UTF_8)));
-            } else if ("apiKey".equalsIgnoreCase(authType)) {
-                String keyName = resolveVariables(requestModel.getAuthApiKeyName(), environment);
-                String keyValue = resolveVariables(requestModel.getAuthApiKeyValue(), environment);
-                if ("header".equalsIgnoreCase(requestModel.getAuthApiKeyIn())) {
-                    if (keyName != null && !keyName.isBlank()) reqBuilder.header(keyName, keyValue != null ? keyValue : "");
-                }
-            }
-            reqBuilder.header("User-Agent", "JAPI API Client");
-
-            // Body
-            HttpRequest.BodyPublisher bodyPublisher = HttpRequest.BodyPublishers.noBody();
-            if (!("GET".equals(method) || "DELETE".equals(method) || "HEAD".equals(method))) {
-                String bodyType = requestModel.getBodyType();
-                if ("raw".equalsIgnoreCase(bodyType)) {
-                    resolvedBodyStr = resolveVariables(requestModel.getBodyRawContent(), environment);
-                    if (resolvedBodyStr == null) resolvedBodyStr = "";
-                    bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
-                    String rawType = requestModel.getBodyRawType();
-                    if ("JSON".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "application/json");
-                    else if ("XML".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "application/xml");
-                    else if ("HTML".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "text/html");
-                    else reqBuilder.header("Content-Type", "text/plain");
-                } else if ("form".equalsIgnoreCase(bodyType)) {
-                    StringBuilder formSb = new StringBuilder();
-                    if (requestModel.getFormData() != null) {
-                        for (KeyValueItem item : requestModel.getFormData()) {
-                            if (!item.isEnabled() || item.getKey() == null || item.getKey().isBlank()) continue;
-                            if (formSb.length() > 0) formSb.append("&");
-                            formSb.append(java.net.URLEncoder.encode(resolveVariables(item.getKey(), environment), StandardCharsets.UTF_8))
-                                    .append("=")
-                                    .append(java.net.URLEncoder.encode(resolveVariables(item.getValue() != null ? item.getValue() : "", environment), StandardCharsets.UTF_8));
-                        }
-                    }
-                    resolvedBodyStr = formSb.toString();
-                    bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
-                    reqBuilder.header("Content-Type", "application/x-www-form-urlencoded");
-                } else {
-                    bodyPublisher = HttpRequest.BodyPublishers.noBody();
-                }
-            }
-
-            reqBuilder.method(method, bodyPublisher);
-
-            // 6. Execute
-            HttpResponse<String> httpResponse = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-            long executionTimeMs = System.currentTimeMillis() - startTime;
-            Map<String, List<String>> headers = httpResponse.headers().map();
-            String responseBody = httpResponse.body();
-            long sizeBytes = responseBody.getBytes(StandardCharsets.UTF_8).length;
-            int statusCode = httpResponse.statusCode();
-            String statusText = getStatusText(statusCode);
-
-            if (!silentMode && in.slpro.japi.storage.StorageManager.getInstance().getSettings().isEnableLogging()) {
-                Map<String, List<String>> reqHeaders = reqBuilder.build().headers().map();
-                ConsoleLogger.getInstance().logRequest(method, resolvedUrl, statusCode, executionTimeMs,
-                        reqHeaders, resolvedBodyStr, headers, responseBody);
-            }
-
-            executeScript(requestModel.getPostRequestScript(), environment);
-
-            ResponseModel response = new ResponseModel(statusCode, statusText, executionTimeMs, sizeBytes, responseBody, headers);
-            response.setActualUrl(resolvedUrl);
-            return response;
-        } catch (Exception e) {
-            long executionTimeMs = System.currentTimeMillis() - startTime;
-            String errorMsg = getErrorMessage(e);
-            if (!silentMode && in.slpro.japi.storage.StorageManager.getInstance().getSettings().isEnableLogging()) {
-                ConsoleLogger.getInstance().logRequest(requestModel.getMethod(), resolvedUrl, 0, executionTimeMs,
-                        Map.of(), resolvedBodyStr, Map.of(), errorMsg);
-            }
-            ResponseModel response = new ResponseModel(0, "Error", executionTimeMs,
-                    errorMsg.getBytes(StandardCharsets.UTF_8).length, errorMsg, Map.of());
-            response.setActualUrl(resolvedUrl);
-            return response;
-        }
+        ExecutionResult result = executeWithScripts(requestModel, environment);
+        return result.getResponse();
     }
 }
