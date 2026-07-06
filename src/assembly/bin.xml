@@ -1,0 +1,29 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 http://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>japi</baseDirectory>
+    <files>
+        <file>
+            <source>target/japi-1.0.0.jar</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>japi-1.0.0.jar</destName>
+        </file>
+        <file>
+            <source>japi.bat</source>
+            <outputDirectory>/</outputDirectory>
+            <lineEnding>windows</lineEnding>
+        </file>
+        <file>
+            <source>japi.sh</source>
+            <outputDirectory>/</outputDirectory>
+            <lineEnding>unix</lineEnding>
+            <fileMode>0755</fileMode>
+        </file>
+    </files>
+</assembly>
