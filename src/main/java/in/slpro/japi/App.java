@@ -11,9 +11,6 @@ import java.awt.*;
 public class App {
     public static void main(String[] args) {
         try {
-            // Force light theme on startup to ensure the white Postman theme is active
-            // in.slpro.japi.storage.StorageManager.getInstance().getSettings().setTheme("light");
-            // in.slpro.japi.storage.StorageManager.getInstance().saveSettings();
 
             int fontSize = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getFontSize();
             if (fontSize < 10)

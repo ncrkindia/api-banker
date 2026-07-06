@@ -5,7 +5,7 @@ import in.slpro.japi.model.*;
 import in.slpro.japi.storage.StorageManager;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -32,12 +32,14 @@ public class MainFrame extends JFrame {
     public static final String OTHERS_COLLECTION_ID = "__others__";
 
     private static MainFrame instance;
+
     public static MainFrame getInstance() {
         return instance;
     }
 
     public CollectionModel getParentCollection(RequestModel req) {
-        if (req == null) return null;
+        if (req == null)
+            return null;
         for (CollectionModel col : collections) {
             for (RequestModel r : col.getRequests()) {
                 if (r.getId() != null && r.getId().equals(req.getId())) {
@@ -294,7 +296,8 @@ public class MainFrame extends JFrame {
 
     private void ensureOthersCollection() {
         for (CollectionModel col : collections) {
-            if (OTHERS_COLLECTION_ID.equals(col.getId())) return;
+            if (OTHERS_COLLECTION_ID.equals(col.getId()))
+                return;
         }
         CollectionModel others = new CollectionModel(OTHERS_COLLECTION_ID, "Others");
         others.setRequests(new ArrayList<>());
@@ -304,7 +307,8 @@ public class MainFrame extends JFrame {
 
     public CollectionModel getOrCreateOthersCollection() {
         for (CollectionModel col : collections) {
-            if (OTHERS_COLLECTION_ID.equals(col.getId())) return col;
+            if (OTHERS_COLLECTION_ID.equals(col.getId()))
+                return col;
         }
         ensureOthersCollection();
         return collections.get(0);
@@ -335,8 +339,10 @@ public class MainFrame extends JFrame {
         CollectionModel target = (CollectionModel) JOptionPane.showInputDialog(this,
                 "Move '" + req.getName() + "' to:", "Move to Collection", JOptionPane.PLAIN_MESSAGE,
                 null, cols.toArray(), cols.get(0));
-        if (target == null || target == sourceCol) return;
-        if (sourceCol != null) sourceCol.getRequests().remove(req);
+        if (target == null || target == sourceCol)
+            return;
+        if (sourceCol != null)
+            sourceCol.getRequests().remove(req);
         target.getRequests().add(req);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
@@ -356,7 +362,8 @@ public class MainFrame extends JFrame {
 
     public void deleteCollection(CollectionModel col) {
         if (OTHERS_COLLECTION_ID.equals(col.getId())) {
-            JOptionPane.showMessageDialog(this, "Cannot delete the 'Others' collection.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Cannot delete the 'Others' collection.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         collections.remove(col);
@@ -645,9 +652,11 @@ public class MainFrame extends JFrame {
         String cardBgHex = "#FFFFFF";
 
         boolean isDark = com.formdev.flatlaf.FlatLaf.isLafDark();
+        String borderColorHex = "#DDDDDD";
         if (isDark) {
             textHex = "#CCCCCC";
             cardBgHex = "#2B2B2B";
+            borderColorHex = "#444444";
         }
 
         String html = "<html><body style='font-family:\"Segoe UI\",sans-serif; margin:30px; color:" + textHex + ";'>"
@@ -660,26 +669,47 @@ public class MainFrame extends JFrame {
                 + "<table width='100%' cellpadding='10' cellspacing='10'>"
                 + "  <tr>"
                 + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
                 + "      <h3 style='color:" + accentHex + "; margin-top:0;'>🚀 Collection Runner</h3>"
                 + "      <p style='font-size:13px; line-height:1.5;'>Execute whole API suites concurrently with configurable virtual users and delay. Monitor real-time logs, view live multiline analytics charts (for response codes and latency percentiles), and export polished PDF or Excel summary reports.</p>"
                 + "    </td>"
                 + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
                 + "      <h3 style='color:" + accentHex + "; margin-top:0;'>⚙️ Environment Management</h3>"
                 + "      <p style='font-size:13px; line-height:1.5;'>Create, import, export, and switch environments instantly. Dynamically substitute double-brace variables (e.g. <code>{{url}}</code>) across headers, parameters, and bodies.</p>"
                 + "    </td>"
                 + "  </tr>"
                 + "  <tr>"
                 + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
                 + "      <h3 style='color:" + accentHex + "; margin-top:0;'>🛠️ Rhino Scripting sandbox</h3>"
                 + "      <p style='font-size:13px; line-height:1.5;'>Write custom JavaScript code inside Pre-request and Post-request tabs to build dynamic workflows, manipulate variables, and chain requests.</p>"
                 + "    </td>"
                 + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid #ddd; border-radius:6px;'>"
+                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
                 + "      <h3 style='color:" + accentHex + "; margin-top:0;'>⚡ Integrated Tool Suite</h3>"
                 + "      <p style='font-size:13px; line-height:1.5;'>Includes a built-in JWT Decoder, Data Comparator, mock JSON editor, native JMeter (.jmx) imports/exports, and offline local Mock Server.</p>"
+                + "    </td>"
+                + "  </tr>"
+                + "  <tr>"
+                + "    <td width='50%' valign='top' style='background:" + cardBgHex
+                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
+                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>🔒 Privacy & Local Security</h3>"
+                + "      <ul style='font-size:13px; line-height:1.6; margin:0; padding-left:20px;'>"
+                + "        <li><b>Local-First:</b> No external telemetry, tracking, or user registrations.</li>"
+                + "        <li><b>Local SSL:</b> Trusts self-signed certificates for localhost tests.</li>"
+                + "        <li><b>Git-Friendly:</b> Save files directly to local, human-readable JSON workspaces.</li>"
+                + "      </ul>"
+                + "    </td>"
+                + "    <td width='50%' valign='top' style='background:" + cardBgHex
+                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
+                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>⌨️ Keyboard Shortcuts</h3>"
+                + "      <table style='font-size:13px; width:100%; border-collapse:collapse;'>"
+                + "        <tr><td style='padding:3px 0;'><b>Ctrl + S</b></td><td>Save Active Tab</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>Ctrl + = / +</b></td><td>Zoom In UI</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>Ctrl + -</b></td><td>Zoom Out UI</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>Right-Click Tabs</b></td><td>Pin, Rename, Close Options</td></tr>"
+                + "      </table>"
                 + "    </td>"
                 + "  </tr>"
                 + "</table>"
@@ -728,13 +758,15 @@ public class MainFrame extends JFrame {
 
     public void openDataComparator() {
         CollectionModel col = askTargetCollection("Save Data Comparator to:");
-        if (col == null) return;
+        if (col == null)
+            return;
         addComparatorToCollection(col);
     }
 
     public void openMockServer() {
         CollectionModel col = askTargetCollection("Save Mock Server to:");
-        if (col == null) return;
+        if (col == null)
+            return;
         addMockServerToCollection(col);
     }
 
@@ -769,18 +801,17 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
-    private boolean closeTab(Component tabContent) {
+    public boolean closeTab(Component tabContent) {
         int idx = workspaceTabs.indexOfComponent(tabContent);
         if (idx >= 0) {
             if (tabContent instanceof RequestPanel rp) {
                 if (rp.hasUnsavedChanges()) {
                     int option = JOptionPane.showConfirmDialog(
-                        this,
-                        "Request \"" + rp.getRequestModel().getName() + "\" has unsaved changes. Save them?",
-                        "Save Changes?",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                    );
+                            this,
+                            "Request \"" + rp.getRequestModel().getName() + "\" has unsaved changes. Save them?",
+                            "Save Changes?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
                     if (option == JOptionPane.YES_OPTION) {
                         rp.save();
                     } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
@@ -793,12 +824,11 @@ public class MainFrame extends JFrame {
             } else if (tabContent instanceof CollectionPanel cp) {
                 if (cp.hasUnsavedChanges()) {
                     int option = JOptionPane.showConfirmDialog(
-                        this,
-                        "Collection \"" + cp.getCollectionModel().getName() + "\" has unsaved changes. Save them?",
-                        "Save Changes?",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                    );
+                            this,
+                            "Collection \"" + cp.getCollectionModel().getName() + "\" has unsaved changes. Save them?",
+                            "Save Changes?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
                     if (option == JOptionPane.YES_OPTION) {
                         cp.save();
                     } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
@@ -824,7 +854,8 @@ public class MainFrame extends JFrame {
 
     private void togglePinTab(Component tabContent) {
         int idx = workspaceTabs.indexOfComponent(tabContent);
-        if (idx < 0) return;
+        if (idx < 0)
+            return;
 
         JComponent comp = (JComponent) tabContent;
         boolean isPinned = Boolean.TRUE.equals(comp.getClientProperty("pinned"));
@@ -873,7 +904,8 @@ public class MainFrame extends JFrame {
 
     private void closeToLeft(Component tabContent) {
         int targetIdx = workspaceTabs.indexOfComponent(tabContent);
-        if (targetIdx < 0) return;
+        if (targetIdx < 0)
+            return;
         List<Component> tabsToRemove = new ArrayList<>();
         for (int i = 0; i < targetIdx; i++) {
             Component c = workspaceTabs.getComponentAt(i);
@@ -890,7 +922,8 @@ public class MainFrame extends JFrame {
 
     private void closeToRight(Component tabContent) {
         int targetIdx = workspaceTabs.indexOfComponent(tabContent);
-        if (targetIdx < 0) return;
+        if (targetIdx < 0)
+            return;
         List<Component> tabsToRemove = new ArrayList<>();
         for (int i = targetIdx + 1; i < workspaceTabs.getTabCount(); i++) {
             Component c = workspaceTabs.getComponentAt(i);
@@ -1273,7 +1306,12 @@ public class MainFrame extends JFrame {
             com.google.gson.JsonObject info = new com.google.gson.JsonObject();
             info.addProperty("name", col.getName());
             info.addProperty("schema", "https://schema.getpostman.com/json/collection/v2.1.0/collection.json");
+            info.addProperty("_exporter_id", "JAPI-1.0.0");
+            info.addProperty("_exported_by", "JAPI v1.0.0 (Offline API Client)");
+            info.addProperty("_exported_at",
+                    new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
             root.add("info", info);
+            root.addProperty("_japi_version", "1.0.0");
             com.google.gson.JsonArray items = new com.google.gson.JsonArray();
             for (RequestModel req : col.getRequests()) {
                 if ("runner".equals(req.getType()))
@@ -1299,77 +1337,23 @@ public class MainFrame extends JFrame {
 
     // ─── Settings ─────────────────────────────────────────────────────────────
 
-    private void openSettings() {
-        JDialog dialog = new JDialog(this, "Settings", true);
-        dialog.setSize(420, 280);
-        dialog.setLocationRelativeTo(this);
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+    public void openSettings() {
+        if (workspaceTabs.getTabCount() == 0) {
+            workspaceCardLayout.show(workspacePanel, "tabs");
+        }
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0;
-        panel.add(new JLabel("Data Directory:"), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        JTextField dirField = new JTextField(storage.getSettings().getDataDirectory());
-        panel.add(dirField, gbc);
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        JButton browseBtn = new JButton("Browse");
-        browseBtn.addActionListener(e -> {
-            JFileChooser fc = new JFileChooser(storage.getSettings().getDataDirectory());
-            fc.setDialogTitle("Select Storage Folder for JAPI");
-            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            if (fc.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION) {
-                dirField.setText(fc.getSelectedFile().getAbsolutePath());
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if (workspaceTabs.getComponentAt(i) instanceof SettingsPanel) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
             }
-        });
-        panel.add(browseBtn, gbc);
+        }
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0;
-        panel.add(new JLabel("Theme:"), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        JComboBox<String> themeCombo = new JComboBox<>(new String[] { "light", "dark" });
-        themeCombo.setSelectedItem(storage.getSettings().getTheme());
-        panel.add(themeCombo, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weightx = 0;
-        panel.add(new JLabel("Enable Request Logging:"), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        JCheckBox loggingCheck = new JCheckBox();
-        loggingCheck.setSelected(storage.getSettings().isEnableLogging());
-        panel.add(loggingCheck, gbc);
-
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton saveBtn = new JButton("Save");
-        saveBtn.addActionListener(e -> {
-            storage.updateDataDirectory(dirField.getText().trim());
-            storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
-            storage.getSettings().setEnableLogging(loggingCheck.isSelected());
-            in.slpro.japi.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
-            storage.saveSettings();
-            dialog.dispose();
-            showToast(this, "Settings saved. Restart for theme changes.");
-        });
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.addActionListener(e -> dialog.dispose());
-        btns.add(cancelBtn);
-        btns.add(saveBtn);
-
-        dialog.add(panel, BorderLayout.CENTER);
-        dialog.add(btns, BorderLayout.SOUTH);
-        dialog.setVisible(true);
+        SettingsPanel panel = new SettingsPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Settings", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Settings", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
     }
 
     public void openWelcomeTabAsTab() {
@@ -1496,6 +1480,8 @@ public class MainFrame extends JFrame {
                     crp.updateFontSize(size);
                 } else if (tab instanceof MockServerPanel msp) {
                     msp.updateFontSize(size);
+                } else if (tab instanceof SettingsPanel sp) {
+                    sp.updateFontSize(size);
                 }
 
                 Component tabComp = workspaceTabs.getTabComponentAt(i);
@@ -1534,12 +1520,11 @@ public class MainFrame extends JFrame {
                 if (rp.hasUnsavedChanges()) {
                     workspaceTabs.setSelectedIndex(i);
                     int option = JOptionPane.showConfirmDialog(
-                        this,
-                        "Request \"" + rp.getRequestModel().getName() + "\" has unsaved changes. Save them?",
-                        "Save Changes?",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                    );
+                            this,
+                            "Request \"" + rp.getRequestModel().getName() + "\" has unsaved changes. Save them?",
+                            "Save Changes?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
                     if (option == JOptionPane.YES_OPTION) {
                         rp.save();
                     } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
@@ -1550,12 +1535,11 @@ public class MainFrame extends JFrame {
                 if (cp.hasUnsavedChanges()) {
                     workspaceTabs.setSelectedIndex(i);
                     int option = JOptionPane.showConfirmDialog(
-                        this,
-                        "Collection \"" + cp.getCollectionModel().getName() + "\" has unsaved changes. Save them?",
-                        "Save Changes?",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                    );
+                            this,
+                            "Collection \"" + cp.getCollectionModel().getName() + "\" has unsaved changes. Save them?",
+                            "Save Changes?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
                     if (option == JOptionPane.YES_OPTION) {
                         cp.save();
                     } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
@@ -1609,6 +1593,8 @@ public class MainFrame extends JFrame {
                 type = "datatools";
             } else if (c instanceof LogConsolePanel) {
                 type = "logconsole";
+            } else if (c instanceof SettingsPanel) {
+                type = "settings";
             } else {
                 String title = workspaceTabs.getTitleAt(i);
                 if ("Welcome".equals(title)) {
@@ -1692,6 +1678,8 @@ public class MainFrame extends JFrame {
             openLogConsole();
         } else if ("welcome".equals(ts.getType())) {
             openWelcomeTab();
+        } else if ("settings".equals(ts.getType())) {
+            openSettings();
         }
     }
 
