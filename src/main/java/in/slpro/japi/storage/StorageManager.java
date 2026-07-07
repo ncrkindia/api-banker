@@ -31,7 +31,7 @@ public class StorageManager {
         }
         this.bootstrapFile = new File(bootstrapDir, "config.json");
         loadOrCreateSettings();
-        ConsoleLogger.getInstance().setLogsDirectory(new File(settings.getDataDirectory(), "logs"));
+        ConsoleLogger.getInstance().setLogsDirectory(new File(settings.getLogsDirectory()));
     }
 
     public static synchronized StorageManager getInstance() {
@@ -76,7 +76,16 @@ public class StorageManager {
         settings.setDataDirectory(newPath);
         saveSettings();
         ensureDataDirExists();
-        ConsoleLogger.getInstance().setLogsDirectory(new File(newPath, "logs"));
+    }
+
+    public void updateLogsDirectory(String newPath) {
+        settings.setLogsDirectory(newPath);
+        saveSettings();
+        File logsDir = new File(newPath);
+        if (!logsDir.exists()) {
+            logsDir.mkdirs();
+        }
+        ConsoleLogger.getInstance().setLogsDirectory(logsDir);
     }
 
     private void ensureDataDirExists() {
@@ -86,53 +95,161 @@ public class StorageManager {
         }
     }
 
+    private String sanitizeFilename(String name) {
+        if (name == null || name.isBlank())
+            return "unnamed";
+        return name.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase();
+    }
+
     // --- Collections ---
     public List<CollectionModel> loadCollections() {
-        File file = new File(settings.getDataDirectory(), "collections.json");
-        if (!file.exists()) {
-            return new ArrayList<>();
+        File folder = new File(settings.getDataDirectory(), "collections");
+        if (!folder.exists()) {
+            folder.mkdirs();
+            // Backward compatibility
+            File oldFile = new File(settings.getDataDirectory(), "collections.json");
+            if (oldFile.exists()) {
+                try (Reader reader = new FileReader(oldFile, StandardCharsets.UTF_8)) {
+                    Type listType = new TypeToken<ArrayList<CollectionModel>>() {}.getType();
+                    List<CollectionModel> collections = gson.fromJson(reader, listType);
+                    if (collections != null) {
+                        saveCollections(collections);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                oldFile.delete();
+            }
         }
-        try (Reader reader = new FileReader(file, StandardCharsets.UTF_8)) {
-            Type listType = new TypeToken<ArrayList<CollectionModel>>() {}.getType();
-            List<CollectionModel> collections = gson.fromJson(reader, listType);
-            return collections != null ? collections : new ArrayList<>();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>();
+
+        List<CollectionModel> collections = new ArrayList<>();
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null) {
+            for (File file : files) {
+                try (Reader reader = new FileReader(file, StandardCharsets.UTF_8)) {
+                    CollectionModel col = gson.fromJson(reader, CollectionModel.class);
+                    if (col != null) {
+                        collections.add(col);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        return collections;
     }
 
     public void saveCollections(List<CollectionModel> collections) {
-        File file = new File(settings.getDataDirectory(), "collections.json");
-        try (Writer writer = new FileWriter(file, StandardCharsets.UTF_8)) {
-            gson.toJson(collections, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
+        File folder = new File(settings.getDataDirectory(), "collections");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+
+        List<String> activeFilenames = new ArrayList<>();
+        for (CollectionModel col : collections) {
+            if (col.getId() == null || col.getId().isBlank()) {
+                col.setId(java.util.UUID.randomUUID().toString());
+            }
+            String baseName = sanitizeFilename(col.getName());
+            String filename = baseName + ".json";
+            int count = 1;
+            while (activeFilenames.contains(filename)) {
+                filename = baseName + "_" + count + ".json";
+                count++;
+            }
+            activeFilenames.add(filename);
+
+            File file = new File(folder, filename);
+            try (Writer writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+                gson.toJson(col, writer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null) {
+            for (File file : files) {
+                if (!activeFilenames.contains(file.getName().toLowerCase())) {
+                    file.delete();
+                }
+            }
         }
     }
 
     // --- Environments ---
     public List<EnvironmentModel> loadEnvironments() {
-        File file = new File(settings.getDataDirectory(), "environments.json");
-        if (!file.exists()) {
-            return new ArrayList<>();
+        File folder = new File(settings.getDataDirectory(), "environments");
+        if (!folder.exists()) {
+            folder.mkdirs();
+            // Backward compatibility
+            File oldFile = new File(settings.getDataDirectory(), "environments.json");
+            if (oldFile.exists()) {
+                try (Reader reader = new FileReader(oldFile, StandardCharsets.UTF_8)) {
+                    Type listType = new TypeToken<ArrayList<EnvironmentModel>>() {}.getType();
+                    List<EnvironmentModel> envs = gson.fromJson(reader, listType);
+                    if (envs != null) {
+                        saveEnvironments(envs);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                oldFile.delete();
+            }
         }
-        try (Reader reader = new FileReader(file, StandardCharsets.UTF_8)) {
-            Type listType = new TypeToken<ArrayList<EnvironmentModel>>() {}.getType();
-            List<EnvironmentModel> envs = gson.fromJson(reader, listType);
-            return envs != null ? envs : new ArrayList<>();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>();
+
+        List<EnvironmentModel> envs = new ArrayList<>();
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null) {
+            for (File file : files) {
+                try (Reader reader = new FileReader(file, StandardCharsets.UTF_8)) {
+                    EnvironmentModel env = gson.fromJson(reader, EnvironmentModel.class);
+                    if (env != null) {
+                        envs.add(env);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        return envs;
     }
 
     public void saveEnvironments(List<EnvironmentModel> environments) {
-        File file = new File(settings.getDataDirectory(), "environments.json");
-        try (Writer writer = new FileWriter(file, StandardCharsets.UTF_8)) {
-            gson.toJson(environments, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
+        File folder = new File(settings.getDataDirectory(), "environments");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+
+        List<String> activeFilenames = new ArrayList<>();
+        for (EnvironmentModel env : environments) {
+            if (env.getId() == null || env.getId().isBlank()) {
+                env.setId(java.util.UUID.randomUUID().toString());
+            }
+            String baseName = sanitizeFilename(env.getName());
+            String filename = baseName + ".json";
+            int count = 1;
+            while (activeFilenames.contains(filename)) {
+                filename = baseName + "_" + count + ".json";
+                count++;
+            }
+            activeFilenames.add(filename);
+
+            File file = new File(folder, filename);
+            try (Writer writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+                gson.toJson(env, writer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null) {
+            for (File file : files) {
+                if (!activeFilenames.contains(file.getName().toLowerCase())) {
+                    file.delete();
+                }
+            }
         }
     }
 

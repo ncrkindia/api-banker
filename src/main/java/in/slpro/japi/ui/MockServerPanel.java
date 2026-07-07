@@ -26,6 +26,7 @@ public class MockServerPanel extends JPanel {
 
     private HttpServer server;
     private boolean isRunning = false;
+    private java.time.LocalDateTime startTime;
 
     private final JTextField portField;
     private final JButton startStopBtn;
@@ -359,6 +360,32 @@ public class MockServerPanel extends JPanel {
         }
     }
 
+    private String sanitizeFilename(String name) {
+        if (name == null)
+            return "mockserver";
+        return name.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase();
+    }
+
+    private File getLogFile() {
+        String logsDir = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getLogsDirectory();
+        File logsFolder = new File(logsDir);
+        if (!logsFolder.exists())
+            logsFolder.mkdirs();
+
+        CollectionModel collection = mainFrame.getParentCollection(model);
+        String cleanColl = sanitizeFilename(collection != null ? collection.getName() : "others");
+        String cleanMock = sanitizeFilename(model.getName());
+        String dirName = cleanColl + "-" + cleanMock;
+        File runDir = new File(logsFolder, dirName);
+        if (!runDir.exists()) {
+            runDir.mkdirs();
+        }
+
+        LocalDateTime start = startTime != null ? startTime : LocalDateTime.now();
+        String fileStr = start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
+        return new File(runDir, fileStr + ".log");
+    }
+
     private void startServer() {
         int port;
         try {
@@ -369,6 +396,30 @@ public class MockServerPanel extends JPanel {
         }
 
         try {
+            startTime = LocalDateTime.now();
+
+            // Write start header to file if logging enabled
+            if (in.slpro.japi.storage.StorageManager.getInstance().getSettings().isEnableLogging()) {
+                try {
+                    File logFile = getLogFile();
+                    CollectionModel parentCol = MainFrame.findParentCollection(model);
+                    String collectionName = parentCol != null ? parentCol.getName() : "Unknown";
+                    String collectionId = parentCol != null ? parentCol.getId() : "Unknown";
+                    try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(logFile, StandardCharsets.UTF_8, true))) {
+                        pw.println("=================================================");
+                        pw.println("Collection Name: " + collectionName);
+                        pw.println("Collection ID: " + collectionId);
+                        pw.println("Mock Server Name: " + model.getName());
+                        pw.println("Mock Server ID: " + model.getId());
+                        pw.println("Port: " + port);
+                        pw.println("Started: " + startTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                        pw.println("=================================================");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
             server.createContext("/", new MockHandler());
             server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
@@ -397,6 +448,20 @@ public class MockServerPanel extends JPanel {
         statusLabel.setText("Status: Stopped");
         statusLabel.setForeground(Color.RED);
         logTraffic("Server stopped");
+
+        // Write stop footer to file if logging enabled
+        if (in.slpro.japi.storage.StorageManager.getInstance().getSettings().isEnableLogging()) {
+            try {
+                File logFile = getLogFile();
+                try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(logFile, StandardCharsets.UTF_8, true))) {
+                    pw.println("=================================================");
+                    pw.println("Mock Server Stopped: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                    pw.println("=================================================");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void stopServerIfRunning() {
@@ -407,10 +472,23 @@ public class MockServerPanel extends JPanel {
 
     private void logTraffic(String msg) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String formatted = String.format("[%s] %s", timestamp, msg);
         SwingUtilities.invokeLater(() -> {
-            serverLogArea.append(String.format("[%s] %s%n", timestamp, msg));
+            serverLogArea.append(formatted + "\n");
             serverLogArea.setCaretPosition(serverLogArea.getDocument().getLength());
         });
+
+        // Write to log file if logging is enabled
+        if (in.slpro.japi.storage.StorageManager.getInstance().getSettings().isEnableLogging()) {
+            try {
+                File logFile = getLogFile();
+                try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(logFile, StandardCharsets.UTF_8, true))) {
+                    pw.println(formatted);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void clearRuleFormForNew() {

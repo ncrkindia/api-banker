@@ -11,6 +11,7 @@ public class SettingsPanel extends JPanel {
     private final StorageManager storage;
 
     private JTextField dirField;
+    private JTextField logsDirField;
     private JComboBox<String> themeCombo;
     private JCheckBox loggingCheck;
 
@@ -65,9 +66,37 @@ public class SettingsPanel extends JPanel {
         });
         contentPanel.add(browseBtn, gbc);
 
-        // Theme row
+        // Logs directory row
         gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.weightx = 0;
+        JLabel logsDirLabel = new JLabel("Logs Directory:");
+        logsDirLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(logsDirLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        logsDirField = new JTextField(storage.getSettings().getLogsDirectory());
+        logsDirField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(logsDirField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        JButton browseLogsBtn = new JButton("Browse");
+        browseLogsBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        browseLogsBtn.addActionListener(e -> {
+            JFileChooser fc = new JFileChooser(storage.getSettings().getLogsDirectory());
+            fc.setDialogTitle("Select Logs Folder for JAPI");
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                logsDirField.setText(fc.getSelectedFile().getAbsolutePath());
+            }
+        });
+        contentPanel.add(browseLogsBtn, gbc);
+
+        // Theme row
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         gbc.weightx = 0;
         JLabel themeLabel = new JLabel("Theme:");
         themeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -82,7 +111,7 @@ public class SettingsPanel extends JPanel {
 
         // Logging row
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.weightx = 0;
         JLabel loggingLabel = new JLabel("Enable Request Logging:");
         loggingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -96,7 +125,7 @@ public class SettingsPanel extends JPanel {
 
         // Empty space filler
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -115,6 +144,7 @@ public class SettingsPanel extends JPanel {
         saveBtn.setPreferredSize(new Dimension(130, 32));
         saveBtn.addActionListener(e -> {
             storage.updateDataDirectory(dirField.getText().trim());
+            storage.updateLogsDirectory(logsDirField.getText().trim());
             storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
             storage.getSettings().setEnableLogging(loggingCheck.isSelected());
             in.slpro.japi.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());

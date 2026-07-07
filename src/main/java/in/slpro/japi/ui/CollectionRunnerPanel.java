@@ -817,8 +817,8 @@ public class CollectionRunnerPanel extends JPanel {
     }
 
     private File getLogFile() {
-        String dataDir = StorageManager.getInstance().getSettings().getDataDirectory();
-        File logsFolder = new File(dataDir, "logs");
+        String logsDir = StorageManager.getInstance().getSettings().getLogsDirectory();
+        File logsFolder = new File(logsDir);
         if (!logsFolder.exists())
             logsFolder.mkdirs();
 
@@ -920,7 +920,8 @@ public class CollectionRunnerPanel extends JPanel {
                         logWriter = new PrintWriter(new FileWriter(logFile, StandardCharsets.UTF_8, true));
                         String startedStr = startTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                         logWriter.println("=== Execution Log ===");
-                        logWriter.println("Collection: " + collection.getName());
+                        logWriter.println("Collection Name: " + collection.getName());
+                        logWriter.println("Collection ID: " + collection.getId());
                         logWriter.println("Runner: " + runnerModel.getName());
                         logWriter.println("Started: " + startedStr);
                         logWriter.println("Environment: " + (env != null ? env.getName() : "None"));

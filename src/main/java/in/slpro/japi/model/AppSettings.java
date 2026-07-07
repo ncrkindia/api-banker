@@ -2,6 +2,7 @@ package in.slpro.japi.model;
 
 public class AppSettings {
     private String dataDirectory;
+    private String logsDirectory;
     private String theme = "light";
     private String activeEnvironmentId;
     private boolean enableLogging = true;
@@ -22,10 +23,18 @@ public class AppSettings {
     public AppSettings() {
         String userHome = System.getProperty("user.home");
         this.dataDirectory = userHome + "/.japi/data";
+        this.logsDirectory = userHome + "/.japi/logs";
     }
 
     public String getDataDirectory() { return dataDirectory; }
     public void setDataDirectory(String dataDirectory) { this.dataDirectory = dataDirectory; }
+    public String getLogsDirectory() {
+        if (logsDirectory == null || logsDirectory.isBlank()) {
+            return dataDirectory + "/logs";
+        }
+        return logsDirectory;
+    }
+    public void setLogsDirectory(String logsDirectory) { this.logsDirectory = logsDirectory; }
     public String getTheme() { return theme; }
     public void setTheme(String theme) { this.theme = theme; }
     public String getActiveEnvironmentId() { return activeEnvironmentId; }

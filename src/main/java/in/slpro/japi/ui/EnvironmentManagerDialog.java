@@ -170,6 +170,11 @@ public class EnvironmentManagerDialog extends JDialog {
     private void saveCurrentToModel(int idx) {
         if (idx < 0 || idx >= environments.size()) return;
         EnvironmentModel env = environments.get(idx);
+        String name = envNameField.getText().trim();
+        if (!name.isBlank()) {
+            env.setName(name);
+            envListModel.set(idx, name);
+        }
         List<KeyValueItem> vars = new ArrayList<>();
         for (int i = 0; i < varTableModel.getRowCount(); i++) {
             boolean enabled = (Boolean) varTableModel.getValueAt(i, 0);
