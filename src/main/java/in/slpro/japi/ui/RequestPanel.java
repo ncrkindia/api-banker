@@ -685,8 +685,28 @@ public class RequestPanel extends JPanel {
     public boolean hasUnsavedChanges() {
         if (originalModelJson == null) return false;
         RequestModel current = collectToNewModel();
-        String currentJson = new com.google.gson.Gson().toJson(current);
-        return !originalModelJson.equals(currentJson);
+        
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        RequestModel original = gson.fromJson(originalModelJson, RequestModel.class);
+        
+        // Clear history and comparator metadata to only compare user-editable request configuration
+        original.setTimestamp(null);
+        original.setResponseStatus(null);
+        original.setActualUrl(null);
+        original.setComparatorTextA(null);
+        original.setComparatorTextB(null);
+        original.setComparatorMode(0);
+        
+        current.setTimestamp(null);
+        current.setResponseStatus(null);
+        current.setActualUrl(null);
+        current.setComparatorTextA(null);
+        current.setComparatorTextB(null);
+        current.setComparatorMode(0);
+        
+        String cleanOriginalJson = gson.toJson(original);
+        String cleanCurrentJson = gson.toJson(current);
+        return !cleanOriginalJson.equals(cleanCurrentJson);
     }
 
     public RequestModel getRequestModel() {
