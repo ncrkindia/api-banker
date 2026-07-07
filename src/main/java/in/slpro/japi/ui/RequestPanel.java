@@ -695,13 +695,28 @@ public class RequestPanel extends JPanel {
     }
 
     public void updateFontSize(int size) {
-        int height = Math.max(32, size + 16);
-        if (methodCombo != null) methodCombo.setPreferredSize(new Dimension(Math.max(90, size * 7), height));
-        if (urlField != null) urlField.setPreferredSize(new Dimension(0, height));
-        if (sendBtn != null) sendBtn.setPreferredSize(new Dimension(Math.max(80, size * 6), height));
-        if (saveBtn != null) saveBtn.setPreferredSize(new Dimension(Math.max(70, size * 5), height));
-        if (codeBtn != null) codeBtn.setPreferredSize(new Dimension(Math.max(70, size * 5), height));
         FontScaleHelper.scaleFonts(this, size);
+        int height = Math.max(32, size + 16);
+        if (methodCombo != null) {
+            methodCombo.setPreferredSize(null);
+            int comboWidth = Math.max(90, methodCombo.getPreferredSize().width);
+            methodCombo.setPreferredSize(new Dimension(comboWidth, height));
+        }
+        if (urlField != null) {
+            urlField.setPreferredSize(new Dimension(0, height));
+        }
+        if (sendBtn != null) {
+            sendBtn.setPreferredSize(null);
+            sendBtn.setPreferredSize(new Dimension(sendBtn.getPreferredSize().width + 12, height));
+        }
+        if (saveBtn != null) {
+            saveBtn.setPreferredSize(null);
+            saveBtn.setPreferredSize(new Dimension(saveBtn.getPreferredSize().width + 12, height));
+        }
+        if (codeBtn != null) {
+            codeBtn.setPreferredSize(null);
+            codeBtn.setPreferredSize(new Dimension(codeBtn.getPreferredSize().width + 12, height));
+        }
         revalidate();
         repaint();
     }

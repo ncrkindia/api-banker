@@ -5,11 +5,19 @@ import in.slpro.japi.model.ScriptResult;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.ui.rtextarea.SearchContext;
+import org.fife.ui.rtextarea.SearchEngine;
+import org.fife.ui.rtextarea.SearchResult;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
 import java.awt.*;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +29,12 @@ public class ResponsePanel extends JPanel {
     private final DefaultTableModel headersModel;
     private final JTabbedPane tabs;
     private final JPanel contentCard;
+
+    private ResponseModel currentResponse;
+    private JTextField searchField;
+    private JLabel matchCountLabel;
+    private JButton prevSearchBtn;
+    private JButton nextSearchBtn;
 
     // Test Results tab components
     private final JLabel testSummaryLabel;
@@ -73,17 +87,64 @@ public class ResponsePanel extends JPanel {
         bodyScroll.setBorder(null);
 
         JPanel bodyPanel = new JPanel(new BorderLayout());
-        JPanel bodyToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
-        bodyToolbar.setBackground(UIManager.getColor("Panel.background"));
+
+        // Search Panel (West)
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+        searchPanel.setOpaque(false);
+
+        JLabel searchIconLabel = new JLabel("Find:");
+        searchIconLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        searchPanel.add(searchIconLabel);
+
+        searchField = new JTextField(15);
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { performSearch(true, false); }
+            @Override public void removeUpdate(DocumentEvent e) { performSearch(true, false); }
+            @Override public void changedUpdate(DocumentEvent e) { performSearch(true, false); }
+        });
+        searchField.addActionListener(e -> performSearch(true, true));
+        searchPanel.add(searchField);
+
+        prevSearchBtn = new JButton("◀");
+        prevSearchBtn.setToolTipText("Previous Match");
+        prevSearchBtn.addActionListener(e -> performSearch(false, true));
+        searchPanel.add(prevSearchBtn);
+
+        nextSearchBtn = new JButton("▶");
+        nextSearchBtn.setToolTipText("Next Match");
+        nextSearchBtn.addActionListener(e -> performSearch(true, true));
+        searchPanel.add(nextSearchBtn);
+
+        matchCountLabel = new JLabel("");
+        matchCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        matchCountLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        searchPanel.add(matchCountLabel);
+
+        // Actions Panel (East)
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+        actionsPanel.setOpaque(false);
+
+        JToggleButton wrapBtn = new JToggleButton("Wrap");
+        wrapBtn.addActionListener(e -> bodyArea.setLineWrap(((JToggleButton) e.getSource()).isSelected()));
+        actionsPanel.add(wrapBtn);
+
         JButton copyBtn = new JButton("Copy");
         copyBtn.addActionListener(e -> {
             java.awt.datatransfer.StringSelection sel = new java.awt.datatransfer.StringSelection(bodyArea.getText());
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(sel, null);
         });
-        JToggleButton wrapBtn = new JToggleButton("Wrap");
-        wrapBtn.addActionListener(e -> bodyArea.setLineWrap(((JToggleButton) e.getSource()).isSelected()));
-        bodyToolbar.add(wrapBtn);
-        bodyToolbar.add(copyBtn);
+        actionsPanel.add(copyBtn);
+
+        JButton exportBtn = new JButton("Save to File");
+        exportBtn.addActionListener(e -> exportResponse());
+        actionsPanel.add(exportBtn);
+
+        JPanel bodyToolbar = new JPanel(new BorderLayout());
+        bodyToolbar.setBackground(UIManager.getColor("Panel.background"));
+        bodyToolbar.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        bodyToolbar.add(searchPanel, BorderLayout.WEST);
+        bodyToolbar.add(actionsPanel, BorderLayout.EAST);
+
         bodyPanel.add(bodyToolbar, BorderLayout.NORTH);
         bodyPanel.add(bodyScroll, BorderLayout.CENTER);
         tabs.addTab("Body", bodyPanel);
@@ -180,6 +241,11 @@ public class ResponsePanel extends JPanel {
 
     public void showResponse(ResponseModel response) {
         if (response == null) return;
+        this.currentResponse = response;
+        if (searchField != null) {
+            searchField.setText("");
+            matchCountLabel.setText("");
+        }
 
         int code = response.getStatusCode();
         String statusText = code + " " + response.getStatusText();
@@ -328,6 +394,8 @@ public class ResponsePanel extends JPanel {
 
     public void updateFontSize(int size) {
         FontScaleHelper.scaleFonts(this, size);
+        revalidate();
+        repaint();
     }
 
     public void reset() {
@@ -352,5 +420,85 @@ public class ResponsePanel extends JPanel {
 
         CardLayout cl = (CardLayout) contentCard.getLayout();
         cl.show(contentCard, "empty");
+    }
+
+    private void performSearch(boolean forward, boolean findNext) {
+        if (searchField == null || bodyArea == null) return;
+        String text = searchField.getText();
+        if (text == null || text.isEmpty()) {
+            bodyArea.setMarkAllHighlightColor(null);
+            SearchContext context = new SearchContext();
+            SearchEngine.markAll(bodyArea, context);
+            matchCountLabel.setText("");
+            return;
+        }
+
+        SearchContext context = new SearchContext();
+        context.setSearchFor(text);
+        context.setMatchCase(false);
+        context.setRegularExpression(false);
+        context.setSearchForward(forward);
+
+        // Mark all matches
+        SearchResult markAllResult = SearchEngine.markAll(bodyArea, context);
+        int count = markAllResult.getMarkedCount();
+        if (count > 0) {
+            matchCountLabel.setText(count + " match" + (count > 1 ? "es" : ""));
+        } else {
+            matchCountLabel.setText("No matches");
+        }
+
+        if (findNext) {
+            boolean found = SearchEngine.find(bodyArea, context).wasFound();
+            if (!found) {
+                // Wrap around
+                if (forward) {
+                    bodyArea.setCaretPosition(0);
+                } else {
+                    bodyArea.setCaretPosition(bodyArea.getDocument().getLength());
+                }
+                SearchEngine.find(bodyArea, context);
+            }
+        }
+    }
+
+    private void exportResponse() {
+        if (currentResponse == null || currentResponse.getBody() == null) {
+            JOptionPane.showMessageDialog(this, "No response content to save.", "Export Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Response to File");
+
+        // Suggest filename based on content type
+        String defaultName = "response.txt";
+        if (currentResponse.getHeaders() != null) {
+            List<String> ct = currentResponse.getHeaders().get("content-type");
+            if (ct == null) ct = currentResponse.getHeaders().get("Content-Type");
+            if (ct != null && !ct.isEmpty()) {
+                String type = ct.get(0).toLowerCase();
+                if (type.contains("json")) {
+                    defaultName = "response.json";
+                } else if (type.contains("xml")) {
+                    defaultName = "response.xml";
+                } else if (type.contains("html")) {
+                    defaultName = "response.html";
+                }
+            }
+        }
+        fileChooser.setSelectedFile(new File(defaultName));
+
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try {
+                Files.writeString(fileToSave.toPath(), currentResponse.getBody(), StandardCharsets.UTF_8);
+                MainFrame.showToast(this, "Response saved to " + fileToSave.getName());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error saving response:\n" + ex.getMessage(),
+                        "Export Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }
