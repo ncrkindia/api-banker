@@ -23,6 +23,7 @@ public class RequestModel {
     private String authApiKeyIn = "header"; // header or query
     private String preRequestScript = "";
     private String postRequestScript = "";
+    private List<KeyValueItem> urlencodedData = new ArrayList<>();
     private String type = "request"; // request, runner
     // History metadata
     private Long timestamp;
@@ -41,6 +42,9 @@ public class RequestModel {
         this.headers.add(new KeyValueItem("Accept-Encoding", "gzip, deflate, br", true));
         this.headers.add(new KeyValueItem("Connection", "keep-alive", true));
     }
+
+    public List<KeyValueItem> getUrlencodedData() { return urlencodedData; }
+    public void setUrlencodedData(List<KeyValueItem> urlencodedData) { this.urlencodedData = urlencodedData; }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

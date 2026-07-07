@@ -9,6 +9,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,10 @@ public class RequestPanel extends JPanel {
     private DefaultTableModel paramsModel;
     private DefaultTableModel headersModel;
     private DefaultTableModel formDataModel;
+    private DefaultTableModel urlencodedModel;
     private HighlightRSyntaxTextArea bodyArea;
+    private HighlightRSyntaxTextArea graphqlQueryArea;
+    private HighlightRSyntaxTextArea graphqlVarsArea;
     private JComboBox<String> bodyTypeCombo;
     private JComboBox<String> rawTypeCombo;
     private JPanel bodyPanel;
@@ -164,7 +168,7 @@ public class RequestPanel extends JPanel {
         bodyPanel = new JPanel(new BorderLayout());
         bodyCardLayout = new CardLayout();
         JPanel bodyTypeBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        bodyTypeCombo = new JComboBox<>(new String[]{"none", "raw", "form-data", "x-www-form-urlencoded"});
+        bodyTypeCombo = new JComboBox<>(new String[]{"none", "raw", "form-data", "x-www-form-urlencoded", "graphql"});
         bodyTypeCombo.addActionListener(e -> updateBodyCard());
         bodyTypeBar.add(new JLabel("Body:"));
         bodyTypeBar.add(bodyTypeCombo);
@@ -180,16 +184,62 @@ public class RequestPanel extends JPanel {
         bodyArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         bodyArea.setAntiAliasingEnabled(true);
         bodyArea.setHighlightCurrentLine(false);
+        
         bodyCards.add(new JPanel(), "none");
         bodyCards.add(new RTextScrollPane(bodyArea), "raw");
-        formDataModel = buildKVModel();
+        
+        formDataModel = buildFormDataModel();
         formDataModel.addTableModelListener(e -> triggerVariableRepaint());
-        bodyCards.add(buildKVPanel(buildKVTable(formDataModel), formDataModel), "form");
+        JPanel formDataPanel = buildKVPanel(buildFormDataTable(formDataModel), formDataModel);
+        bodyCards.add(formDataPanel, "form-data");
+
+        urlencodedModel = buildKVModel();
+        urlencodedModel.addTableModelListener(e -> triggerVariableRepaint());
+        JPanel urlencodedPanel = buildKVPanel(buildKVTable(urlencodedModel), urlencodedModel);
+        bodyCards.add(urlencodedPanel, "x-www-form-urlencoded");
+
+        // GraphQL Panel
+        JPanel graphqlPanel = new JPanel(new BorderLayout(0, 4));
+        
+        JPanel gqlToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        JButton fetchIntrospectionBtn = new JButton("Fetch Schema");
+        fetchIntrospectionBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        fetchIntrospectionBtn.addActionListener(e -> fetchIntrospectionSchema());
+        gqlToolbar.add(fetchIntrospectionBtn);
+        graphqlPanel.add(gqlToolbar, BorderLayout.NORTH);
+        
+        JSplitPane gqlSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        gqlSplit.setResizeWeight(0.65);
+        gqlSplit.setBorder(null);
+        
+        JPanel queryWrap = new JPanel(new BorderLayout());
+        queryWrap.add(new JLabel("Query:"), BorderLayout.NORTH);
+        graphqlQueryArea = new HighlightRSyntaxTextArea();
+        graphqlQueryArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        graphqlQueryArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        graphqlQueryArea.setAntiAliasingEnabled(true);
+        graphqlQueryArea.setHighlightCurrentLine(false);
+        queryWrap.add(new RTextScrollPane(graphqlQueryArea), BorderLayout.CENTER);
+        gqlSplit.setTopComponent(queryWrap);
+        
+        JPanel varsWrap = new JPanel(new BorderLayout());
+        varsWrap.add(new JLabel("Variables (JSON):"), BorderLayout.NORTH);
+        graphqlVarsArea = new HighlightRSyntaxTextArea();
+        graphqlVarsArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        graphqlVarsArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        graphqlVarsArea.setAntiAliasingEnabled(true);
+        graphqlVarsArea.setHighlightCurrentLine(false);
+        varsWrap.add(new RTextScrollPane(graphqlVarsArea), BorderLayout.CENTER);
+        gqlSplit.setBottomComponent(varsWrap);
+        
+        graphqlPanel.add(gqlSplit, BorderLayout.CENTER);
+        bodyCards.add(graphqlPanel, "graphql");
+
         bodyPanel.add(bodyCards, BorderLayout.CENTER);
         bodyTypeCombo.addActionListener(e -> {
             String sel = (String) bodyTypeCombo.getSelectedItem();
             rawTypeCombo.setVisible("raw".equals(sel));
-            bodyCardLayout.show(bodyCards, "none".equals(sel) ? "none" : "raw".equals(sel) ? "raw" : "form");
+            bodyCardLayout.show(bodyCards, sel != null ? sel : "none");
             if ("raw".equals(sel)) {
                 String rawType = (String) rawTypeCombo.getSelectedItem();
                 bodyArea.setSyntaxEditingStyle("JSON".equals(rawType) ? SyntaxConstants.SYNTAX_STYLE_JSON :
@@ -278,6 +328,8 @@ public class RequestPanel extends JPanel {
         VariableHelper.attachToTextComponent(apiKeyNameField, requestModel, mainFrame);
         VariableHelper.attachToTextComponent(apiKeyValueField, requestModel, mainFrame);
         VariableHelper.attachToTextComponent(bodyArea, requestModel, mainFrame);
+        VariableHelper.attachToTextComponent(graphqlQueryArea, requestModel, mainFrame);
+        VariableHelper.attachToTextComponent(graphqlVarsArea, requestModel, mainFrame);
     }
 
     private JPanel buildLabeledField(String label, JTextField field) {
@@ -410,6 +462,137 @@ public class RequestPanel extends JPanel {
         parent.add(Box.createVerticalStrut(2));
     }
 
+    private DefaultTableModel buildFormDataModel() {
+        return new DefaultTableModel(new Object[]{"", "Key", "Type", "Value", "Description"}, 0) {
+            @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
+            @Override public boolean isCellEditable(int r, int c) { return true; }
+        };
+    }
+
+    private JTable buildFormDataTable(DefaultTableModel model) {
+        JTable table = new JTable(model) {
+            @Override
+            public String getToolTipText(java.awt.event.MouseEvent e) {
+                int row = rowAtPoint(e.getPoint());
+                int col = columnAtPoint(e.getPoint());
+                if (row >= 0 && col >= 0) {
+                    Object val = getValueAt(row, col);
+                    if (val instanceof String s) {
+                        java.util.regex.Matcher matcher = VariableHelper.VAR_PATTERN.matcher(s);
+                        StringBuilder sb = new StringBuilder("<html><body style='font-family: sans-serif; padding: 2px;'>");
+                        boolean found = false;
+                        while (matcher.find()) {
+                            String varName = matcher.group(1).trim();
+                            VariableHelper.VariableResolution res = VariableHelper.resolveVariable(varName, requestModel, mainFrame);
+                            if (res.resolved) {
+                                sb.append(String.format("<b>Variable:</b> %s<br/><b>Source:</b> %s<br/><b>Current Value:</b> <font color='green'>%s</font><br/><br/>",
+                                        res.name, res.source, res.value));
+                            } else {
+                                sb.append(String.format("<b>Variable:</b> %s<br/><b>Source:</b> <font color='red'>Unresolved</font><br/><br/>",
+                                        res.name));
+                            }
+                            found = true;
+                        }
+                        if (found) {
+                            if (sb.length() > 8) {
+                                sb.setLength(sb.length() - 9);
+                            }
+                            sb.append("</body></html>");
+                            return sb.toString();
+                        }
+                    }
+                }
+                return super.getToolTipText(e);
+            }
+        };
+
+        javax.swing.table.TableCellRenderer defaultRenderer = new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+                Component c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
+                if (c instanceof JLabel label && value instanceof String s) {
+                    if (s.contains("{{") && s.contains("}}")) {
+                        java.util.regex.Matcher matcher = VariableHelper.VAR_PATTERN.matcher(s);
+                        StringBuffer sb = new StringBuffer("<html>");
+                        while (matcher.find()) {
+                            String varName = matcher.group(1).trim();
+                            VariableHelper.VariableResolution res = VariableHelper.resolveVariable(varName, requestModel, mainFrame);
+                            String colorStr;
+                            if (res.resolved) {
+                                Color colVal = res.isEnv ? VariableHelper.getEnvColor() : VariableHelper.getCollectionColor();
+                                colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(), colVal.getBlue());
+                            } else {
+                                Color colVal = VariableHelper.getUnresolvedColor();
+                                colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(), colVal.getBlue());
+                            }
+                            matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(
+                                    "<span style='color: " + colorStr + "; font-weight: bold;'>{{" + varName + "}}</span>"));
+                        }
+                        matcher.appendTail(sb);
+                        sb.append("</html>");
+                        label.setText(sb.toString());
+                    }
+                }
+                return c;
+            }
+        };
+
+        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"text", "file"});
+        table.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(typeCombo));
+        table.getColumnModel().getColumn(3).setCellEditor(new FileCellEditor());
+
+        table.getColumnModel().getColumn(0).setMaxWidth(30);
+        table.getColumnModel().getColumn(0).setMinWidth(30);
+        table.getColumnModel().getColumn(1).setCellRenderer(defaultRenderer);
+        table.getColumnModel().getColumn(2).setCellRenderer(defaultRenderer);
+        table.getColumnModel().getColumn(3).setCellRenderer(defaultRenderer);
+        table.getColumnModel().getColumn(4).setCellRenderer(defaultRenderer);
+        table.setRowHeight(24);
+        return table;
+    }
+
+    private class FileCellEditor extends AbstractCellEditor implements TableCellEditor {
+        private JPanel panel;
+        private JTextField text;
+        private JButton btn;
+        private String currentVal;
+
+        public FileCellEditor() {
+            panel = new JPanel(new BorderLayout(2, 0));
+            panel.setOpaque(false);
+            text = new JTextField();
+            btn = new JButton("...");
+            btn.setPreferredSize(new Dimension(24, 18));
+            btn.setFocusable(false);
+            btn.addActionListener(e -> {
+                JFileChooser chooser = new JFileChooser();
+                if (chooser.showOpenDialog(panel) == JFileChooser.APPROVE_OPTION) {
+                    text.setText(chooser.getSelectedFile().getAbsolutePath());
+                    fireEditingStopped();
+                }
+            });
+            panel.add(text, BorderLayout.CENTER);
+            panel.add(btn, BorderLayout.EAST);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            String type = (String) table.getValueAt(row, 2);
+            currentVal = value != null ? value.toString() : "";
+            text.setText(currentVal);
+            if ("file".equalsIgnoreCase(type)) {
+                return panel;
+            } else {
+                return text;
+            }
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return text.getText();
+        }
+    }
+
     private DefaultTableModel buildKVModel() {
         return new DefaultTableModel(new Object[]{"", "Key", "Value", "Description"}, 0) {
             @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
@@ -538,14 +721,55 @@ public class RequestPanel extends JPanel {
             }
 
             String bt = requestModel.getBodyType() != null ? requestModel.getBodyType() : "none";
+            if ("form".equals(bt)) {
+                bt = "x-www-form-urlencoded";
+            }
             bodyTypeCombo.setSelectedItem(bt);
             rawTypeCombo.setSelectedItem(requestModel.getBodyRawType() != null ? requestModel.getBodyRawType() : "JSON");
-            bodyArea.setText(requestModel.getBodyRawContent() != null ? requestModel.getBodyRawContent() : "");
+
+            if ("graphql".equals(bt)) {
+                String rawContent = requestModel.getBodyRawContent();
+                String query = "";
+                String vars = "";
+                if (rawContent != null && rawContent.trim().startsWith("{")) {
+                    try {
+                        com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(rawContent).getAsJsonObject();
+                        if (json.has("query")) {
+                            query = json.get("query").getAsString();
+                        }
+                        if (json.has("variables")) {
+                            vars = json.get("variables").getAsString();
+                        }
+                    } catch (Exception e) {
+                        query = rawContent;
+                    }
+                } else {
+                    query = rawContent != null ? rawContent : "";
+                }
+                graphqlQueryArea.setText(query);
+                graphqlVarsArea.setText(vars != null ? vars : "");
+                bodyArea.setText("");
+            } else {
+                bodyArea.setText(requestModel.getBodyRawContent() != null ? requestModel.getBodyRawContent() : "");
+                graphqlQueryArea.setText("");
+                graphqlVarsArea.setText("");
+            }
 
             formDataModel.setRowCount(0);
             if (requestModel.getFormData() != null) {
                 for (KeyValueItem kv : requestModel.getFormData()) {
-                    formDataModel.addRow(new Object[]{kv.isEnabled(), kv.getKey(), kv.getValue(), kv.getDescription()});
+                    formDataModel.addRow(new Object[]{kv.isEnabled(), kv.getKey(), kv.getType() != null ? kv.getType() : "text", kv.getValue(), kv.getDescription()});
+                }
+            }
+
+            urlencodedModel.setRowCount(0);
+            if (requestModel.getUrlencodedData() != null && !requestModel.getUrlencodedData().isEmpty()) {
+                for (KeyValueItem kv : requestModel.getUrlencodedData()) {
+                    urlencodedModel.addRow(new Object[]{kv.isEnabled(), kv.getKey(), kv.getValue(), kv.getDescription()});
+                }
+            } else if (requestModel.getFormData() != null && ("form".equals(requestModel.getBodyType()) || "x-www-form-urlencoded".equals(requestModel.getBodyType()))) {
+                for (KeyValueItem kv : requestModel.getFormData()) {
+                    urlencodedModel.addRow(new Object[]{kv.isEnabled(), kv.getKey(), kv.getValue(), kv.getDescription()});
                 }
             }
 
@@ -572,7 +796,14 @@ public class RequestPanel extends JPanel {
         requestModel.setUrl(urlField.getText().trim());
         requestModel.setBodyType((String) bodyTypeCombo.getSelectedItem());
         requestModel.setBodyRawType((String) rawTypeCombo.getSelectedItem());
-        requestModel.setBodyRawContent(bodyArea.getText());
+        if ("graphql".equals(bodyTypeCombo.getSelectedItem())) {
+            com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+            json.addProperty("query", graphqlQueryArea.getText());
+            json.addProperty("variables", graphqlVarsArea.getText());
+            requestModel.setBodyRawContent(new com.google.gson.Gson().toJson(json));
+        } else {
+            requestModel.setBodyRawContent(bodyArea.getText());
+        }
         requestModel.setAuthType((String) authTypeCombo.getSelectedItem());
         requestModel.setAuthToken(bearerTokenField.getText());
         requestModel.setAuthUsername(basicUsernameField.getText());
@@ -585,7 +816,24 @@ public class RequestPanel extends JPanel {
 
         requestModel.setParams(extractKV(paramsModel));
         requestModel.setHeaders(extractKV(headersModel));
-        requestModel.setFormData(extractKV(formDataModel));
+        requestModel.setFormData(extractFormData(formDataModel));
+        requestModel.setUrlencodedData(extractKV(urlencodedModel));
+    }
+
+    private List<KeyValueItem> extractFormData(DefaultTableModel model) {
+        List<KeyValueItem> list = new ArrayList<>();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            boolean enabled = model.getValueAt(i, 0) instanceof Boolean b && b;
+            String key = (String) model.getValueAt(i, 1);
+            String type = (String) model.getValueAt(i, 2);
+            String value = (String) model.getValueAt(i, 3);
+            String desc = model.getColumnCount() > 4 ? (String) model.getValueAt(i, 4) : "";
+            KeyValueItem kv = new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled);
+            kv.setType(type != null ? type : "text");
+            kv.setDescription(desc != null ? desc : "");
+            list.add(kv);
+        }
+        return list;
     }
 
     private List<KeyValueItem> extractKV(DefaultTableModel model) {
@@ -665,7 +913,14 @@ public class RequestPanel extends JPanel {
         m.setUrl(urlField.getText().trim());
         m.setBodyType((String) bodyTypeCombo.getSelectedItem());
         m.setBodyRawType((String) rawTypeCombo.getSelectedItem());
-        m.setBodyRawContent(bodyArea.getText());
+        if ("graphql".equals(bodyTypeCombo.getSelectedItem())) {
+            com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+            json.addProperty("query", graphqlQueryArea.getText());
+            json.addProperty("variables", graphqlVarsArea.getText());
+            m.setBodyRawContent(new com.google.gson.Gson().toJson(json));
+        } else {
+            m.setBodyRawContent(bodyArea.getText());
+        }
         m.setAuthType((String) authTypeCombo.getSelectedItem());
         m.setAuthToken(bearerTokenField.getText());
         m.setAuthUsername(basicUsernameField.getText());
@@ -678,7 +933,8 @@ public class RequestPanel extends JPanel {
 
         m.setParams(extractKV(paramsModel));
         m.setHeaders(extractKV(headersModel));
-        m.setFormData(extractKV(formDataModel));
+        m.setFormData(extractFormData(formDataModel));
+        m.setUrlencodedData(extractKV(urlencodedModel));
         return m;
     }
 
@@ -689,24 +945,62 @@ public class RequestPanel extends JPanel {
         com.google.gson.Gson gson = new com.google.gson.Gson();
         RequestModel original = gson.fromJson(originalModelJson, RequestModel.class);
         
-        // Clear history and comparator metadata to only compare user-editable request configuration
-        original.setTimestamp(null);
-        original.setResponseStatus(null);
-        original.setActualUrl(null);
-        original.setComparatorTextA(null);
-        original.setComparatorTextB(null);
-        original.setComparatorMode(0);
-        
-        current.setTimestamp(null);
-        current.setResponseStatus(null);
-        current.setActualUrl(null);
-        current.setComparatorTextA(null);
-        current.setComparatorTextB(null);
-        current.setComparatorMode(0);
+        normalizeRequestModel(original);
+        normalizeRequestModel(current);
         
         String cleanOriginalJson = gson.toJson(original);
         String cleanCurrentJson = gson.toJson(current);
         return !cleanOriginalJson.equals(cleanCurrentJson);
+    }
+
+    private void normalizeRequestModel(RequestModel m) {
+        if (m == null) return;
+        m.setName(m.getName() == null ? "" : m.getName().trim());
+        m.setMethod(m.getMethod() == null ? "GET" : m.getMethod().trim());
+        m.setUrl(m.getUrl() == null ? "" : m.getUrl().trim());
+        m.setBodyType(m.getBodyType() == null ? "none" : m.getBodyType().trim());
+        if ("form".equals(m.getBodyType())) m.setBodyType("x-www-form-urlencoded");
+        m.setBodyRawType(m.getBodyRawType() == null ? "JSON" : m.getBodyRawType().trim());
+        m.setBodyRawContent(m.getBodyRawContent() == null ? "" : m.getBodyRawContent().trim());
+        m.setAuthType(m.getAuthType() == null ? "none" : m.getAuthType().trim());
+        m.setAuthToken(m.getAuthToken() == null ? "" : m.getAuthToken().trim());
+        m.setAuthUsername(m.getAuthUsername() == null ? "" : m.getAuthUsername().trim());
+        m.setAuthPassword(m.getAuthPassword() == null ? "" : m.getAuthPassword().trim());
+        m.setAuthApiKeyName(m.getAuthApiKeyName() == null ? "" : m.getAuthApiKeyName().trim());
+        m.setAuthApiKeyValue(m.getAuthApiKeyValue() == null ? "" : m.getAuthApiKeyValue().trim());
+        m.setAuthApiKeyIn(m.getAuthApiKeyIn() == null ? "header" : m.getAuthApiKeyIn().trim());
+        m.setPreRequestScript(m.getPreRequestScript() == null ? "" : m.getPreRequestScript().trim());
+        m.setPostRequestScript(m.getPostRequestScript() == null ? "" : m.getPostRequestScript().trim());
+        m.setType(m.getType() == null ? "request" : m.getType().trim());
+
+        m.setHeaders(normalizeKV(m.getHeaders()));
+        m.setParams(normalizeKV(m.getParams()));
+        m.setFormData(normalizeKV(m.getFormData()));
+        m.setUrlencodedData(normalizeKV(m.getUrlencodedData()));
+
+        m.setTimestamp(null);
+        m.setResponseStatus(null);
+        m.setActualUrl(null);
+        m.setComparatorTextA(null);
+        m.setComparatorTextB(null);
+        m.setComparatorMode(0);
+    }
+
+    private List<KeyValueItem> normalizeKV(List<KeyValueItem> list) {
+        List<KeyValueItem> res = new ArrayList<>();
+        if (list == null) return res;
+        for (KeyValueItem item : list) {
+            if (item == null) continue;
+            KeyValueItem normalized = new KeyValueItem(
+                item.getKey() == null ? "" : item.getKey().trim(),
+                item.getValue() == null ? "" : item.getValue().trim(),
+                item.isEnabled()
+            );
+            normalized.setDescription(item.getDescription() == null ? "" : item.getDescription().trim());
+            normalized.setType(item.getType() == null ? "text" : item.getType().trim());
+            res.add(normalized);
+        }
+        return res;
     }
 
     public RequestModel getRequestModel() {
@@ -737,8 +1031,88 @@ public class RequestPanel extends JPanel {
             codeBtn.setPreferredSize(null);
             codeBtn.setPreferredSize(new Dimension(codeBtn.getPreferredSize().width + 12, height));
         }
+        if (graphqlQueryArea != null) {
+            graphqlQueryArea.setFont(new Font("JetBrains Mono", Font.PLAIN, size - 2));
+        }
+        if (graphqlVarsArea != null) {
+            graphqlVarsArea.setFont(new Font("JetBrains Mono", Font.PLAIN, size - 2));
+        }
         revalidate();
         repaint();
+    }
+
+    private void fetchIntrospectionSchema() {
+        String url = urlField.getText().trim();
+        if (url.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid URL first.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String introspectionQuery = "query IntrospectionQuery {\n" +
+                "  __schema {\n" +
+                "    queryType { name }\n" +
+                "    mutationType { name }\n" +
+                "    subscriptionType { name }\n" +
+                "    types {\n" +
+                "      kind\n" +
+                "      name\n" +
+                "      description\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
+
+        com.google.gson.JsonObject payload = new com.google.gson.JsonObject();
+        payload.addProperty("query", introspectionQuery);
+        payload.add("variables", new com.google.gson.JsonObject());
+
+        RequestModel snapshot = new RequestModel();
+        snapshot.setId(java.util.UUID.randomUUID().toString());
+        snapshot.setName("GraphQL Introspection");
+        snapshot.setUrl(url);
+        snapshot.setMethod("POST");
+        snapshot.setBodyType("raw");
+        snapshot.setBodyRawType("JSON");
+        snapshot.setBodyRawContent(new com.google.gson.Gson().toJson(payload));
+
+        snapshot.setAuthType((String) authTypeCombo.getSelectedItem());
+        snapshot.setAuthToken(bearerTokenField.getText());
+        snapshot.setAuthUsername(basicUsernameField.getText());
+        snapshot.setAuthPassword(new String(basicPasswordField.getPassword()));
+        snapshot.setAuthApiKeyName(apiKeyNameField.getText());
+        snapshot.setAuthApiKeyValue(apiKeyValueField.getText());
+        snapshot.setAuthApiKeyIn((String) apiKeyInCombo.getSelectedItem());
+
+        snapshot.setHeaders(extractKV(headersModel));
+
+        sendBtn.setEnabled(false);
+        sendBtn.setText("Introspecting...");
+        responsePanel.reset();
+
+        EnvironmentModel env = mainFrame.getActiveEnvironment();
+        SwingWorker<HttpClientWrapper.ExecutionResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected HttpClientWrapper.ExecutionResult doInBackground() {
+                HttpClientWrapper client = new HttpClientWrapper();
+                return client.executeWithScripts(snapshot, env);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    HttpClientWrapper.ExecutionResult execResult = get();
+                    ResponseModel response = execResult.getResponse();
+                    responsePanel.showResponse(response);
+                    MainFrame.showToast(RequestPanel.this, "GraphQL Introspection Schema loaded.");
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(RequestPanel.this,
+                            "Introspection failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    sendBtn.setEnabled(true);
+                    sendBtn.setText("Send");
+                }
+            }
+        };
+        worker.execute();
     }
 
     public void setRequestModel(RequestModel model) {

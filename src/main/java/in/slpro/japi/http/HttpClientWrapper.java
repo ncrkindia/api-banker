@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.File;
+import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
 
 public class HttpClientWrapper {
     private final HttpClient httpClient;
@@ -244,10 +247,25 @@ public class HttpClientWrapper {
                     else if ("XML".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "application/xml");
                     else if ("HTML".equalsIgnoreCase(rawType)) reqBuilder.header("Content-Type", "text/html");
                     else reqBuilder.header("Content-Type", "text/plain");
-                } else if ("form".equalsIgnoreCase(bodyType)) {
+                } else if ("form-data".equalsIgnoreCase(bodyType)) {
+                    String boundary = "JAPIBoundary" + System.currentTimeMillis();
+                    try {
+                        byte[] multipartData = buildMultipartBody(requestModel.getFormData(), boundary, requestModel, environment);
+                        bodyPublisher = HttpRequest.BodyPublishers.ofByteArray(multipartData);
+                        reqBuilder.header("Content-Type", "multipart/form-data; boundary=" + boundary);
+                        resolvedBodyStr = "[Multipart/Form-Data Payload: " + multipartData.length + " bytes]";
+                    } catch (Exception ex) {
+                        resolvedBodyStr = "Error building multipart body: " + ex.getMessage();
+                        bodyPublisher = HttpRequest.BodyPublishers.noBody();
+                    }
+                } else if ("form".equalsIgnoreCase(bodyType) || "x-www-form-urlencoded".equalsIgnoreCase(bodyType)) {
                     StringBuilder formSb = new StringBuilder();
-                    if (requestModel.getFormData() != null) {
-                        for (KeyValueItem item : requestModel.getFormData()) {
+                    List<KeyValueItem> items = requestModel.getUrlencodedData();
+                    if (items == null || items.isEmpty()) {
+                        items = requestModel.getFormData();
+                    }
+                    if (items != null) {
+                        for (KeyValueItem item : items) {
                             if (!item.isEnabled() || item.getKey() == null || item.getKey().isBlank()) continue;
                             if (formSb.length() > 0) formSb.append("&");
                             formSb.append(java.net.URLEncoder.encode(resolveVariables(item.getKey(), requestModel, environment), StandardCharsets.UTF_8))
@@ -258,9 +276,55 @@ public class HttpClientWrapper {
                     resolvedBodyStr = formSb.toString();
                     bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
                     reqBuilder.header("Content-Type", "application/x-www-form-urlencoded");
+                } else if ("graphql".equalsIgnoreCase(bodyType)) {
+                    reqBuilder.header("Content-Type", "application/json");
+                    try {
+                        String rawContent = requestModel.getBodyRawContent();
+                        String query = "";
+                        String variablesStr = "";
+                        if (rawContent != null && rawContent.trim().startsWith("{")) {
+                            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(rawContent).getAsJsonObject();
+                            if (json.has("query")) {
+                                query = json.get("query").getAsString();
+                            }
+                            if (json.has("variables")) {
+                                variablesStr = json.get("variables").getAsString();
+                            }
+                        } else {
+                            query = rawContent != null ? rawContent : "";
+                        }
+
+                        String resolvedQuery = resolveVariables(query, requestModel, environment);
+                        String resolvedVars = resolveVariables(variablesStr, requestModel, environment);
+
+                        com.google.gson.JsonObject payload = new com.google.gson.JsonObject();
+                        payload.addProperty("query", resolvedQuery);
+                        if (resolvedVars != null && !resolvedVars.isBlank()) {
+                            try {
+                                com.google.gson.JsonElement varsJson = com.google.gson.JsonParser.parseString(resolvedVars);
+                                payload.add("variables", varsJson);
+                            } catch (Exception e) {
+                                payload.addProperty("variables", resolvedVars);
+                            }
+                        } else {
+                            payload.add("variables", new com.google.gson.JsonObject());
+                        }
+
+                        resolvedBodyStr = new com.google.gson.Gson().toJson(payload);
+                        bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
+                    } catch (Exception ex) {
+                        resolvedBodyStr = "Error building GraphQL body: " + ex.getMessage();
+                        bodyPublisher = HttpRequest.BodyPublishers.noBody();
+                    }
                 } else {
                     bodyPublisher = HttpRequest.BodyPublishers.noBody();
                 }
+            }
+
+            // Cookie Jar Manager support: attach matching cookies
+            String cookieHeader = CookieJar.getInstance().getCookieHeaderForUrl(resolvedUrl);
+            if (cookieHeader != null && !cookieHeader.isBlank()) {
+                reqBuilder.header("Cookie", cookieHeader);
             }
 
             reqBuilder.method(method, bodyPublisher);
@@ -269,6 +333,21 @@ public class HttpClientWrapper {
             HttpResponse<String> httpResponse = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
             long executionTimeMs = System.currentTimeMillis() - startTime;
             Map<String, List<String>> headers = httpResponse.headers().map();
+
+            // Cookie Jar Manager support: capture response cookies
+            List<String> setCookieHeaders = headers.get("set-cookie");
+            if (setCookieHeaders == null || setCookieHeaders.isEmpty()) {
+                // Try case-insensitive lookup
+                for (String key : headers.keySet()) {
+                    if (key != null && key.equalsIgnoreCase("set-cookie")) {
+                        setCookieHeaders = headers.get(key);
+                        break;
+                    }
+                }
+            }
+            if (setCookieHeaders != null && !setCookieHeaders.isEmpty()) {
+                CookieJar.getInstance().parseAndStoreCookies(resolvedUrl, setCookieHeaders);
+            }
             String responseBody = httpResponse.body();
             long sizeBytes = responseBody.getBytes(StandardCharsets.UTF_8).length;
             int statusCode = httpResponse.statusCode();
@@ -342,5 +421,51 @@ public class HttpClientWrapper {
     public ResponseModel execute(RequestModel requestModel, EnvironmentModel environment) {
         ExecutionResult result = executeWithScripts(requestModel, environment);
         return result.getResponse();
+    }
+
+    private byte[] buildMultipartBody(List<KeyValueItem> items, String boundary, RequestModel requestModel, EnvironmentModel environment) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] newline = "\r\n".getBytes(StandardCharsets.UTF_8);
+
+        for (KeyValueItem item : items) {
+            if (!item.isEnabled() || item.getKey() == null || item.getKey().isBlank()) continue;
+
+            String key = resolveVariables(item.getKey(), requestModel, environment);
+            String type = item.getType() != null ? item.getType() : "text";
+
+            bos.write(("--" + boundary).getBytes(StandardCharsets.UTF_8));
+            bos.write(newline);
+
+            if ("file".equalsIgnoreCase(type)) {
+                String filePath = resolveVariables(item.getValue() != null ? item.getValue() : "", requestModel, environment);
+                File file = new File(filePath);
+                String fileName = file.getName();
+                bos.write(String.format("Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"", key, fileName).getBytes(StandardCharsets.UTF_8));
+                bos.write(newline);
+                String contentType = Files.probeContentType(file.toPath());
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+                bos.write(String.format("Content-Type: %s", contentType).getBytes(StandardCharsets.UTF_8));
+                bos.write(newline);
+                bos.write(newline);
+
+                if (file.exists() && file.isFile()) {
+                    bos.write(Files.readAllBytes(file.toPath()));
+                }
+            } else {
+                String val = resolveVariables(item.getValue() != null ? item.getValue() : "", requestModel, environment);
+                bos.write(String.format("Content-Disposition: form-data; name=\"%s\"", key).getBytes(StandardCharsets.UTF_8));
+                bos.write(newline);
+                bos.write(newline);
+                bos.write(val.getBytes(StandardCharsets.UTF_8));
+            }
+            bos.write(newline);
+        }
+
+        bos.write(("--" + boundary + "--").getBytes(StandardCharsets.UTF_8));
+        bos.write(newline);
+
+        return bos.toByteArray();
     }
 }

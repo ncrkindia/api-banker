@@ -6,6 +6,8 @@ public class KeyValueItem {
     private boolean enabled;
     private String description;
 
+    private String type = "text"; // "text" or "file"
+
     public KeyValueItem() { this.enabled = true; }
 
     public KeyValueItem(String key, String value, boolean enabled) {
@@ -22,4 +24,6 @@ public class KeyValueItem {
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 }

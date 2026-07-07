@@ -210,12 +210,15 @@ public class MainFrame extends JFrame {
         mockServerItem.addActionListener(e -> openMockServer());
         JMenuItem dataToolsItem = new JMenuItem("Data Tools");
         dataToolsItem.addActionListener(e -> openDataTools());
+        JMenuItem cookieJarItem = new JMenuItem("Cookie Jar Manager...");
+        cookieJarItem.addActionListener(e -> openCookieJarManager());
         toolsMenu.add(jwtItem);
         toolsMenu.add(jsonItem);
         toolsMenu.add(compareItem);
         toolsMenu.addSeparator();
         toolsMenu.add(mockServerItem);
         toolsMenu.add(dataToolsItem);
+        toolsMenu.add(cookieJarItem);
 
         JMenu helpMenu = new JMenu("Help");
         JMenuItem aboutItem = new JMenuItem("About JAPI...");
@@ -429,6 +432,17 @@ public class MainFrame extends JFrame {
         openMockServer(mock);
     }
 
+    public void addWebSocketToCollection(CollectionModel col) {
+        RequestModel ws = new RequestModel();
+        ws.setName(col.getName() + " WS Client");
+        ws.setType("websocket");
+        ws.setMethod("WS");
+        col.getRequests().add(ws);
+        saveCollections();
+        sidebarPanel.refreshCollections(collections);
+        openRequest(ws);
+    }
+
     public RequestModel duplicateRequestModel(RequestModel req) {
         com.google.gson.Gson gson = new com.google.gson.Gson();
         String json = gson.toJson(req);
@@ -560,6 +574,22 @@ public class MainFrame extends JFrame {
 
         if ("mockserver".equals(req.getType())) {
             openMockServer(req);
+            return;
+        }
+
+        if ("websocket".equals(req.getType())) {
+            for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+                Component c = workspaceTabs.getComponentAt(i);
+                if (c instanceof WebSocketPanel wsp && wsp.getRequestModel().getId().equals(req.getId())) {
+                    workspaceTabs.setSelectedIndex(i);
+                    return;
+                }
+            }
+            WebSocketPanel panel = new WebSocketPanel(this, req);
+            int idx = workspaceTabs.getTabCount();
+            workspaceTabs.addTab(req.getName(), panel);
+            workspaceTabs.setTabComponentAt(idx, buildTabHeader(req.getName(), idx, panel));
+            workspaceTabs.setSelectedIndex(idx);
             return;
         }
 
@@ -968,7 +998,8 @@ public class MainFrame extends JFrame {
                 (tabContent instanceof CollectionRunnerPanel) ||
                 (tabContent instanceof DataComparatorPanel) ||
                 (tabContent instanceof MockServerPanel) ||
-                (tabContent instanceof CollectionPanel);
+                (tabContent instanceof CollectionPanel) ||
+                (tabContent instanceof WebSocketPanel);
 
         final JTextField editField;
         final Runnable startEdit;
@@ -1147,10 +1178,38 @@ public class MainFrame extends JFrame {
         refreshEnvCombo();
     }
 
-    private void openEnvManager() {
-        new EnvironmentManagerDialog(this).setVisible(true);
-        sidebarPanel.refreshCollections(collections); // refresh in case env changed
-        triggerVariableRepaintAll();
+    public void openEnvManager() {
+        if (workspaceTabs.getTabCount() == 0) {
+            workspaceCardLayout.show(workspacePanel, "tabs");
+        }
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if (workspaceTabs.getComponentAt(i) instanceof EnvironmentManagerPanel) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+        EnvironmentManagerPanel panel = new EnvironmentManagerPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Environment Manager", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Environment Manager", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
+    public void openCookieJarManager() {
+        if (workspaceTabs.getTabCount() == 0) {
+            workspaceCardLayout.show(workspacePanel, "tabs");
+        }
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if (workspaceTabs.getComponentAt(i) instanceof CookieJarPanel) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+        CookieJarPanel panel = new CookieJarPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Cookie Jar", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Cookie Jar", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
     }
 
     public void triggerVariableRepaintAll() {
@@ -1484,6 +1543,10 @@ public class MainFrame extends JFrame {
                     msp.updateFontSize(size);
                 } else if (tab instanceof SettingsPanel sp) {
                     sp.updateFontSize(size);
+                } else if (tab instanceof CookieJarPanel cjp) {
+                    cjp.updateFontSize(size);
+                } else if (tab instanceof EnvironmentManagerPanel emp) {
+                    emp.updateFontSize(size);
                 }
 
                 Component tabComp = workspaceTabs.getTabComponentAt(i);
@@ -1563,6 +1626,8 @@ public class MainFrame extends JFrame {
             } else if (c instanceof MockServerPanel msp) {
                 msp.stopServerIfRunning();
                 msp.updateModel(); // triggers collect
+            } else if (c instanceof WebSocketPanel wsp) {
+                wsp.getRequestModel(); // triggers collect
             }
         }
         saveCollections();
@@ -1591,12 +1656,19 @@ public class MainFrame extends JFrame {
             } else if (c instanceof MockServerPanel msp) {
                 type = "mockserver";
                 reqId = msp.getRequestModel().getId();
+            } else if (c instanceof WebSocketPanel wsp) {
+                type = "websocket";
+                reqId = wsp.getRequestModel().getId();
             } else if (c instanceof DataToolsPanel) {
                 type = "datatools";
             } else if (c instanceof LogConsolePanel) {
                 type = "logconsole";
             } else if (c instanceof SettingsPanel) {
                 type = "settings";
+            } else if (c instanceof CookieJarPanel) {
+                type = "cookiejar";
+            } else if (c instanceof EnvironmentManagerPanel) {
+                type = "envmanager";
             } else {
                 String title = workspaceTabs.getTitleAt(i);
                 if ("Welcome".equals(title)) {
@@ -1674,6 +1746,11 @@ public class MainFrame extends JFrame {
             } else {
                 openMockServer();
             }
+        } else if ("websocket".equals(ts.getType())) {
+            RequestModel req = findRequestModel(ts.getRequestModelId());
+            if (req != null) {
+                openRequest(req);
+            }
         } else if ("datatools".equals(ts.getType())) {
             openDataTools();
         } else if ("logconsole".equals(ts.getType())) {
@@ -1682,6 +1759,10 @@ public class MainFrame extends JFrame {
             openWelcomeTab();
         } else if ("settings".equals(ts.getType())) {
             openSettings();
+        } else if ("cookiejar".equals(ts.getType())) {
+            openCookieJarManager();
+        } else if ("envmanager".equals(ts.getType())) {
+            openEnvManager();
         }
     }
 

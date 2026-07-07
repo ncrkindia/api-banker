@@ -206,6 +206,8 @@ public class SidebarPanel extends JPanel {
             addMockItem.addActionListener(e -> mainFrame.addMockServerToCollection(col));
             JMenuItem addJsonItem = new JMenuItem("Add JSON Formatter");
             addJsonItem.addActionListener(e -> mainFrame.openJsonTool());
+            JMenuItem addWsItem = new JMenuItem("Add WebSocket Client");
+            addWsItem.addActionListener(e -> mainFrame.addWebSocketToCollection(col));
             
             addMenu.add(addReqItem);
             addMenu.add(addRunnerItem);
@@ -213,6 +215,7 @@ public class SidebarPanel extends JPanel {
             addMenu.add(addCompItem);
             addMenu.add(addMockItem);
             addMenu.add(addJsonItem);
+            addMenu.add(addWsItem);
 
             JMenuItem delete = new JMenuItem("Delete Collection");
             delete.addActionListener(e -> {
@@ -383,6 +386,9 @@ public class SidebarPanel extends JPanel {
                     } else if ("mockserver".equals(req.getType())) {
                         Color mockColor = new Color(41, 128, 185); // Blue
                         setText("<html><span style='color:" + toHex(mockColor) + ";font-weight:bold;'>MOCK</span> " + req.getName() + "</html>");
+                    } else if ("websocket".equals(req.getType())) {
+                        Color wsColor = new Color(46, 204, 113); // Green
+                        setText("<html><span style='color:" + toHex(wsColor) + ";font-weight:bold;'>WS</span> " + req.getName() + "</html>");
                     } else {
                         String method = req.getMethod() != null ? req.getMethod() : "GET";
                         Color methodColor = getMethodColor(method);
