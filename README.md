@@ -8,7 +8,8 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 
 ### 🔒 Offline-First & Privacy-Focused
 * **No Accounts Required**: Use the app instantly without any login, registration, or online verification.
-* **Readable Filesystem Workspace**: All request collections, environments, scripts, and history items are stored as human-readable JSON files. This makes it trivial to place your workspace data under version control (e.g. Git) to collaborate with team members.
+* **Granular, Readable Filesystem Workspace**: Request collections and environments are saved as individual human-readable JSON files named after their sanitized names (e.g. `my_collection.json`, `local_env.json`) inside your data directory. This makes it trivial to place your workspace data under version control (e.g., Git) to collaborate with team members.
+* **Auto-Migration & Compatibility**: JAPI handles legacy workspaces and automatically migrates monolithic `collections.json` and `environments.json` files to the individual file-per-entity scheme upon startup, clean and seamless.
 * **Local Security**: None of your variables, credentials, request payloads, or responses leave your machine.
 
 ### 🛠️ Core Client Capabilities
@@ -22,18 +23,21 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 * **Inline Syntax Highlighting**: Dynamic, live variable coloring and highlighting across inputs. 
 * **Variable Tooltips**: Hover over variables to instantly view their current resolved values, types, and source (e.g. Current Environment name or Collection name).
 * **Header-Aligned Environment Selector**: Instantly switch environments and access the environment manager via the dropdown and gear (`⚙`) button located at the top-right corner of the tab bar.
+* **Auto-Applying Renames**: Modifying environment names in the Environment Manager updates the list and file names instantly upon saving without needing manual Rename actions.
 
-### 🧪 Automation & Scripting
+### 🧪 Automation, Scripting & Mocking
 * **Pre & Post Request Scripts**: Support for scripting to dynamically execute JavaScript code before a request is sent, or parse and assert responses (e.g. capturing tokens from auth responses to set environment variables dynamically).
 * **Collection Runner**: Sequence executor to run all requests in a collection sequentially, featuring a progress dashboard and success/failure statistics reporting.
 * **History Logging**: Chronological history of executed requests with filter searching.
+* **Isolated Performance & Server Logging**: Separates logs for mock server runs and collection execution runs. Log outputs are stored in a configurable folder, populated with parent collection metadata (names, IDs, ports, timestamps) for robust post-execution audits.
 
 ### 🎨 Developer Experience (DX)
 * **Pinning & Tab Management**: Standard tab controls including Pin/Unpin, Rename, Close others, Close to the left, Close to the right, and Close all.
 * **State-Aware tab dirty tracking**: Prompts you to Save, Discard, or Cancel if you try to close tabs containing unsaved modifications.
 * **Zoom Support**: Scale the UI, labels, editor font size, and text layouts globally using `Ctrl + +` / `Ctrl + =` (Zoom In) and `Ctrl + -` (Zoom Out).
-* **Save Hotkey**: Save your current request or collection state instantly using `Ctrl + S`.
+* **Save Hotkey**: Save your current request, collection state, or mock server configuration instantly using `Ctrl + S`.
 * **Postman Interoperability**: Built-in support to import and export collections and environments in standard Postman formats.
+* **Configurable Storage Directories**: Customize both your local workspace **Data Directory** and **Logs Directory** on-the-fly using the integrated Settings tab and built-in folder browser.
 
 ---
 
@@ -67,17 +71,30 @@ This outputs a shaded executable JAR under `target/japi-1.0.0.jar`.
 
 ### Run the Application
 
-Execute the compiled shaded JAR:
+#### During Development
+You can run the application directly from the source directory using Maven:
+```bash
+mvn compile exec:java -Dexec.mainClass="in.slpro.japi.App"
+```
 
+#### Executing the JAR directly
+Once built, you can launch the compiled shaded JAR file:
 ```bash
 java -jar target/japi-1.0.0.jar
 ```
 
-Alternatively, run directly during development:
+#### Using Launch Scripts (Distribution Bundle)
+After building the project, Maven packages a distribution zip at `target/japi.zip`. Unzipping this bundle yields a standalone directory containing the executable jar along with native launch scripts:
 
-```bash
-mvn compile exec:java -Dexec.mainClass="in.slpro.japi.App"
-```
+* **On Windows**: Double-click `japi.bat` or run:
+  ```cmd
+  japi.bat
+  ```
+* **On macOS / Linux**: Grant execution permissions and run `japi.sh`:
+  ```bash
+  chmod +x japi.sh
+  ./japi.sh
+  ```
 
 ---
 
