@@ -9,14 +9,21 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.StyleSheet;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
+import org.commonmark.node.Node;
 
 public class CollectionPanel extends JPanel {
     private final MainFrame mainFrame;
     private final CollectionModel collectionModel;
     private String originalModelJson;
+    private int currentGlobalFontSize = 13;
 
     // UI elements
     private JLabel titleLabel;
@@ -25,6 +32,14 @@ public class CollectionPanel extends JPanel {
 
     // Overview tab
     private RSyntaxTextArea readmeArea;
+    private CardLayout overviewCardLayout;
+    private JPanel overviewCardPanel;
+    private JEditorPane htmlPane;
+    private JComboBox<String> mdFontCombo;
+    private JComboBox<Integer> mdFontSizeCombo;
+    private JComboBox<String> mdHeaderCombo;
+    private JPanel formatToolsPanel;
+    private JToggleButton readBtn;
 
     // Auth tab
     private JComboBox<String> authTypeCombo;
@@ -90,18 +105,185 @@ public class CollectionPanel extends JPanel {
         JPanel overviewPanel = new JPanel(new BorderLayout());
         overviewPanel.setBorder(new EmptyBorder(8, 8, 8, 8));
         overviewPanel.setBackground(UIManager.getColor("Panel.background"));
-        JLabel descLabel = new JLabel("Description / README (Markdown supported):");
-        descLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        descLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
-        overviewPanel.add(descLabel, BorderLayout.NORTH);
 
+        // Header containing Mode Toggles and formatting buttons
+        JPanel toolbarPanel = new JPanel(new BorderLayout(10, 0));
+        toolbarPanel.setBackground(UIManager.getColor("Panel.background"));
+        toolbarPanel.setBorder(new EmptyBorder(0, 0, 5, 0));
+
+        readBtn = new JToggleButton("👁 Read");
+        JToggleButton editBtn = new JToggleButton("✏ Edit");
+        readBtn.putClientProperty("JButton.buttonType", "segmented");
+        editBtn.putClientProperty("JButton.buttonType", "segmented");
+        readBtn.putClientProperty("JButton.segmentPosition", "first");
+        editBtn.putClientProperty("JButton.segmentPosition", "last");
+        
+        ButtonGroup group = new ButtonGroup();
+        group.add(readBtn);
+        group.add(editBtn);
+        readBtn.setSelected(true);
+
+        JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        modePanel.setBackground(UIManager.getColor("Panel.background"));
+        modePanel.add(readBtn);
+        modePanel.add(editBtn);
+        toolbarPanel.add(modePanel, BorderLayout.WEST);
+
+        // Formatting Tools Panel (visible only in Edit mode)
+        formatToolsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        formatToolsPanel.setBackground(UIManager.getColor("Panel.background"));
+
+        String[] fontNames = { "JetBrains Mono", "Segoe UI", "Arial", "Courier New", "Consolas", "Monospaced" };
+        mdFontCombo = new JComboBox<>(fontNames);
+        mdFontCombo.setSelectedItem("JetBrains Mono");
+        mdFontCombo.addActionListener(e -> updateEditorFont());
+        
+        Integer[] fontSizes = { 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32 };
+        mdFontSizeCombo = new JComboBox<>(fontSizes);
+        mdFontSizeCombo.setSelectedItem(12);
+        mdFontSizeCombo.addActionListener(e -> updateEditorFont());
+
+        formatToolsPanel.add(new JLabel("Font:"));
+        formatToolsPanel.add(mdFontCombo);
+        formatToolsPanel.add(Box.createHorizontalStrut(5));
+        formatToolsPanel.add(new JLabel("Size:"));
+        formatToolsPanel.add(mdFontSizeCombo);
+        formatToolsPanel.add(Box.createHorizontalStrut(10));
+
+        String[] headers = { "Paragraph", "Heading 1", "Heading 2", "Heading 3", "Heading 4" };
+        mdHeaderCombo = new JComboBox<>(headers);
+        mdHeaderCombo.addActionListener(e -> {
+            int index = mdHeaderCombo.getSelectedIndex();
+            if (index > 0) {
+                applyHeader(index);
+                mdHeaderCombo.setSelectedIndex(0);
+            }
+        });
+        formatToolsPanel.add(new JLabel("Format:"));
+        formatToolsPanel.add(mdHeaderCombo);
+        formatToolsPanel.add(Box.createHorizontalStrut(10));
+
+        JButton boldBtn = createToolbarButton("B", "Bold (Ctrl+B)", new Font("Segoe UI", Font.BOLD, 12));
+        boldBtn.addActionListener(e -> insertMarkdown("**", "**"));
+        formatToolsPanel.add(boldBtn);
+
+        JButton italicBtn = createToolbarButton("I", "Italic (Ctrl+I)", new Font("Segoe UI", Font.ITALIC, 12));
+        italicBtn.addActionListener(e -> insertMarkdown("*", "*"));
+        formatToolsPanel.add(italicBtn);
+
+        JButton strikeBtn = createToolbarButton("S", "Strikethrough", new Font("Segoe UI", Font.PLAIN, 12));
+        strikeBtn.addActionListener(e -> insertMarkdown("~~", "~~"));
+        formatToolsPanel.add(strikeBtn);
+
+        JButton codeBtn = createToolbarButton("</>", "Code Block", new Font("Segoe UI", Font.PLAIN, 11));
+        codeBtn.addActionListener(e -> insertMarkdown("`", "`"));
+        formatToolsPanel.add(codeBtn);
+
+        JButton linkBtn = createToolbarButton("🔗", "Insert Link", new Font("Segoe UI", Font.PLAIN, 12));
+        linkBtn.addActionListener(e -> {
+            String text = JOptionPane.showInputDialog(this, "Enter Link Text:", "Insert Link", JOptionPane.PLAIN_MESSAGE);
+            if (text != null && !text.trim().isEmpty()) {
+                String url = JOptionPane.showInputDialog(this, "Enter Link URL:", "Insert Link", JOptionPane.PLAIN_MESSAGE);
+                if (url != null) {
+                    insertMarkdown("[" + text.trim() + "](", url.trim() + ")");
+                }
+            }
+        });
+        formatToolsPanel.add(linkBtn);
+
+        JButton bulletBtn = createToolbarButton("• List", "Bulleted List", new Font("Segoe UI", Font.PLAIN, 12));
+        bulletBtn.addActionListener(e -> insertMarkdown("\n- ", ""));
+        formatToolsPanel.add(bulletBtn);
+
+        JButton numListBtn = createToolbarButton("1. List", "Numbered List", new Font("Segoe UI", Font.PLAIN, 12));
+        numListBtn.addActionListener(e -> insertMarkdown("\n1. ", ""));
+        formatToolsPanel.add(numListBtn);
+
+        JButton quoteBtn = createToolbarButton("“", "Blockquote", new Font("Segoe UI", Font.BOLD, 14));
+        quoteBtn.addActionListener(e -> insertMarkdown("\n> ", ""));
+        formatToolsPanel.add(quoteBtn);
+
+        JButton tableBtn = createToolbarButton("田", "Insert Table", new Font("Segoe UI", Font.PLAIN, 12));
+        tableBtn.addActionListener(e -> {
+            String tableTemplate = "\n| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n";
+            insertMarkdown(tableTemplate, "");
+        });
+        formatToolsPanel.add(tableBtn);
+
+        JButton hrBtn = createToolbarButton("―", "Horizontal Line", new Font("Segoe UI", Font.PLAIN, 12));
+        hrBtn.addActionListener(e -> insertMarkdown("\n---\n", ""));
+        formatToolsPanel.add(hrBtn);
+
+        formatToolsPanel.setVisible(false);
+        toolbarPanel.add(formatToolsPanel, BorderLayout.CENTER);
+        overviewPanel.add(toolbarPanel, BorderLayout.NORTH);
+
+        // CardLayout content panel
+        overviewCardLayout = new CardLayout();
+        overviewCardPanel = new JPanel(overviewCardLayout);
+        overviewCardPanel.setBackground(UIManager.getColor("Panel.background"));
+
+        // Edit view
         readmeArea = new RSyntaxTextArea();
         readmeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
         readmeArea.setCodeFoldingEnabled(true);
         readmeArea.setAntiAliasingEnabled(true);
         readmeArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
-        overviewPanel.add(new RTextScrollPane(readmeArea), BorderLayout.CENTER);
+        
+        // Key bindings for RSyntaxTextArea
+        readmeArea.getInputMap().put(KeyStroke.getKeyStroke("control B"), "insertBold");
+        readmeArea.getActionMap().put("insertBold", new AbstractAction() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) {
+                insertMarkdown("**", "**");
+            }
+        });
+        readmeArea.getInputMap().put(KeyStroke.getKeyStroke("control I"), "insertItalic");
+        readmeArea.getActionMap().put("insertItalic", new AbstractAction() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) {
+                insertMarkdown("*", "*");
+            }
+        });
+
+        RTextScrollPane editScrollPane = new RTextScrollPane(readmeArea);
+        overviewCardPanel.add(editScrollPane, "edit");
+
+        // Read view
+        htmlPane = new JEditorPane();
+        htmlPane.setEditable(false);
+        htmlPane.setContentType("text/html");
+        htmlPane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                try {
+                    java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
+                } catch (Exception ex) {
+                    try {
+                        String desc = e.getDescription();
+                        if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
+                            java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        });
+        JScrollPane readScrollPane = new JScrollPane(htmlPane);
+        readScrollPane.setBorder(null);
+        overviewCardPanel.add(readScrollPane, "read");
+
+        overviewPanel.add(overviewCardPanel, BorderLayout.CENTER);
         tabbedPane.addTab("Overview", overviewPanel);
+
+        // Action listeners for mode changes
+        readBtn.addActionListener(e -> {
+            updateHtmlPreview();
+            overviewCardLayout.show(overviewCardPanel, "read");
+            formatToolsPanel.setVisible(false);
+        });
+        
+        editBtn.addActionListener(e -> {
+            overviewCardLayout.show(overviewCardPanel, "edit");
+            formatToolsPanel.setVisible(true);
+            readmeArea.requestFocusInWindow();
+        });
 
         // 2. Authorization Tab
         JPanel authPanel = new JPanel(new BorderLayout(0, 8));
@@ -390,6 +572,17 @@ public class CollectionPanel extends JPanel {
 
     private void loadModel() {
         readmeArea.setText(collectionModel.getReadme());
+        if (readBtn != null) {
+            readBtn.setSelected(true);
+        }
+        if (overviewCardLayout != null) {
+            overviewCardLayout.show(overviewCardPanel, "read");
+        }
+        if (formatToolsPanel != null) {
+            formatToolsPanel.setVisible(false);
+        }
+        updateHtmlPreview();
+
         authTypeCombo.setSelectedItem(collectionModel.getAuthType());
         authCardLayout.show(authCardPanel, collectionModel.getAuthType());
         bearerTokenField.setText(collectionModel.getAuthToken());
@@ -481,6 +674,7 @@ public class CollectionPanel extends JPanel {
     }
 
     public void updateFontSize(int size) {
+        this.currentGlobalFontSize = size;
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, size + 2));
         if (saveBtn != null) {
             int height = Math.max(28, size + 12);
@@ -488,8 +682,145 @@ public class CollectionPanel extends JPanel {
             saveBtn.setPreferredSize(new Dimension(width, height));
         }
         FontScaleHelper.scaleFonts(this, size);
+        if (mdFontSizeCombo != null) {
+            mdFontSizeCombo.setSelectedItem(size);
+        }
+        updateHtmlPreview();
         revalidate();
         repaint();
+    }
+
+    private JButton createToolbarButton(String text, String tooltip, Font font) {
+        JButton btn = new JButton(text);
+        btn.setFont(font);
+        btn.setToolTipText(tooltip);
+        btn.setFocusable(false);
+        btn.setMargin(new Insets(2, 6, 2, 6));
+        btn.putClientProperty("JButton.buttonType", "toolBarButton");
+        return btn;
+    }
+
+    private void insertMarkdown(String prefix, String suffix) {
+        String selectedText = readmeArea.getSelectedText();
+        if (selectedText == null) {
+            selectedText = "";
+        }
+        int start = readmeArea.getSelectionStart();
+        int end = readmeArea.getSelectionEnd();
+        String replacement = prefix + selectedText + suffix;
+        readmeArea.replaceRange(replacement, start, end);
+        if (selectedText.isEmpty()) {
+            readmeArea.setCaretPosition(start + prefix.length());
+        } else {
+            readmeArea.setCaretPosition(start + replacement.length());
+        }
+        readmeArea.requestFocusInWindow();
+    }
+
+    private void applyHeader(int level) {
+        if (level <= 0) return;
+        String prefix = "#".repeat(level) + " ";
+        int caretPos = readmeArea.getCaretPosition();
+        try {
+            int line = readmeArea.getLineOfOffset(caretPos);
+            int start = readmeArea.getLineStartOffset(line);
+            readmeArea.insert(prefix, start);
+        } catch (Exception ignored) {}
+        readmeArea.requestFocusInWindow();
+    }
+
+    private void updateEditorFont() {
+        if (readmeArea == null || mdFontCombo == null || mdFontSizeCombo == null) return;
+        String fontName = (String) mdFontCombo.getSelectedItem();
+        Integer fontSize = (Integer) mdFontSizeCombo.getSelectedItem();
+        if (fontName != null && fontSize != null) {
+            readmeArea.setFont(new Font(fontName, Font.PLAIN, fontSize));
+        }
+    }
+
+    private String toHex(Color color) {
+        if (color == null) return "#888888";
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    private boolean isDarkTheme() {
+        try {
+            String theme = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getTheme();
+            return "dark".equals(theme);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void updateHtmlPreview() {
+        if (htmlPane == null || readmeArea == null) return;
+        String markdownText = readmeArea.getText();
+        if (markdownText == null || markdownText.trim().isEmpty()) {
+            htmlPane.setText("<html><body><p style='color: #888888; font-style: italic; font-family: sans-serif;'>No description provided. Click 'Edit' to add one.</p></body></html>");
+            return;
+        }
+
+        try {
+            Parser parser = Parser.builder().build();
+            Node document = parser.parse(markdownText);
+            HtmlRenderer renderer = HtmlRenderer.builder().build();
+            String rawHtml = renderer.render(document);
+
+            Color bg = UIManager.getColor("Panel.background");
+            Color fg = UIManager.getColor("Label.foreground");
+            Color border = UIManager.getColor("Workspace.borderColor");
+            Color accent = UIManager.getColor("AccentColor");
+            if (accent == null) accent = new Color(52, 152, 219);
+            
+            if (bg == null) bg = Color.WHITE;
+            if (fg == null) fg = Color.BLACK;
+            if (border == null) border = new Color(228, 228, 228);
+
+            String bgHex = toHex(bg);
+            String fgHex = toHex(fg);
+            String borderHex = toHex(border);
+            String accentHex = toHex(accent);
+            String codeBgHex = toHex(isDarkTheme() ? new Color(45, 48, 52) : new Color(240, 240, 240));
+            String headerBgHex = toHex(isDarkTheme() ? new Color(38, 41, 44) : new Color(245, 245, 245));
+            String mutedHex = toHex(isDarkTheme() ? new Color(160, 160, 160) : new Color(100, 100, 100));
+
+            int baseFontSize = currentGlobalFontSize;
+            if (baseFontSize <= 0) {
+                baseFontSize = 13;
+                try {
+                    Font defaultFont = UIManager.getFont("defaultFont");
+                    if (defaultFont != null) {
+                        baseFontSize = defaultFont.getSize();
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            HTMLEditorKit kit = new HTMLEditorKit();
+            StyleSheet styleSheet = kit.getStyleSheet();
+            styleSheet.addRule("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: " + baseFontSize + "px; color: " + fgHex + "; background-color: " + bgHex + "; margin: 15px; line-height: 1.6; }");
+            styleSheet.addRule("h1 { font-size: 1.5em; font-weight: bold; color: " + fgHex + "; border-bottom: 1px solid " + borderHex + "; padding-bottom: 6px; margin-top: 24px; margin-bottom: 12px; }");
+            styleSheet.addRule("h2 { font-size: 1.3em; font-weight: bold; color: " + fgHex + "; border-bottom: 1px solid " + borderHex + "; padding-bottom: 4px; margin-top: 20px; margin-bottom: 10px; }");
+            styleSheet.addRule("h3 { font-size: 1.15em; font-weight: bold; color: " + fgHex + "; margin-top: 16px; margin-bottom: 8px; }");
+            styleSheet.addRule("p { margin-top: 0px; margin-bottom: 12px; }");
+            styleSheet.addRule("a { color: " + accentHex + "; text-decoration: none; }");
+            styleSheet.addRule("code { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.9em; background-color: " + codeBgHex + "; padding: 2px 4px; border-radius: 3px; }");
+            styleSheet.addRule("pre { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.9em; background-color: " + codeBgHex + "; border: 1px solid " + borderHex + "; padding: 12px; border-radius: 6px; display: block; margin-bottom: 12px; }");
+            styleSheet.addRule("blockquote { border-left: 4px solid " + accentHex + "; margin: 0 0 12px 0; padding-left: 12px; color: " + mutedHex + "; font-style: italic; }");
+            styleSheet.addRule("ul, ol { margin-top: 0px; margin-bottom: 12px; padding-left: 20px; }");
+            styleSheet.addRule("li { margin-bottom: 4px; }");
+            styleSheet.addRule("table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }");
+            styleSheet.addRule("th, td { border: 1px solid " + borderHex + "; padding: 8px; text-align: left; }");
+            styleSheet.addRule("th { background-color: " + headerBgHex + "; font-weight: bold; }");
+            styleSheet.addRule("hr { border: 0; border-top: 1px solid " + borderHex + "; margin: 20px 0; }");
+            styleSheet.addRule("strong, b { font-weight: bold; }");
+            styleSheet.addRule("em, i { font-style: italic; }");
+
+            htmlPane.setEditorKit(kit);
+            htmlPane.setText("<html><body>" + rawHtml + "</body></html>");
+            htmlPane.setCaretPosition(0);
+        } catch (Exception e) {
+            htmlPane.setText("<html><body><pre style='color: red;'>" + e.getMessage() + "</pre></body></html>");
+        }
     }
 
     public CollectionModel getCollectionModel() {

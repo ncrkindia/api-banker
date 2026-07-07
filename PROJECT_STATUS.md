@@ -37,6 +37,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
 * [x] **Request Editor**: Authorization inputs (Bearer Token, Basic Auth credentials) and request body syntax editor.
 * [x] **Response Panel**: Shows colored status tags (2xx green, 3xx blue, 4xx orange, 5xx red), latency durations, response size formatting, pretty-printed JSON/XML highlight viewers, and response header grids.
 * [x] **Environment Dialog**: Full manager interface to add, delete, and modify variables.
+* [x] **Collection Overview (Readme.md) Editor**: Premium dual-mode viewer supporting a Read mode (live-rendered Markdown to HTML using Commonmark) and an Edit mode (full Markdown editing toolbar with Font, Size, Headings, Bold, Italic, Strikethrough, Link, List, Quote, Table, and line helpers, plus keyboard shortcuts).
 
 ---
 
