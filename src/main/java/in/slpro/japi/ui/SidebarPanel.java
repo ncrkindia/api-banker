@@ -106,11 +106,16 @@ public class SidebarPanel extends JPanel {
         collectionsTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                TreePath path = collectionsTree.getPathForLocation(e.getX(), e.getY());
+                int row = collectionsTree.getClosestRowForLocation(e.getX(), e.getY());
+                if (row == -1) return;
+                Rectangle bounds = collectionsTree.getRowBounds(row);
+                if (bounds == null || e.getY() < bounds.y || e.getY() >= bounds.y + bounds.height) return;
+                TreePath path = collectionsTree.getPathForRow(row);
                 if (path == null) return;
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 
                 if (SwingUtilities.isRightMouseButton(e)) {
+                    collectionsTree.setSelectionPath(path);
                     showCollectionContextMenu(e.getX(), e.getY(), node);
                 } else if (e.getClickCount() == 2) {
                     if (node.getUserObject() instanceof RequestModel req) {
@@ -289,7 +294,11 @@ public class SidebarPanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() != 2) return;
-                TreePath path = historyTree.getPathForLocation(e.getX(), e.getY());
+                int row = historyTree.getClosestRowForLocation(e.getX(), e.getY());
+                if (row == -1) return;
+                Rectangle bounds = historyTree.getRowBounds(row);
+                if (bounds == null || e.getY() < bounds.y || e.getY() >= bounds.y + bounds.height) return;
+                TreePath path = historyTree.getPathForRow(row);
                 if (path == null) return;
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 if (node.getUserObject() instanceof RequestModel req) {
@@ -430,11 +439,12 @@ public class SidebarPanel extends JPanel {
                     }
                     tip.append("<b>URL:</b> ").append(fullUrl).append("</html>");
                     setToolTipText(tip.toString());
+                    setFont(tree.getFont().deriveFont(Font.PLAIN));
                     setIcon(null);
                 } else {
                     // Date header node (Year, Month, or Date)
                     setText("<html><b>" + node.getUserObject() + "</b></html>");
-                    setFont(getFont().deriveFont(Font.BOLD, 11f));
+                    setFont(tree.getFont().deriveFont(Font.BOLD, tree.getFont().getSize() - 1f));
                     setToolTipText(null);
                     setIcon(null);
                 }

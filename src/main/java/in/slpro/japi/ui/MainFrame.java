@@ -1439,6 +1439,8 @@ public class MainFrame extends JFrame {
             if (cp.hasUnsavedChanges()) {
                 cp.save();
             }
+        } else if (c instanceof MockServerPanel msp) {
+            msp.save();
         }
     }
 

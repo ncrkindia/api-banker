@@ -595,6 +595,13 @@ public class MockServerPanel extends JPanel {
         }
     }
 
+    public void save() {
+        saveActiveResponseFromUI();
+        updateModel();
+        mainFrame.saveCollections();
+        MainFrame.showToast(this, "Mock Server configuration saved!");
+    }
+
     public void updateFontSize(int size) {
         FontScaleHelper.scaleFonts(this, size);
     }
