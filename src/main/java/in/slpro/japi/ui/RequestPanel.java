@@ -24,6 +24,7 @@ public class RequestPanel extends JPanel {
     private HighlightTextField urlField;
     private JButton sendBtn;
     private JButton saveBtn;
+    private JButton codeBtn;
 
 
     // Request tabs
@@ -112,9 +113,17 @@ public class RequestPanel extends JPanel {
         sendBtn.setPreferredSize(new Dimension(80, 32));
         sendBtn.addActionListener(e -> sendRequest());
 
+        codeBtn = new JButton("Code");
+        codeBtn.setPreferredSize(new Dimension(70, 32));
+        codeBtn.addActionListener(e -> {
+            collectModel();
+            new CodeSnippetDialog(mainFrame, requestModel, mainFrame.getActiveEnvironment()).setVisible(true);
+        });
+
         saveBtn = new JButton("Save");
         saveBtn.setPreferredSize(new Dimension(70, 32));
         saveBtn.addActionListener(e -> save());
+        rightBtns.add(codeBtn);
         rightBtns.add(saveBtn);
         rightBtns.add(sendBtn);
 
@@ -691,6 +700,7 @@ public class RequestPanel extends JPanel {
         if (urlField != null) urlField.setPreferredSize(new Dimension(0, height));
         if (sendBtn != null) sendBtn.setPreferredSize(new Dimension(Math.max(80, size * 6), height));
         if (saveBtn != null) saveBtn.setPreferredSize(new Dimension(Math.max(70, size * 5), height));
+        if (codeBtn != null) codeBtn.setPreferredSize(new Dimension(Math.max(70, size * 5), height));
         FontScaleHelper.scaleFonts(this, size);
         revalidate();
         repaint();

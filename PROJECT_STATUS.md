@@ -53,11 +53,11 @@ Here is a list of features queued for future development iterations:
 
 ### Automation & Scripting
 * [ ] **Pre-request & Test Scripts**: Embed a JavaScript engine (e.g., Nashorn or GraalVM JavaScript) to run pre-request setups and validation assertions (similar to Postman's `pm.test` API).
-* [x] **Collection Runner**: Run all requests inside a collection in a sequence with statistics reporting (success/failure summaries).
+* [] **Collection Runner**: Run all requests inside a collection in a sequence with statistics reporting (success/failure summaries).
 
 ### Developer Quality-of-Life
-* [x] **UI Scaling**: Zoom in or out of the application interface and editors using `Ctrl + =/+` and `Ctrl + -`.
-* [x] **Theme Settings**: Add a Settings option to toggle between Light Theme (`FlatLightLaf`) and Dark Theme.
+* [] **UI Scaling**: Zoom in or out of the application interface and editors using `Ctrl + =/+` and `Ctrl + -`.
+* [] **Theme Settings**: Add a Settings option to toggle between Light Theme (`FlatLightLaf`) and Dark Theme.
 * [ ] **Response Search**: Add a search/filter bar inside the Response panel to find text substrings within JSON/HTML payloads.
 * [ ] **Response Exporter**: "Save Response to File" button to download response payloads directly.
-* [ ] **Code Snippet Generator**: Automatically generate fetch code snippets from the request in other languages (curl, JavaScript fetch, Python requests, Java HttpClient).
+* [x] **Code Snippet Generator**: Automatically generate fetch code snippets from the request in other languages (curl, JavaScript fetch, Python requests, Java HttpClient).
