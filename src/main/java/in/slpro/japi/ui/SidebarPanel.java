@@ -361,8 +361,9 @@ public class SidebarPanel extends JPanel {
             super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
             if (value instanceof DefaultMutableTreeNode node) {
                 if (node.getUserObject() instanceof CollectionModel col) {
-                    setText("📁 " + col.getName());
+                    setText(col.getName());
                     setFont(getFont().deriveFont(Font.BOLD));
+                    // Keep default FlatLaf folder icon
                 } else if (node.getUserObject() instanceof RequestModel req) {
                     if ("runner".equals(req.getType())) {
                         Color runnerColor = new Color(255, 108, 55); // Postman Orange
@@ -380,6 +381,7 @@ public class SidebarPanel extends JPanel {
                                 method + "</span> " + req.getName() + "</html>");
                     }
                     setFont(getFont().deriveFont(Font.PLAIN));
+                    setIcon(null); // Clear generic file icon next to request methods
                 }
             }
             setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground") : UIManager.getColor("Sidebar.treeBackground"));
@@ -428,11 +430,13 @@ public class SidebarPanel extends JPanel {
                     }
                     tip.append("<b>URL:</b> ").append(fullUrl).append("</html>");
                     setToolTipText(tip.toString());
+                    setIcon(null);
                 } else {
                     // Date header node (Year, Month, or Date)
                     setText("<html><b>" + node.getUserObject() + "</b></html>");
                     setFont(getFont().deriveFont(Font.BOLD, 11f));
                     setToolTipText(null);
+                    setIcon(null);
                 }
             }
             setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground") : UIManager.getColor("Sidebar.treeBackground"));

@@ -82,7 +82,8 @@ public class CollectionPanel extends JPanel {
         headerPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
         headerPanel.setBackground(UIManager.getColor("Panel.background"));
 
-        titleLabel = new JLabel("📁 " + collectionModel.getName());
+        titleLabel = new JLabel(collectionModel.getName());
+        titleLabel.setIcon(UIManager.getIcon("Tree.closedIcon"));
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
@@ -111,8 +112,10 @@ public class CollectionPanel extends JPanel {
         toolbarPanel.setBackground(UIManager.getColor("Panel.background"));
         toolbarPanel.setBorder(new EmptyBorder(0, 0, 5, 0));
 
-        readBtn = new JToggleButton("👁 Read");
-        JToggleButton editBtn = new JToggleButton("✏ Edit");
+        readBtn = new JToggleButton("Read");
+        readBtn.setIcon(VectorIcon.getReadIcon(14));
+        JToggleButton editBtn = new JToggleButton("Edit");
+        editBtn.setIcon(VectorIcon.getEditIcon(14));
         readBtn.putClientProperty("JButton.buttonType", "segmented");
         editBtn.putClientProperty("JButton.buttonType", "segmented");
         readBtn.putClientProperty("JButton.segmentPosition", "first");
@@ -179,7 +182,8 @@ public class CollectionPanel extends JPanel {
         codeBtn.addActionListener(e -> insertMarkdown("`", "`"));
         formatToolsPanel.add(codeBtn);
 
-        JButton linkBtn = createToolbarButton("🔗", "Insert Link", new Font("Segoe UI", Font.PLAIN, 12));
+        JButton linkBtn = createToolbarButton("", "Insert Link", new Font("Segoe UI", Font.PLAIN, 12));
+        linkBtn.setIcon(VectorIcon.getLinkIcon(14));
         linkBtn.addActionListener(e -> {
             String text = JOptionPane.showInputDialog(this, "Enter Link Text:", "Insert Link", JOptionPane.PLAIN_MESSAGE);
             if (text != null && !text.trim().isEmpty()) {
@@ -191,26 +195,31 @@ public class CollectionPanel extends JPanel {
         });
         formatToolsPanel.add(linkBtn);
 
-        JButton bulletBtn = createToolbarButton("• List", "Bulleted List", new Font("Segoe UI", Font.PLAIN, 12));
+        JButton bulletBtn = createToolbarButton("", "Bulleted List", new Font("Segoe UI", Font.PLAIN, 12));
+        bulletBtn.setIcon(VectorIcon.getBulletIcon(14));
         bulletBtn.addActionListener(e -> insertMarkdown("\n- ", ""));
         formatToolsPanel.add(bulletBtn);
 
-        JButton numListBtn = createToolbarButton("1. List", "Numbered List", new Font("Segoe UI", Font.PLAIN, 12));
+        JButton numListBtn = createToolbarButton("", "Numbered List", new Font("Segoe UI", Font.PLAIN, 12));
+        numListBtn.setIcon(VectorIcon.getNumberIcon(14));
         numListBtn.addActionListener(e -> insertMarkdown("\n1. ", ""));
         formatToolsPanel.add(numListBtn);
 
-        JButton quoteBtn = createToolbarButton("“", "Blockquote", new Font("Segoe UI", Font.BOLD, 14));
+        JButton quoteBtn = createToolbarButton("", "Blockquote", new Font("Segoe UI", Font.BOLD, 12));
+        quoteBtn.setIcon(VectorIcon.getQuoteIcon(14));
         quoteBtn.addActionListener(e -> insertMarkdown("\n> ", ""));
         formatToolsPanel.add(quoteBtn);
 
-        JButton tableBtn = createToolbarButton("田", "Insert Table", new Font("Segoe UI", Font.PLAIN, 12));
+        JButton tableBtn = createToolbarButton("", "Insert Table", new Font("Segoe UI", Font.PLAIN, 12));
+        tableBtn.setIcon(VectorIcon.getTableIcon(14));
         tableBtn.addActionListener(e -> {
             String tableTemplate = "\n| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n";
             insertMarkdown(tableTemplate, "");
         });
         formatToolsPanel.add(tableBtn);
 
-        JButton hrBtn = createToolbarButton("―", "Horizontal Line", new Font("Segoe UI", Font.PLAIN, 12));
+        JButton hrBtn = createToolbarButton("", "Horizontal Line", new Font("Segoe UI", Font.PLAIN, 12));
+        hrBtn.setIcon(VectorIcon.getLineIcon(14));
         hrBtn.addActionListener(e -> insertMarkdown("\n---\n", ""));
         formatToolsPanel.add(hrBtn);
 
