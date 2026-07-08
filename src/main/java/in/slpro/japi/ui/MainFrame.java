@@ -32,6 +32,7 @@ public class MainFrame extends JFrame {
     public static final String OTHERS_COLLECTION_ID = "__others__";
 
     private static MainFrame instance;
+    public static File lastFileChooserDirectory = null;
 
     public static MainFrame getInstance() {
         return instance;
@@ -165,8 +166,8 @@ public class MainFrame extends JFrame {
         JMenuItem newReqItem = new JMenuItem("New Request");
         newReqItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
         newReqItem.addActionListener(e -> openNewRequest());
-        JMenuItem importItem = new JMenuItem("Import Postman Collection...");
-        importItem.addActionListener(e -> importPostmanCollection());
+        JMenuItem importItem = new JMenuItem("Import ");
+        importItem.addActionListener(e -> importPostmanFiles());
         JMenuItem settingsItem = new JMenuItem("Settings...");
         settingsItem.addActionListener(e -> openSettings());
         JMenuItem exitItem = new JMenuItem("Exit");
@@ -334,7 +335,8 @@ public class MainFrame extends JFrame {
         }
         CollectionPathWrapper targetWrapper = (CollectionPathWrapper) JOptionPane.showInputDialog(this,
                 "Move '" + req.getName() + "' to:", "Move to Collection/Folder", JOptionPane.PLAIN_MESSAGE,
-                null, wrappers.toArray(), defaultSel != null ? defaultSel : (wrappers.isEmpty() ? null : wrappers.get(0)));
+                null, wrappers.toArray(),
+                defaultSel != null ? defaultSel : (wrappers.isEmpty() ? null : wrappers.get(0)));
         if (targetWrapper == null || targetWrapper.model == sourceCol)
             return;
         if (sourceCol != null)
@@ -695,7 +697,8 @@ public class MainFrame extends JFrame {
                 + "<div style='text-align:center; margin-bottom:30px;'>"
                 + "  <h1 style='color:" + accentHex + "; font-size:36px; margin:0;'>Japi</h1>"
                 + "  <h2 style='font-weight:normal; font-size:18px; margin:5px 0 15px 0;'>The Ultimate Offline API Client & Collection Runner</h2>"
-                + "  <div style='font-size:12px; color:#888;'>Version " + in.slpro.japi.App.getVersion() + " | Secured Offline-First Architecture | From SL Pro</div>"
+                + "  <div style='font-size:12px; color:#888;'>Version " + in.slpro.japi.App.getVersion()
+                + " | Secured Offline-First Architecture | From SL Pro</div>"
                 + "</div>"
                 + "<hr style='margin-bottom:30px;'>"
                 + "<table width='100%' cellpadding='10' cellspacing='10'>"
@@ -1267,33 +1270,118 @@ public class MainFrame extends JFrame {
 
     // ─── Import / Export ─────────────────────────────────────────────────────
 
-    public void importPostmanCollection() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Import Postman Collection (.json)");
+    public void importPostmanFiles() {
+        JFileChooser chooser = new JFileChooser(lastFileChooserDirectory);
+        chooser.setDialogTitle("Import Postman Files (Collections/Environments)");
+        chooser.setMultiSelectionEnabled(true);
+        chooser.setFileFilter(
+                new javax.swing.filechooser.FileNameExtensionFilter("Postman JSON files (*.json)", "json"));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
             return;
-        try {
-            String json = java.nio.file.Files.readString(chooser.getSelectedFile().toPath());
-            com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
-            CollectionModel col = new CollectionModel();
-            col.setId(UUID.randomUUID().toString());
 
-            com.google.gson.JsonObject info = root.has("info") ? root.getAsJsonObject("info") : null;
-            col.setName(info != null && info.has("name") ? info.get("name").getAsString()
-                    : chooser.getSelectedFile().getName());
+        File[] files = chooser.getSelectedFiles();
+        if (files == null || files.length == 0) {
+            return;
+        }
 
-            if (root.has("item") && root.get("item").isJsonArray()) {
-                parsePostmanItemsRecursive(root.getAsJsonArray("item"), col);
+        lastFileChooserDirectory = files[0].getParentFile();
+
+        List<String> importedCollections = new ArrayList<>();
+        List<String> importedEnvironments = new ArrayList<>();
+        List<String> failedFiles = new ArrayList<>();
+
+        for (File file : files) {
+            try {
+                String json = java.nio.file.Files.readString(file.toPath());
+                com.google.gson.JsonElement parsedElement = com.google.gson.JsonParser.parseString(json);
+                if (!parsedElement.isJsonObject()) {
+                    failedFiles.add(file.getName() + " (not a JSON Object)");
+                    continue;
+                }
+                com.google.gson.JsonObject root = parsedElement.getAsJsonObject();
+
+                if (root.has("item") || root.has("info")) {
+                    // Import as Collection
+                    CollectionModel col = new CollectionModel();
+                    col.setId(UUID.randomUUID().toString());
+
+                    com.google.gson.JsonObject info = root.has("info") ? root.getAsJsonObject("info") : null;
+                    col.setName(info != null && info.has("name") ? info.get("name").getAsString()
+                            : file.getName());
+
+                    if (root.has("item") && root.get("item").isJsonArray()) {
+                        parsePostmanItemsRecursive(root.getAsJsonArray("item"), col);
+                    }
+                    collections.add(col);
+                    int totalRequests = countRequestsRecursive(col);
+                    importedCollections.add(col.getName() + " (" + totalRequests + " requests)");
+                } else if (root.has("values")) {
+                    // Import as Environment
+                    EnvironmentModel env = new EnvironmentModel();
+                    env.setId(UUID.randomUUID().toString());
+                    env.setName(
+                            root.has("name") ? root.get("name").getAsString() : file.getName().replace(".json", ""));
+
+                    List<KeyValueItem> vars = new ArrayList<>();
+                    if (root.has("values") && root.get("values").isJsonArray()) {
+                        for (com.google.gson.JsonElement el : root.getAsJsonArray("values")) {
+                            com.google.gson.JsonObject v = el.getAsJsonObject();
+                            String key = v.has("key") ? v.get("key").getAsString() : "";
+                            String value = v.has("value") ? v.get("value").getAsString() : "";
+                            boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
+                            vars.add(new KeyValueItem(key, value, enabled));
+                        }
+                    }
+                    env.setVariables(vars);
+                    environments.add(env);
+                    importedEnvironments.add(env.getName());
+                } else {
+                    failedFiles.add(file.getName() + " (unrecognized Postman format)");
+                }
+            } catch (Exception e) {
+                failedFiles.add(file.getName() + " (" + e.getMessage() + ")");
             }
-            collections.add(col);
+        }
+
+        if (!importedCollections.isEmpty()) {
             saveCollections();
             sidebarPanel.refreshCollections(collections);
-            int totalRequests = countRequestsRecursive(col);
-            JOptionPane.showMessageDialog(this,
-                    "Imported " + totalRequests + " requests into \"" + col.getName() + "\".");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Import failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        if (!importedEnvironments.isEmpty()) {
+            setEnvironments(environments);
+            for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+                Component comp = workspaceTabs.getComponentAt(i);
+                if (comp instanceof EnvironmentManagerPanel emp) {
+                    emp.refreshEnvironments(environments);
+                }
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Import Results:\n\n");
+        if (!importedCollections.isEmpty()) {
+            sb.append("Imported Collections:\n");
+            for (String colName : importedCollections) {
+                sb.append(" - ").append(colName).append("\n");
+            }
+            sb.append("\n");
+        }
+        if (!importedEnvironments.isEmpty()) {
+            sb.append("Imported Environments:\n");
+            for (String envName : importedEnvironments) {
+                sb.append(" - ").append(envName).append("\n");
+            }
+            sb.append("\n");
+        }
+        if (!failedFiles.isEmpty()) {
+            sb.append("Failed/Skipped Files:\n");
+            for (String failDetail : failedFiles) {
+                sb.append(" - ").append(failDetail).append("\n");
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, sb.toString(), "Import Summary", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private int countRequestsRecursive(CollectionModel col) {
@@ -1353,7 +1441,8 @@ public class MainFrame extends JFrame {
                             com.google.gson.JsonObject opts = body.getAsJsonObject("options");
                             if (opts.has("raw")) {
                                 com.google.gson.JsonObject rawOpts = opts.getAsJsonObject("raw");
-                                String language = rawOpts.has("language") ? rawOpts.get("language").getAsString() : "json";
+                                String language = rawOpts.has("language") ? rawOpts.get("language").getAsString()
+                                        : "json";
                                 if ("json".equalsIgnoreCase(language)) {
                                     req.setBodyRawType("JSON");
                                 } else if ("html".equalsIgnoreCase(language)) {
@@ -1401,7 +1490,8 @@ public class MainFrame extends JFrame {
                             com.google.gson.JsonObject gqlObj = body.getAsJsonObject("graphql");
                             com.google.gson.JsonObject json = new com.google.gson.JsonObject();
                             json.addProperty("query", gqlObj.has("query") ? gqlObj.get("query").getAsString() : "");
-                            json.addProperty("variables", gqlObj.has("variables") ? gqlObj.get("variables").getAsString() : "");
+                            json.addProperty("variables",
+                                    gqlObj.has("variables") ? gqlObj.get("variables").getAsString() : "");
                             req.setBodyRawContent(json.toString());
                         }
                     }
@@ -1412,11 +1502,12 @@ public class MainFrame extends JFrame {
     }
 
     public void exportCollection(CollectionModel col) {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new JFileChooser(lastFileChooserDirectory);
         chooser.setSelectedFile(new File(col.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + ".json"));
         chooser.setDialogTitle("Export Collection");
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
             return;
+        lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
         try {
             com.google.gson.JsonObject root = new com.google.gson.JsonObject();
             com.google.gson.JsonObject info = new com.google.gson.JsonObject();
@@ -1935,7 +2026,8 @@ public class MainFrame extends JFrame {
         return list;
     }
 
-    private void collectCollectionsAndFoldersWithPathsRecursive(CollectionModel col, String currentPath, List<CollectionPathWrapper> list) {
+    private void collectCollectionsAndFoldersWithPathsRecursive(CollectionModel col, String currentPath,
+            List<CollectionPathWrapper> list) {
         list.add(new CollectionPathWrapper(col, currentPath));
         for (CollectionModel sub : col.getFolders()) {
             collectCollectionsAndFoldersWithPathsRecursive(sub, currentPath + " > " + sub.getName(), list);
@@ -2010,7 +2102,8 @@ public class MainFrame extends JFrame {
 
     public CollectionModel findCollectionParent(CollectionModel child) {
         for (CollectionModel col : collections) {
-            if (col == child) return null;
+            if (col == child)
+                return null;
             CollectionModel parent = findCollectionParentRecursive(col, child);
             if (parent != null) {
                 return parent;

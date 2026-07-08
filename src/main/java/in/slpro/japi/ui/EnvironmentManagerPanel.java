@@ -30,7 +30,9 @@ public class EnvironmentManagerPanel extends JPanel {
         // Left panel - environment list
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setPreferredSize(new Dimension(200, 0));
-        leftPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground") != null ? UIManager.getColor("Separator.foreground") : new Color(220, 220, 220)));
+        leftPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1,
+                UIManager.getColor("Separator.foreground") != null ? UIManager.getColor("Separator.foreground")
+                        : new Color(220, 220, 220)));
         leftPanel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel leftHeader = new JPanel(new BorderLayout());
@@ -57,7 +59,8 @@ public class EnvironmentManagerPanel extends JPanel {
         envList = new JList<>(envListModel);
         envList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         envList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) loadSelectedEnv();
+            if (!e.getValueIsAdjusting())
+                loadSelectedEnv();
         });
         leftPanel.add(new JScrollPane(envList), BorderLayout.CENTER);
 
@@ -78,9 +81,16 @@ public class EnvironmentManagerPanel extends JPanel {
         namePanel.add(renameBtn, BorderLayout.EAST);
         rightPanel.add(namePanel, BorderLayout.NORTH);
 
-        varTableModel = new DefaultTableModel(new String[]{"", "Variable", "Value"}, 0) {
-            @Override public Class<?> getColumnClass(int c) { return c == 0 ? Boolean.class : String.class; }
-            @Override public boolean isCellEditable(int r, int c) { return true; }
+        varTableModel = new DefaultTableModel(new String[] { "", "Variable", "Value" }, 0) {
+            @Override
+            public Class<?> getColumnClass(int c) {
+                return c == 0 ? Boolean.class : String.class;
+            }
+
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return true;
+            }
         };
         JTable varTable = new JTable(varTableModel);
         varTable.getColumnModel().getColumn(0).setMaxWidth(30);
@@ -90,10 +100,11 @@ public class EnvironmentManagerPanel extends JPanel {
         varBtns.setOpaque(false);
         JButton addVarBtn = new JButton("+ Add Variable");
         JButton delVarBtn = new JButton("Delete Row");
-        addVarBtn.addActionListener(e -> varTableModel.addRow(new Object[]{true, "", ""}));
+        addVarBtn.addActionListener(e -> varTableModel.addRow(new Object[] { true, "", "" }));
         delVarBtn.addActionListener(e -> {
             int row = varTable.getSelectedRow();
-            if (row >= 0) varTableModel.removeRow(row);
+            if (row >= 0)
+                varTableModel.removeRow(row);
         });
         varBtns.add(addVarBtn);
         varBtns.add(delVarBtn);
@@ -113,8 +124,8 @@ public class EnvironmentManagerPanel extends JPanel {
 
         JPanel leftActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftActions.setOpaque(false);
-        JButton importBtn = new JButton("Import Postman Env");
-        importBtn.addActionListener(e -> importPostman());
+        JButton importBtn = new JButton("Import");
+        importBtn.addActionListener(e -> importPostman(varTable));
         JButton exportBtn = new JButton("Export");
         exportBtn.addActionListener(e -> exportCurrentEnv(varTable));
         leftActions.add(importBtn);
@@ -153,7 +164,8 @@ public class EnvironmentManagerPanel extends JPanel {
 
     private void addEnvironment() {
         String name = JOptionPane.showInputDialog(this, "Environment name:");
-        if (name == null || name.isBlank()) return;
+        if (name == null || name.isBlank())
+            return;
         EnvironmentModel env = new EnvironmentModel();
         env.setId(UUID.randomUUID().toString());
         env.setName(name);
@@ -165,13 +177,15 @@ public class EnvironmentManagerPanel extends JPanel {
 
     private void deleteEnvironment() {
         int idx = envList.getSelectedIndex();
-        if (idx < 0) return;
+        if (idx < 0)
+            return;
         environments.remove(idx);
         envListModel.remove(idx);
         selectedEnvIndex = -1;
         varTableModel.setRowCount(0);
         envNameField.setText("");
-        if (!envListModel.isEmpty()) envList.setSelectedIndex(Math.min(idx, envListModel.size() - 1));
+        if (!envListModel.isEmpty())
+            envList.setSelectedIndex(Math.min(idx, envListModel.size() - 1));
     }
 
     private void loadSelectedEnv() {
@@ -180,19 +194,21 @@ public class EnvironmentManagerPanel extends JPanel {
         }
         int idx = envList.getSelectedIndex();
         selectedEnvIndex = idx;
-        if (idx < 0 || idx >= environments.size()) return;
+        if (idx < 0 || idx >= environments.size())
+            return;
         EnvironmentModel env = environments.get(idx);
         envNameField.setText(env.getName());
         varTableModel.setRowCount(0);
         if (env.getVariables() != null) {
             for (KeyValueItem kv : env.getVariables()) {
-                varTableModel.addRow(new Object[]{kv.isEnabled(), kv.getKey(), kv.getValue()});
+                varTableModel.addRow(new Object[] { kv.isEnabled(), kv.getKey(), kv.getValue() });
             }
         }
     }
 
     private void saveCurrentToModel(int idx) {
-        if (idx < 0 || idx >= environments.size()) return;
+        if (idx < 0 || idx >= environments.size())
+            return;
         EnvironmentModel env = environments.get(idx);
         String name = envNameField.getText().trim();
         if (!name.isBlank()) {
@@ -213,9 +229,11 @@ public class EnvironmentManagerPanel extends JPanel {
 
     private void renameEnvironment() {
         int idx = envList.getSelectedIndex();
-        if (idx < 0) return;
+        if (idx < 0)
+            return;
         String name = envNameField.getText().trim();
-        if (name.isBlank()) return;
+        if (name.isBlank())
+            return;
         environments.get(idx).setName(name);
         envListModel.set(idx, name);
     }
@@ -224,52 +242,37 @@ public class EnvironmentManagerPanel extends JPanel {
         if (varTable.getCellEditor() != null) {
             varTable.getCellEditor().stopCellEditing();
         }
-        if (selectedEnvIndex >= 0) saveCurrentToModel(selectedEnvIndex);
+        if (selectedEnvIndex >= 0)
+            saveCurrentToModel(selectedEnvIndex);
         mainFrame.setEnvironments(environments);
         StorageManager.getInstance().saveEnvironments(environments);
         mainFrame.closeTab(this);
     }
 
-    private void importPostman() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Import Postman Environment (.json)");
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        try {
-            String json = java.nio.file.Files.readString(chooser.getSelectedFile().toPath());
-            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
-            EnvironmentModel env = new EnvironmentModel();
-            env.setId(UUID.randomUUID().toString());
-            env.setName(obj.has("name") ? obj.get("name").getAsString() : "Imported");
-            List<KeyValueItem> vars = new ArrayList<>();
-            if (obj.has("values") && obj.get("values").isJsonArray()) {
-                for (com.google.gson.JsonElement el : obj.getAsJsonArray("values")) {
-                    com.google.gson.JsonObject v = el.getAsJsonObject();
-                    String key = v.has("key") ? v.get("key").getAsString() : "";
-                    String value = v.has("value") ? v.get("value").getAsString() : "";
-                    boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
-                    vars.add(new KeyValueItem(key, value, enabled));
-                }
-            }
-            env.setVariables(vars);
-            environments.add(env);
-            envListModel.addElement(env.getName());
-            envList.setSelectedIndex(environments.size() - 1);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Import failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    private void importPostman(JTable varTable) {
+        if (varTable.getCellEditor() != null) {
+            varTable.getCellEditor().stopCellEditing();
         }
+        if (selectedEnvIndex >= 0)
+            saveCurrentToModel(selectedEnvIndex);
+        mainFrame.setEnvironments(environments);
+        mainFrame.importPostmanFiles();
     }
 
     private void exportCurrentEnv(JTable varTable) {
         int idx = envList.getSelectedIndex();
-        if (idx < 0) return;
+        if (idx < 0)
+            return;
         if (varTable.getCellEditor() != null) {
             varTable.getCellEditor().stopCellEditing();
         }
         saveCurrentToModel(idx);
         EnvironmentModel env = environments.get(idx);
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new JFileChooser(MainFrame.lastFileChooserDirectory);
         chooser.setSelectedFile(new java.io.File(env.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + ".json"));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
+        MainFrame.lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
         try {
             com.google.gson.JsonObject root = new com.google.gson.JsonObject();
             root.addProperty("id", env.getId());
@@ -292,6 +295,21 @@ public class EnvironmentManagerPanel extends JPanel {
             MainFrame.showToast(this, "Exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void refreshEnvironments(List<EnvironmentModel> newEnvs) {
+        this.environments.clear();
+        this.environments.addAll(newEnvs);
+        envListModel.clear();
+        for (EnvironmentModel env : environments) {
+            envListModel.addElement(env.getName());
+        }
+        selectedEnvIndex = -1;
+        envNameField.setText("");
+        varTableModel.setRowCount(0);
+        if (!environments.isEmpty()) {
+            envList.setSelectedIndex(0);
         }
     }
 }

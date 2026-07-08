@@ -92,7 +92,8 @@ public class SidebarPanel extends JPanel {
         collectionsTree.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         collectionsTree.setRowHeight(28);
         collectionsTree.setCellRenderer(new CollectionTreeRenderer());
-        collectionsTree.setCellEditor(new javax.swing.tree.DefaultTreeCellEditor(collectionsTree, (javax.swing.tree.DefaultTreeCellRenderer) collectionsTree.getCellRenderer()) {
+        collectionsTree.setCellEditor(new javax.swing.tree.DefaultTreeCellEditor(collectionsTree,
+                (javax.swing.tree.DefaultTreeCellRenderer) collectionsTree.getCellRenderer()) {
             @Override
             public boolean isCellEditable(EventObject event) {
                 if (event instanceof MouseEvent) {
@@ -107,11 +108,14 @@ public class SidebarPanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int row = collectionsTree.getClosestRowForLocation(e.getX(), e.getY());
-                if (row == -1) return;
+                if (row == -1)
+                    return;
                 Rectangle bounds = collectionsTree.getRowBounds(row);
-                if (bounds == null || e.getY() < bounds.y || e.getY() >= bounds.y + bounds.height) return;
+                if (bounds == null || e.getY() < bounds.y || e.getY() >= bounds.y + bounds.height)
+                    return;
                 TreePath path = collectionsTree.getPathForRow(row);
-                if (path == null) return;
+                if (path == null)
+                    return;
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 
                 if (SwingUtilities.isRightMouseButton(e)) {
@@ -166,15 +170,18 @@ public class SidebarPanel extends JPanel {
     }
 
     private void createCollection() {
-        String name = JOptionPane.showInputDialog(this, "Collection name:", "New Collection", JOptionPane.PLAIN_MESSAGE);
-        if (name == null || name.isBlank()) return;
+        String name = JOptionPane.showInputDialog(this, "Collection name:", "New Collection",
+                JOptionPane.PLAIN_MESSAGE);
+        if (name == null || name.isBlank())
+            return;
         mainFrame.createCollection(name);
     }
 
     private void createFolder(DefaultMutableTreeNode node) {
         if (node.getUserObject() instanceof CollectionModel parentCol) {
             String name = JOptionPane.showInputDialog(this, "Folder name:", "New Folder", JOptionPane.PLAIN_MESSAGE);
-            if (name == null || name.isBlank()) return;
+            if (name == null || name.isBlank())
+                return;
             CollectionModel newFolder = new CollectionModel();
             newFolder.setId(java.util.UUID.randomUUID().toString());
             newFolder.setName(name);
@@ -191,25 +198,32 @@ public class SidebarPanel extends JPanel {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             if (node.getUserObject() instanceof CollectionModel col) {
                 targetCollection = col;
-            } else if (node.getUserObject() instanceof RequestModel && node.getParent() instanceof DefaultMutableTreeNode parent) {
-                if (parent.getUserObject() instanceof CollectionModel col) targetCollection = col;
+            } else if (node.getUserObject() instanceof RequestModel
+                    && node.getParent() instanceof DefaultMutableTreeNode parent) {
+                if (parent.getUserObject() instanceof CollectionModel col)
+                    targetCollection = col;
             }
         }
         if (targetCollection == null) {
             List<MainFrame.CollectionPathWrapper> wrappers = mainFrame.getAllCollectionsAndFoldersWithPaths();
             if (wrappers.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please create a collection first.", "No Collection", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please create a collection first.", "No Collection",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            MainFrame.CollectionPathWrapper selected = (MainFrame.CollectionPathWrapper) JOptionPane.showInputDialog(this,
+            MainFrame.CollectionPathWrapper selected = (MainFrame.CollectionPathWrapper) JOptionPane.showInputDialog(
+                    this,
                     "Select collection/folder:", "Add Request", JOptionPane.PLAIN_MESSAGE,
                     null, wrappers.toArray(), wrappers.get(0));
-            if (selected == null) return;
+            if (selected == null)
+                return;
             targetCollection = selected.model;
         }
-        if (targetCollection == null) return;
+        if (targetCollection == null)
+            return;
         String name = JOptionPane.showInputDialog(this, "Request name:", "New Request", JOptionPane.PLAIN_MESSAGE);
-        if (name == null || name.isBlank()) return;
+        if (name == null || name.isBlank())
+            return;
         mainFrame.addRequestToCollection(targetCollection, name);
     }
 
@@ -220,7 +234,7 @@ public class SidebarPanel extends JPanel {
             rename.addActionListener(e -> {
                 collectionsTree.startEditingAtPath(new TreePath(node.getPath()));
             });
-            
+
             JMenu addMenu = new JMenu("Add");
             JMenuItem addReqItem = new JMenuItem("Add Request");
             addReqItem.addActionListener(e -> createRequest());
@@ -238,7 +252,7 @@ public class SidebarPanel extends JPanel {
             addJsonItem.addActionListener(e -> mainFrame.openJsonTool());
             JMenuItem addWsItem = new JMenuItem("Add WebSocket Client");
             addWsItem.addActionListener(e -> mainFrame.addWebSocketToCollection(col));
-            
+
             addMenu.add(addReqItem);
             addMenu.add(addFolderItem);
             addMenu.add(addRunnerItem);
@@ -250,25 +264,29 @@ public class SidebarPanel extends JPanel {
 
             JMenuItem delete = new JMenuItem("Delete Collection");
             delete.addActionListener(e -> {
-                int confirm = JOptionPane.showConfirmDialog(this, "Delete collection \"" + col.getName() + "\"?", "Confirm", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) mainFrame.deleteCollection(col);
+                int confirm = JOptionPane.showConfirmDialog(this, "Delete collection \"" + col.getName() + "\"?",
+                        "Confirm", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION)
+                    mainFrame.deleteCollection(col);
             });
-            JMenuItem importCol = new JMenuItem("Import from Postman...");
-            importCol.addActionListener(e -> mainFrame.importPostmanCollection());
-            JMenuItem exportCol = new JMenuItem("Export Collection...");
+            JMenuItem importCol = new JMenuItem("Import ");
+            importCol.addActionListener(e -> mainFrame.importPostmanFiles());
+            JMenuItem exportCol = new JMenuItem("Export Collection");
             exportCol.addActionListener(e -> mainFrame.exportCollection(col));
-            
+
             boolean isOthers = MainFrame.OTHERS_COLLECTION_ID.equals(col.getId());
 
             menu.add(rename);
-            if (isOthers) rename.setEnabled(false);
+            if (isOthers)
+                rename.setEnabled(false);
             menu.add(addMenu);
             menu.addSeparator();
             menu.add(importCol);
             menu.add(exportCol);
             menu.addSeparator();
             menu.add(delete);
-            if (isOthers) delete.setEnabled(false);
+            if (isOthers)
+                delete.setEnabled(false);
         } else if (node.getUserObject() instanceof RequestModel req) {
             JMenuItem open = new JMenuItem("Open");
             open.addActionListener(e -> mainFrame.openRequest(req));
@@ -327,13 +345,17 @@ public class SidebarPanel extends JPanel {
         historyTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() != 2) return;
+                if (e.getClickCount() != 2)
+                    return;
                 int row = historyTree.getClosestRowForLocation(e.getX(), e.getY());
-                if (row == -1) return;
+                if (row == -1)
+                    return;
                 Rectangle bounds = historyTree.getRowBounds(row);
-                if (bounds == null || e.getY() < bounds.y || e.getY() >= bounds.y + bounds.height) return;
+                if (bounds == null || e.getY() < bounds.y || e.getY() >= bounds.y + bounds.height)
+                    return;
                 TreePath path = historyTree.getPathForRow(row);
-                if (path == null) return;
+                if (path == null)
+                    return;
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 if (node.getUserObject() instanceof RequestModel req) {
                     mainFrame.openHistoryRequest(req);
@@ -349,20 +371,24 @@ public class SidebarPanel extends JPanel {
         historyRoot.removeAllChildren();
 
         // Group by Year desc -> Month desc -> Date desc
-        Map<Integer, Map<java.time.Month, Map<Integer, List<RequestModel>>>> nestedGroup = new TreeMap<>(Collections.reverseOrder());
+        Map<Integer, Map<java.time.Month, Map<Integer, List<RequestModel>>>> nestedGroup = new TreeMap<>(
+                Collections.reverseOrder());
 
         for (RequestModel req : history) {
             LocalDate date = req.getTimestamp() != null
                     ? Instant.ofEpochMilli(req.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.now();
 
-            nestedGroup.computeIfAbsent(date.getYear(), y -> new TreeMap<>((m1, m2) -> Integer.compare(m2.getValue(), m1.getValue())))
-                       .computeIfAbsent(date.getMonth(), m -> new TreeMap<>(Collections.reverseOrder()))
-                       .computeIfAbsent(date.getDayOfMonth(), d -> new ArrayList<>())
-                       .add(req);
+            nestedGroup
+                    .computeIfAbsent(date.getYear(),
+                            y -> new TreeMap<>((m1, m2) -> Integer.compare(m2.getValue(), m1.getValue())))
+                    .computeIfAbsent(date.getMonth(), m -> new TreeMap<>(Collections.reverseOrder()))
+                    .computeIfAbsent(date.getDayOfMonth(), d -> new ArrayList<>())
+                    .add(req);
         }
 
-        for (Map.Entry<Integer, Map<java.time.Month, Map<Integer, List<RequestModel>>>> yEntry : nestedGroup.entrySet()) {
+        for (Map.Entry<Integer, Map<java.time.Month, Map<Integer, List<RequestModel>>>> yEntry : nestedGroup
+                .entrySet()) {
             DefaultMutableTreeNode yearNode = new DefaultMutableTreeNode(yEntry.getKey().toString());
             historyRoot.add(yearNode);
 
@@ -373,7 +399,8 @@ public class SidebarPanel extends JPanel {
                 yearNode.add(monthNode);
 
                 for (Map.Entry<Integer, List<RequestModel>> dEntry : mEntry.getValue().entrySet()) {
-                    DefaultMutableTreeNode dateNode = new DefaultMutableTreeNode(String.format("%02d", dEntry.getKey()));
+                    DefaultMutableTreeNode dateNode = new DefaultMutableTreeNode(
+                            String.format("%02d", dEntry.getKey()));
                     monthNode.add(dateNode);
 
                     // Sort within day desc by timestamp
@@ -400,7 +427,7 @@ public class SidebarPanel extends JPanel {
     private static class CollectionTreeRenderer extends DefaultTreeCellRenderer {
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected,
-                                                       boolean expanded, boolean leaf, int row, boolean hasFocus) {
+                boolean expanded, boolean leaf, int row, boolean hasFocus) {
             super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
             if (value instanceof DefaultMutableTreeNode node) {
                 if (node.getUserObject() instanceof CollectionModel col) {
@@ -410,16 +437,20 @@ public class SidebarPanel extends JPanel {
                 } else if (node.getUserObject() instanceof RequestModel req) {
                     if ("runner".equals(req.getType())) {
                         Color runnerColor = new Color(255, 108, 55); // Postman Orange
-                        setText("<html><span style='color:" + toHex(runnerColor) + ";font-weight:bold;'>RUNNER</span> " + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(runnerColor) + ";font-weight:bold;'>RUNNER</span> "
+                                + req.getName() + "</html>");
                     } else if ("comparator".equals(req.getType())) {
                         Color compColor = new Color(142, 68, 173); // Purple
-                        setText("<html><span style='color:" + toHex(compColor) + ";font-weight:bold;'>COMPARE</span> " + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(compColor) + ";font-weight:bold;'>COMPARE</span> "
+                                + req.getName() + "</html>");
                     } else if ("mockserver".equals(req.getType())) {
                         Color mockColor = new Color(41, 128, 185); // Blue
-                        setText("<html><span style='color:" + toHex(mockColor) + ";font-weight:bold;'>MOCK</span> " + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(mockColor) + ";font-weight:bold;'>MOCK</span> "
+                                + req.getName() + "</html>");
                     } else if ("websocket".equals(req.getType())) {
                         Color wsColor = new Color(46, 204, 113); // Green
-                        setText("<html><span style='color:" + toHex(wsColor) + ";font-weight:bold;'>WS</span> " + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(wsColor) + ";font-weight:bold;'>WS</span> "
+                                + req.getName() + "</html>");
                     } else {
                         String method = req.getMethod() != null ? req.getMethod() : "GET";
                         Color methodColor = getMethodColor(method);
@@ -430,7 +461,8 @@ public class SidebarPanel extends JPanel {
                     setIcon(null); // Clear generic file icon next to request methods
                 }
             }
-            setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground") : UIManager.getColor("Sidebar.treeBackground"));
+            setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground")
+                    : UIManager.getColor("Sidebar.treeBackground"));
             setOpaque(true);
             return this;
         }
@@ -440,26 +472,38 @@ public class SidebarPanel extends JPanel {
         private static String getStatusText(int code) {
             return switch (code) {
                 case 0 -> "Error";
-                case 200 -> "OK"; case 201 -> "Created"; case 204 -> "No Content";
-                case 301 -> "Moved Permanently"; case 302 -> "Found"; case 304 -> "Not Modified";
-                case 400 -> "Bad Request"; case 401 -> "Unauthorized"; case 403 -> "Forbidden";
-                case 404 -> "Not Found"; case 405 -> "Method Not Allowed"; case 409 -> "Conflict";
-                case 422 -> "Unprocessable Entity"; case 429 -> "Too Many Requests";
-                case 500 -> "Internal Server Error"; case 502 -> "Bad Gateway";
-                case 503 -> "Service Unavailable"; case 504 -> "Gateway Timeout";
+                case 200 -> "OK";
+                case 201 -> "Created";
+                case 204 -> "No Content";
+                case 301 -> "Moved Permanently";
+                case 302 -> "Found";
+                case 304 -> "Not Modified";
+                case 400 -> "Bad Request";
+                case 401 -> "Unauthorized";
+                case 403 -> "Forbidden";
+                case 404 -> "Not Found";
+                case 405 -> "Method Not Allowed";
+                case 409 -> "Conflict";
+                case 422 -> "Unprocessable Entity";
+                case 429 -> "Too Many Requests";
+                case 500 -> "Internal Server Error";
+                case 502 -> "Bad Gateway";
+                case 503 -> "Service Unavailable";
+                case 504 -> "Gateway Timeout";
                 default -> "Unknown";
             };
         }
 
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected,
-                                                       boolean expanded, boolean leaf, int row, boolean hasFocus) {
+                boolean expanded, boolean leaf, int row, boolean hasFocus) {
             super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
             if (value instanceof DefaultMutableTreeNode node) {
                 if (node.getUserObject() instanceof RequestModel req) {
                     String method = req.getMethod() != null ? req.getMethod() : "GET";
                     String url = req.getUrl() != null ? req.getUrl() : "";
-                    String displayUrl = url.isEmpty() ? "(No URL)" : (url.length() > 40 ? url.substring(0, 40) + "…" : url);
+                    String displayUrl = url.isEmpty() ? "(No URL)"
+                            : (url.length() > 40 ? url.substring(0, 40) + "…" : url);
                     Color methodColor = getMethodColor(method);
                     setText("<html><span style='color:" + toHex(methodColor) + ";font-weight:bold;'>" +
                             method + "</span> " + displayUrl + "</html>");
@@ -468,7 +512,8 @@ public class SidebarPanel extends JPanel {
                     StringBuilder tip = new StringBuilder("<html>");
                     if (req.getResponseStatus() != null) {
                         int code = req.getResponseStatus();
-                        tip.append("<b>Status:</b> ").append(code).append(" ").append(getStatusText(code)).append("<br>");
+                        tip.append("<b>Status:</b> ").append(code).append(" ").append(getStatusText(code))
+                                .append("<br>");
                     }
                     String fullUrl = req.getActualUrl() != null ? req.getActualUrl() : url;
                     if (fullUrl.isEmpty()) {
@@ -486,7 +531,8 @@ public class SidebarPanel extends JPanel {
                     setIcon(null);
                 }
             }
-            setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground") : UIManager.getColor("Sidebar.treeBackground"));
+            setBackground(selected ? UIManager.getColor("Sidebar.selectionBackground")
+                    : UIManager.getColor("Sidebar.treeBackground"));
             setOpaque(true);
             return this;
         }

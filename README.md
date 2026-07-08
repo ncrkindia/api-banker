@@ -41,7 +41,7 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 * **State-Aware tab dirty tracking**: Prompts you to Save, Discard, or Cancel if you try to close tabs containing unsaved modifications.
 * **Zoom Support**: Scale the UI, labels, editor font size, and text layouts globally using `Ctrl + +` / `Ctrl + =` (Zoom In) and `Ctrl + -` (Zoom Out).
 * **Save Hotkey**: Save your current request, collection state, or mock server configuration instantly using `Ctrl + S`.
-* **Postman Interoperability**: Built-in support to import and export collections and environments in standard Postman formats.
+* **Postman Interoperability**: Built-in support to import and export collections and environments in standard Postman formats. The importer supports selecting multiple files simultaneously and automatically detects whether they are Collections or Environments to import them seamlessly in a single action.
 * **Configurable Storage Directories**: Customize both your local workspace **Data Directory** and **Logs Directory** on-the-fly using the integrated Settings tab and built-in folder browser.
 
 ---
