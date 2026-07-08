@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar japi-1.0.0.jar &
+java -jar japi-${project.version}.jar &

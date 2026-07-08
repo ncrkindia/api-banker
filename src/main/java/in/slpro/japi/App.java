@@ -151,4 +151,25 @@ public class App {
             System.err.println("Failed to initialize theme: " + e.getMessage());
         }
     }
+
+    private static String version = null;
+
+    public static String getVersion() {
+        if (version != null) {
+            return version;
+        }
+        try (java.io.InputStream is = App.class.getClassLoader().getResourceAsStream("app.properties")) {
+            if (is != null) {
+                java.util.Properties props = new java.util.Properties();
+                props.load(is);
+                version = props.getProperty("app.version");
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        if (version == null || version.isEmpty() || "${project.version}".equals(version)) {
+            version = "1.0.0-beta"; // fallback if running outside jar or un-filtered environment
+        }
+        return version;
+    }
 }

@@ -7,7 +7,7 @@
     <groupId>in.slpro</groupId>
     <artifactId>japi</artifactId>
     <name>Japi</name>
-    <version>1.0.0</version>
+    <version>1.0.0-beta</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -82,6 +82,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <!-- Compiler plugin -->
             <plugin>

@@ -10,20 +10,22 @@
     <baseDirectory>japi</baseDirectory>
     <files>
         <file>
-            <source>target/japi-1.0.0.jar</source>
+            <source>target/japi-${project.version}.jar</source>
             <outputDirectory>/</outputDirectory>
-            <destName>japi-1.0.0.jar</destName>
+            <destName>japi-${project.version}.jar</destName>
         </file>
         <file>
             <source>japi.bat</source>
             <outputDirectory>/</outputDirectory>
             <lineEnding>windows</lineEnding>
+            <filtered>true</filtered>
         </file>
         <file>
             <source>japi.sh</source>
             <outputDirectory>/</outputDirectory>
             <lineEnding>unix</lineEnding>
             <fileMode>0755</fileMode>
+            <filtered>true</filtered>
         </file>
     </files>
 </assembly>

@@ -274,7 +274,7 @@ public class EnvironmentManagerPanel extends JPanel {
             com.google.gson.JsonObject root = new com.google.gson.JsonObject();
             root.addProperty("id", env.getId());
             root.addProperty("name", env.getName());
-            root.addProperty("_postman_exported_using", "JAPI/1.0.0");
+            root.addProperty("_postman_exported_using", "JAPI/" + in.slpro.japi.App.getVersion());
             com.google.gson.JsonArray values = new com.google.gson.JsonArray();
             if (env.getVariables() != null) {
                 for (KeyValueItem kv : env.getVariables()) {

@@ -693,7 +693,7 @@ public class MainFrame extends JFrame {
                 + "<div style='text-align:center; margin-bottom:30px;'>"
                 + "  <h1 style='color:" + accentHex + "; font-size:36px; margin:0;'>Japi</h1>"
                 + "  <h2 style='font-weight:normal; font-size:18px; margin:5px 0 15px 0;'>The Ultimate Offline API Client & Collection Runner</h2>"
-                + "  <div style='font-size:12px; color:#888;'>Version 1.0.0 | Secured Offline-First Architecture | From SL Pro</div>"
+                + "  <div style='font-size:12px; color:#888;'>Version " + in.slpro.japi.App.getVersion() + " | Secured Offline-First Architecture | From SL Pro</div>"
                 + "</div>"
                 + "<hr style='margin-bottom:30px;'>"
                 + "<table width='100%' cellpadding='10' cellspacing='10'>"
@@ -1365,12 +1365,12 @@ public class MainFrame extends JFrame {
             com.google.gson.JsonObject info = new com.google.gson.JsonObject();
             info.addProperty("name", col.getName());
             info.addProperty("schema", "https://schema.getpostman.com/json/collection/v2.1.0/collection.json");
-            info.addProperty("_exporter_id", "JAPI-1.0.0");
-            info.addProperty("_exported_by", "JAPI v1.0.0 (Offline API Client)");
+            info.addProperty("_exporter_id", "JAPI-" + in.slpro.japi.App.getVersion());
+            info.addProperty("_exported_by", "JAPI v" + in.slpro.japi.App.getVersion() + " (Offline API Client)");
             info.addProperty("_exported_at",
                     new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
             root.add("info", info);
-            root.addProperty("_japi_version", "1.0.0");
+            root.addProperty("_japi_version", in.slpro.japi.App.getVersion());
             com.google.gson.JsonArray items = new com.google.gson.JsonArray();
             for (RequestModel req : col.getRequests()) {
                 if ("runner".equals(req.getType()))
