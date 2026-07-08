@@ -14,6 +14,7 @@ public class SettingsPanel extends JPanel {
     private JTextField logsDirField;
     private JComboBox<String> themeCombo;
     private JCheckBox loggingCheck;
+    private JComboBox<String> sslPolicyCombo;
 
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -123,9 +124,38 @@ public class SettingsPanel extends JPanel {
         loggingCheck.setSelected(storage.getSettings().isEnableLogging());
         contentPanel.add(loggingCheck, gbc);
 
-        // Empty space filler
+        // Global SSL row
         gbc.gridx = 0;
         gbc.gridy = 4;
+        gbc.weightx = 0;
+        JLabel sslLabel = new JLabel("SSL Verification Policy:");
+        sslLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(sslLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        sslPolicyCombo = new JComboBox<>(new String[] {
+            "Verify",
+            "Don't Verify",
+            "Verify (FORCED)",
+            "Don't Verify (FORCED)"
+        });
+        sslPolicyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        String currentSsl = storage.getSettings().getGlobalSslSetting();
+        if ("NO_VERIFY".equalsIgnoreCase(currentSsl)) {
+            sslPolicyCombo.setSelectedIndex(1);
+        } else if ("VERIFY_FORCED".equalsIgnoreCase(currentSsl)) {
+            sslPolicyCombo.setSelectedIndex(2);
+        } else if ("NO_VERIFY_FORCED".equalsIgnoreCase(currentSsl)) {
+            sslPolicyCombo.setSelectedIndex(3);
+        } else {
+            sslPolicyCombo.setSelectedIndex(0);
+        }
+        contentPanel.add(sslPolicyCombo, gbc);
+
+        // Empty space filler
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -148,6 +178,18 @@ public class SettingsPanel extends JPanel {
             storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
             storage.getSettings().setEnableLogging(loggingCheck.isSelected());
             in.slpro.japi.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
+            
+            int sslIndex = sslPolicyCombo.getSelectedIndex();
+            String sslVal = "VERIFY";
+            if (sslIndex == 1) {
+                sslVal = "NO_VERIFY";
+            } else if (sslIndex == 2) {
+                sslVal = "VERIFY_FORCED";
+            } else if (sslIndex == 3) {
+                sslVal = "NO_VERIFY_FORCED";
+            }
+            storage.getSettings().setGlobalSslSetting(sslVal);
+            
             storage.saveSettings();
             MainFrame.showToast(this, "Settings saved. Restart JAPI to apply theme changes.");
         });

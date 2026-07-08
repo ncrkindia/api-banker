@@ -60,6 +60,7 @@ public class CollectionPanel extends JPanel {
 
     // Tests (Post-request) Script tab
     private RSyntaxTextArea postScriptArea;
+    private JComboBox<String> sslVerifyCombo;
 
     public CollectionPanel(MainFrame mainFrame, CollectionModel collectionModel) {
         this.mainFrame = mainFrame;
@@ -358,6 +359,16 @@ public class CollectionPanel extends JPanel {
         postScriptArea = buildScriptArea();
         tabbedPane.addTab("Tests", buildScriptTab(postScriptArea, true));
 
+        // 6. Settings Tab
+        JPanel settingsTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        settingsTabPanel.setBackground(UIManager.getColor("Panel.background"));
+        settingsTabPanel.add(new JLabel("SSL Verification:"));
+        sslVerifyCombo = new JComboBox<>(new String[]{"Inherit", "Do not verify", "Verify"});
+        sslVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        sslVerifyCombo.setToolTipText("Select SSL verification behavior for this collection/folder. 'Inherit' resolves to parent collection/folder setting recursively, or global setting.");
+        settingsTabPanel.add(sslVerifyCombo);
+        tabbedPane.addTab("Settings", settingsTabPanel);
+
         add(tabbedPane, BorderLayout.CENTER);
 
         // Attach variable highlights and tooltips
@@ -610,6 +621,14 @@ public class CollectionPanel extends JPanel {
 
         preScriptArea.setText(collectionModel.getPreRequestScript());
         postScriptArea.setText(collectionModel.getPostRequestScript());
+        String sslSetting = collectionModel.getSslSetting();
+        if ("INHERIT".equalsIgnoreCase(sslSetting)) {
+            sslVerifyCombo.setSelectedIndex(0);
+        } else if ("NO_VERIFY".equalsIgnoreCase(sslSetting)) {
+            sslVerifyCombo.setSelectedIndex(1);
+        } else {
+            sslVerifyCombo.setSelectedIndex(2);
+        }
         this.originalModelJson = new com.google.gson.Gson().toJson(collectionModel);
     }
 
@@ -637,6 +656,14 @@ public class CollectionPanel extends JPanel {
 
         collectionModel.setPreRequestScript(preScriptArea.getText());
         collectionModel.setPostRequestScript(postScriptArea.getText());
+        int sslIndex = sslVerifyCombo.getSelectedIndex();
+        if (sslIndex == 0) {
+            collectionModel.setSslSetting("INHERIT");
+        } else if (sslIndex == 1) {
+            collectionModel.setSslSetting("NO_VERIFY");
+        } else {
+            collectionModel.setSslSetting("VERIFY");
+        }
 
         mainFrame.saveCollections();
         MainFrame.showToast(this, "Collection \"" + collectionModel.getName() + "\" saved.");
@@ -672,6 +699,14 @@ public class CollectionPanel extends JPanel {
 
         m.setPreRequestScript(preScriptArea.getText());
         m.setPostRequestScript(postScriptArea.getText());
+        int sslIndex2 = sslVerifyCombo.getSelectedIndex();
+        if (sslIndex2 == 0) {
+            m.setSslSetting("INHERIT");
+        } else if (sslIndex2 == 1) {
+            m.setSslSetting("NO_VERIFY");
+        } else {
+            m.setSslSetting("VERIFY");
+        }
         return m;
     }
 

@@ -11,6 +11,7 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 
 ### 🔒 Offline-First & Privacy-Focused
 * **No Accounts Required**: Use the app instantly without any login, registration, or online verification.
+* **Nested Collections & Folders**: Organize requests in unlimited hierarchical subfolders, matching Postman's folder structure.
 * **Granular, Readable Filesystem Workspace**: Request collections and environments are saved as individual human-readable JSON files named after their sanitized names (e.g. `my_collection.json`, `local_env.json`) inside your data directory. This makes it trivial to place your workspace data under version control (e.g., Git) to collaborate with team members.
 * **Auto-Migration & Compatibility**: JAPI handles legacy workspaces and automatically migrates monolithic `collections.json` and `environments.json` files to the individual file-per-entity scheme upon startup, clean and seamless.
 * **Local Security**: None of your variables, credentials, request payloads, or responses leave your machine.
@@ -19,6 +20,7 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 * **Robust HTTP Engine**: Powered by an asynchronous Java `HttpClient` wrapper running inside Swing background worker threads to ensure the UI remains fully responsive at all times.
 * **Dynamic Parameter Grid**: Grid lists for query parameters, request headers, and request bodies that auto-expand as you type.
 * **Authorization Support**: Native support for common auth methods, including **Bearer Token**, **Basic Auth**, and custom **API Key** headers.
+* **Per-Request SSL Verification**: Granular control via settings to enable or disable SSL certificate verification for individual requests to support testing environments with self-signed certificates.
 * **Flexible SSL Management**: Enabled to trust local self-signed SSL certificates automatically, allowing seamless testing of local development setups (`http://localhost`, etc.).
 
 ### ⚙️ Environments & Variables

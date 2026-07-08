@@ -402,10 +402,10 @@ public class CollectionRunnerPanel extends JPanel {
 
     private void populateSelectionTable() {
         requestSelectionModel.setRowCount(0);
-        if (collection != null && collection.getRequests() != null) {
-            for (RequestModel req : collection.getRequests()) {
-                if ("runner".equalsIgnoreCase(req.getType()))
-                    continue;
+        if (collection != null) {
+            List<RequestModel> allReqs = new ArrayList<>();
+            collectRequestsRecursive(collection, allReqs);
+            for (RequestModel req : allReqs) {
                 requestSelectionModel.addRow(new Object[] { true, req.getMethod(), req.getName() });
             }
         }
@@ -852,12 +852,14 @@ public class CollectionRunnerPanel extends JPanel {
         final List<RequestModel> requests;
         if (requestSelectionModel != null) {
             List<RequestModel> temp = new ArrayList<>();
+            List<RequestModel> allReqs = new ArrayList<>();
+            collectRequestsRecursive(collection, allReqs);
             for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
                 boolean checked = (Boolean) requestSelectionModel.getValueAt(i, 0);
                 if (checked) {
                     String reqName = (String) requestSelectionModel.getValueAt(i, 2);
-                    for (RequestModel r : collection.getRequests()) {
-                        if (reqName.equals(r.getName()) && !"runner".equalsIgnoreCase(r.getType())) {
+                    for (RequestModel r : allReqs) {
+                        if (reqName.equals(r.getName())) {
                             temp.add(r);
                             break;
                         }
@@ -866,9 +868,9 @@ public class CollectionRunnerPanel extends JPanel {
             }
             requests = temp;
         } else {
-            requests = collection.getRequests().stream()
-                    .filter(r -> !"runner".equalsIgnoreCase(r.getType()))
-                    .toList();
+            List<RequestModel> allReqs = new ArrayList<>();
+            collectRequestsRecursive(collection, allReqs);
+            requests = allReqs;
         }
 
         if (requests.isEmpty()) {
@@ -1780,6 +1782,21 @@ public class CollectionRunnerPanel extends JPanel {
                 toast.dispose();
             });
         }).start();
+    }
+
+    private void collectRequestsRecursive(CollectionModel col, List<RequestModel> list) {
+        if (col.getRequests() != null) {
+            for (RequestModel req : col.getRequests()) {
+                if (!"runner".equalsIgnoreCase(req.getType())) {
+                    list.add(req);
+                }
+            }
+        }
+        if (col.getFolders() != null) {
+            for (CollectionModel folder : col.getFolders()) {
+                collectRequestsRecursive(folder, list);
+            }
+        }
     }
 
     public RequestModel getRequestModel() {

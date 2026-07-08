@@ -38,16 +38,7 @@ public class MainFrame extends JFrame {
     }
 
     public CollectionModel getParentCollection(RequestModel req) {
-        if (req == null)
-            return null;
-        for (CollectionModel col : collections) {
-            for (RequestModel r : col.getRequests()) {
-                if (r.getId() != null && r.getId().equals(req.getId())) {
-                    return col;
-                }
-            }
-        }
-        return null;
+        return findRequestParent(req);
     }
 
     public static CollectionModel findParentCollection(RequestModel req) {
@@ -330,23 +321,25 @@ public class MainFrame extends JFrame {
     }
 
     public void moveRequestToCollection(RequestModel req) {
-        // Find current collection
-        CollectionModel sourceCol = null;
-        for (CollectionModel col : collections) {
-            if (col.getRequests().contains(req)) {
-                sourceCol = col;
-                break;
+        CollectionModel sourceCol = findRequestParent(req);
+        List<CollectionPathWrapper> wrappers = getAllCollectionsAndFoldersWithPaths();
+        CollectionPathWrapper defaultSel = null;
+        if (sourceCol != null) {
+            for (CollectionPathWrapper w : wrappers) {
+                if (w.model == sourceCol) {
+                    defaultSel = w;
+                    break;
+                }
             }
         }
-        List<CollectionModel> cols = getCollections();
-        CollectionModel target = (CollectionModel) JOptionPane.showInputDialog(this,
-                "Move '" + req.getName() + "' to:", "Move to Collection", JOptionPane.PLAIN_MESSAGE,
-                null, cols.toArray(), cols.get(0));
-        if (target == null || target == sourceCol)
+        CollectionPathWrapper targetWrapper = (CollectionPathWrapper) JOptionPane.showInputDialog(this,
+                "Move '" + req.getName() + "' to:", "Move to Collection/Folder", JOptionPane.PLAIN_MESSAGE,
+                null, wrappers.toArray(), defaultSel != null ? defaultSel : (wrappers.isEmpty() ? null : wrappers.get(0)));
+        if (targetWrapper == null || targetWrapper.model == sourceCol)
             return;
         if (sourceCol != null)
             sourceCol.getRequests().remove(req);
-        target.getRequests().add(req);
+        targetWrapper.model.getRequests().add(req);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
     }
@@ -369,9 +362,33 @@ public class MainFrame extends JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        collections.remove(col);
+        closeTabsForCollectionRecursive(col);
+        deleteCollectionRecursive(collections, col);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
+    }
+
+    private void closeTabsForCollectionRecursive(CollectionModel col) {
+        if (col.getRequests() != null) {
+            for (RequestModel req : col.getRequests()) {
+                closeTabForRequest(req);
+            }
+        }
+        if (col.getFolders() != null) {
+            for (CollectionModel folder : col.getFolders()) {
+                closeTabsForCollectionRecursive(folder);
+            }
+        }
+    }
+
+    private void closeTabForRequest(RequestModel req) {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c instanceof RequestPanel rp && rp.getRequestModel().getId().equals(req.getId())) {
+                workspaceTabs.removeTabAt(i);
+                break;
+            }
+        }
     }
 
     public void addRequestToCollection(CollectionModel col, String name) {
@@ -396,7 +413,9 @@ public class MainFrame extends JFrame {
 
     public void deleteRequest(RequestModel req) {
         for (CollectionModel col : collections) {
-            col.getRequests().remove(req);
+            if (deleteRequestRecursive(col, req)) {
+                break;
+            }
         }
         saveCollections();
         sidebarPanel.refreshCollections(collections);
@@ -453,14 +472,7 @@ public class MainFrame extends JFrame {
 
     public void duplicateRequest(RequestModel req) {
         for (CollectionModel col : collections) {
-            int index = col.getRequests().indexOf(req);
-            if (index >= 0) {
-                RequestModel dup = duplicateRequestModel(req);
-                dup.setName(req.getName() + " Copy");
-                col.getRequests().add(index + 1, dup);
-                saveCollections();
-                sidebarPanel.refreshCollections(collections);
-                openRequest(dup);
+            if (duplicateRequestRecursive(col, req)) {
                 break;
             }
         }
@@ -470,20 +482,20 @@ public class MainFrame extends JFrame {
         String newName = JOptionPane.showInputDialog(this, "Save As name:", req.getName());
         if (newName == null || newName.isBlank())
             return;
-        List<CollectionModel> cols = getCollections();
-        if (cols.isEmpty()) {
+        List<CollectionPathWrapper> wrappers = getAllCollectionsAndFoldersWithPaths();
+        if (wrappers.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No collections available.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        CollectionModel targetCol = (CollectionModel) JOptionPane.showInputDialog(this,
-                "Select destination collection:", "Save As", JOptionPane.PLAIN_MESSAGE,
-                null, cols.toArray(), cols.get(0));
-        if (targetCol == null)
+        CollectionPathWrapper targetWrapper = (CollectionPathWrapper) JOptionPane.showInputDialog(this,
+                "Select destination collection/folder:", "Save As", JOptionPane.PLAIN_MESSAGE,
+                null, wrappers.toArray(), wrappers.get(0));
+        if (targetWrapper == null)
             return;
 
         RequestModel dup = duplicateRequestModel(req);
         dup.setName(newName.trim());
-        targetCol.getRequests().add(dup);
+        targetWrapper.model.getRequests().add(dup);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRequest(dup);
@@ -539,17 +551,7 @@ public class MainFrame extends JFrame {
 
     public void openRequest(RequestModel req) {
         if ("runner".equals(req.getType())) {
-            CollectionModel parentCol = null;
-            for (CollectionModel col : collections) {
-                for (RequestModel r : col.getRequests()) {
-                    if (r.getId() != null && r.getId().equals(req.getId())) {
-                        parentCol = col;
-                        break;
-                    }
-                }
-                if (parentCol != null)
-                    break;
-            }
+            CollectionModel parentCol = findRequestParent(req);
             if (parentCol != null) {
                 openRunner(parentCol, req);
                 return;
@@ -1280,27 +1282,38 @@ public class MainFrame extends JFrame {
             col.setName(info != null && info.has("name") ? info.get("name").getAsString()
                     : chooser.getSelectedFile().getName());
 
-            List<RequestModel> reqs = new ArrayList<>();
             if (root.has("item") && root.get("item").isJsonArray()) {
-                parsePostmanItems(root.getAsJsonArray("item"), reqs);
+                parsePostmanItemsRecursive(root.getAsJsonArray("item"), col);
             }
-            col.setRequests(reqs);
             collections.add(col);
             saveCollections();
             sidebarPanel.refreshCollections(collections);
+            int totalRequests = countRequestsRecursive(col);
             JOptionPane.showMessageDialog(this,
-                    "Imported " + reqs.size() + " requests into \"" + col.getName() + "\".");
+                    "Imported " + totalRequests + " requests into \"" + col.getName() + "\".");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Import failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void parsePostmanItems(com.google.gson.JsonArray items, List<RequestModel> reqs) {
+    private int countRequestsRecursive(CollectionModel col) {
+        int count = col.getRequests().size();
+        for (CollectionModel folder : col.getFolders()) {
+            count += countRequestsRecursive(folder);
+        }
+        return count;
+    }
+
+    private void parsePostmanItemsRecursive(com.google.gson.JsonArray items, CollectionModel parent) {
         for (com.google.gson.JsonElement el : items) {
             com.google.gson.JsonObject item = el.getAsJsonObject();
             if (item.has("item")) {
                 // Folder
-                parsePostmanItems(item.getAsJsonArray("item"), reqs);
+                CollectionModel subFolder = new CollectionModel();
+                subFolder.setId(UUID.randomUUID().toString());
+                subFolder.setName(item.has("name") ? item.get("name").getAsString() : "Folder");
+                parsePostmanItemsRecursive(item.getAsJsonArray("item"), subFolder);
+                parent.getFolders().add(subFolder);
             } else if (item.has("request")) {
                 RequestModel req = new RequestModel();
                 req.setId(UUID.randomUUID().toString());
@@ -1339,17 +1352,61 @@ public class MainFrame extends JFrame {
                         if (body.has("options")) {
                             com.google.gson.JsonObject opts = body.getAsJsonObject("options");
                             if (opts.has("raw")) {
-                                String lang = opts.getAsJsonObject("raw").has("language")
-                                        ? opts.getAsJsonObject("raw").get("language").getAsString()
-                                        : "json";
-                                req.setBodyRawType(lang.toUpperCase());
+                                com.google.gson.JsonObject rawOpts = opts.getAsJsonObject("raw");
+                                String language = rawOpts.has("language") ? rawOpts.get("language").getAsString() : "json";
+                                if ("json".equalsIgnoreCase(language)) {
+                                    req.setBodyRawType("JSON");
+                                } else if ("html".equalsIgnoreCase(language)) {
+                                    req.setBodyRawType("HTML");
+                                } else if ("xml".equalsIgnoreCase(language)) {
+                                    req.setBodyRawType("XML");
+                                } else if ("javascript".equalsIgnoreCase(language)) {
+                                    req.setBodyRawType("JavaScript");
+                                } else {
+                                    req.setBodyRawType("Text");
+                                }
                             }
-                        } else {
-                            req.setBodyRawType("JSON");
+                        }
+                    } else if ("formdata".equals(mode)) {
+                        req.setBodyType("form-data");
+                        List<KeyValueItem> fd = new ArrayList<>();
+                        if (body.has("formdata") && body.get("formdata").isJsonArray()) {
+                            for (com.google.gson.JsonElement fEl : body.getAsJsonArray("formdata")) {
+                                com.google.gson.JsonObject fObj = fEl.getAsJsonObject();
+                                KeyValueItem kv = new KeyValueItem(
+                                        fObj.has("key") ? fObj.get("key").getAsString() : "",
+                                        fObj.has("value") ? fObj.get("value").getAsString() : "",
+                                        !fObj.has("disabled") || !fObj.get("disabled").getAsBoolean());
+                                kv.setType(fObj.has("type") ? fObj.get("type").getAsString() : "text");
+                                fd.add(kv);
+                            }
+                        }
+                        req.setFormData(fd);
+                    } else if ("urlencoded".equals(mode)) {
+                        req.setBodyType("x-www-form-urlencoded");
+                        List<KeyValueItem> ue = new ArrayList<>();
+                        if (body.has("urlencoded") && body.get("urlencoded").isJsonArray()) {
+                            for (com.google.gson.JsonElement uEl : body.getAsJsonArray("urlencoded")) {
+                                com.google.gson.JsonObject uObj = uEl.getAsJsonObject();
+                                ue.add(new KeyValueItem(
+                                        uObj.has("key") ? uObj.get("key").getAsString() : "",
+                                        uObj.has("value") ? uObj.get("value").getAsString() : "",
+                                        !uObj.has("disabled") || !uObj.get("disabled").getAsBoolean()));
+                            }
+                        }
+                        req.setUrlencodedData(ue);
+                    } else if ("graphql".equals(mode)) {
+                        req.setBodyType("graphql");
+                        if (body.has("graphql")) {
+                            com.google.gson.JsonObject gqlObj = body.getAsJsonObject("graphql");
+                            com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+                            json.addProperty("query", gqlObj.has("query") ? gqlObj.get("query").getAsString() : "");
+                            json.addProperty("variables", gqlObj.has("variables") ? gqlObj.get("variables").getAsString() : "");
+                            req.setBodyRawContent(json.toString());
                         }
                     }
                 }
-                reqs.add(req);
+                parent.getRequests().add(req);
             }
         }
     }
@@ -1372,6 +1429,28 @@ public class MainFrame extends JFrame {
             root.add("info", info);
             root.addProperty("_japi_version", in.slpro.japi.App.getVersion());
             com.google.gson.JsonArray items = new com.google.gson.JsonArray();
+            exportCollectionRecursive(col, items);
+            root.add("item", items);
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
+            showToast(this, "Collection exported successfully.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportCollectionRecursive(CollectionModel col, com.google.gson.JsonArray items) {
+        if (col.getFolders() != null) {
+            for (CollectionModel folder : col.getFolders()) {
+                com.google.gson.JsonObject folderObj = new com.google.gson.JsonObject();
+                folderObj.addProperty("name", folder.getName());
+                com.google.gson.JsonArray folderItems = new com.google.gson.JsonArray();
+                exportCollectionRecursive(folder, folderItems);
+                folderObj.add("item", folderItems);
+                items.add(folderObj);
+            }
+        }
+        if (col.getRequests() != null) {
             for (RequestModel req : col.getRequests()) {
                 if ("runner".equals(req.getType()))
                     continue;
@@ -1385,12 +1464,6 @@ public class MainFrame extends JFrame {
                 item.add("request", reqObj);
                 items.add(item);
             }
-            root.add("item", items);
-            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            showToast(this, "Collection exported successfully.");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -1700,10 +1773,24 @@ public class MainFrame extends JFrame {
         if (id == null)
             return null;
         for (CollectionModel col : collections) {
-            for (RequestModel req : col.getRequests()) {
-                if (id.equals(req.getId())) {
-                    return req;
-                }
+            RequestModel found = findRequestModelRecursive(col, id);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private RequestModel findRequestModelRecursive(CollectionModel col, String id) {
+        for (RequestModel req : col.getRequests()) {
+            if (id.equals(req.getId())) {
+                return req;
+            }
+        }
+        for (CollectionModel sub : col.getFolders()) {
+            RequestModel found = findRequestModelRecursive(sub, id);
+            if (found != null) {
+                return found;
             }
         }
         return null;
@@ -1717,13 +1804,7 @@ public class MainFrame extends JFrame {
         } else if ("runner".equals(ts.getType())) {
             RequestModel runner = findRequestModel(ts.getRequestModelId());
             if (runner != null) {
-                CollectionModel parentCol = null;
-                for (CollectionModel col : collections) {
-                    if (col.getRequests().contains(runner)) {
-                        parentCol = col;
-                        break;
-                    }
-                }
+                CollectionModel parentCol = findRequestParent(runner);
                 if (parentCol != null) {
                     openRunner(parentCol, runner);
                 }
@@ -1829,5 +1910,186 @@ public class MainFrame extends JFrame {
             this.title = title;
             setOpaque(false);
         }
+    }
+
+    public static class CollectionPathWrapper {
+        public final CollectionModel model;
+        public final String path;
+
+        public CollectionPathWrapper(CollectionModel model, String path) {
+            this.model = model;
+            this.path = path;
+        }
+
+        @Override
+        public String toString() {
+            return path;
+        }
+    }
+
+    public List<CollectionPathWrapper> getAllCollectionsAndFoldersWithPaths() {
+        List<CollectionPathWrapper> list = new ArrayList<>();
+        for (CollectionModel col : collections) {
+            collectCollectionsAndFoldersWithPathsRecursive(col, col.getName(), list);
+        }
+        return list;
+    }
+
+    private void collectCollectionsAndFoldersWithPathsRecursive(CollectionModel col, String currentPath, List<CollectionPathWrapper> list) {
+        list.add(new CollectionPathWrapper(col, currentPath));
+        for (CollectionModel sub : col.getFolders()) {
+            collectCollectionsAndFoldersWithPathsRecursive(sub, currentPath + " > " + sub.getName(), list);
+        }
+    }
+
+    public CollectionModel findRequestParent(RequestModel req) {
+        for (CollectionModel col : collections) {
+            CollectionModel parent = findRequestParentRecursive(col, req);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    private CollectionModel findRequestParentRecursive(CollectionModel col, RequestModel req) {
+        if (col.getRequests().contains(req)) {
+            return col;
+        }
+        for (CollectionModel sub : col.getFolders()) {
+            CollectionModel parent = findRequestParentRecursive(sub, req);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    private boolean deleteCollectionRecursive(List<CollectionModel> list, CollectionModel target) {
+        if (list.remove(target)) {
+            return true;
+        }
+        for (CollectionModel col : list) {
+            if (deleteCollectionRecursive(col.getFolders(), target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean deleteRequestRecursive(CollectionModel col, RequestModel req) {
+        if (col.getRequests().remove(req)) {
+            return true;
+        }
+        for (CollectionModel sub : col.getFolders()) {
+            if (deleteRequestRecursive(sub, req)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean duplicateRequestRecursive(CollectionModel col, RequestModel req) {
+        int index = col.getRequests().indexOf(req);
+        if (index >= 0) {
+            RequestModel dup = duplicateRequestModel(req);
+            dup.setName(req.getName() + " Copy");
+            col.getRequests().add(index + 1, dup);
+            saveCollections();
+            sidebarPanel.refreshCollections(collections);
+            openRequest(dup);
+            return true;
+        }
+        for (CollectionModel sub : col.getFolders()) {
+            if (duplicateRequestRecursive(sub, req)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public CollectionModel findCollectionParent(CollectionModel child) {
+        for (CollectionModel col : collections) {
+            if (col == child) return null;
+            CollectionModel parent = findCollectionParentRecursive(col, child);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    private CollectionModel findCollectionParentRecursive(CollectionModel current, CollectionModel target) {
+        for (CollectionModel folder : current.getFolders()) {
+            if (folder == target) {
+                return current;
+            }
+            CollectionModel parent = findCollectionParentRecursive(folder, target);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    public boolean resolveSslVerification(RequestModel req) {
+        if (req == null) {
+            return true;
+        }
+        // 1. Check Global forced options first
+        String globalSetting = storage.getSettings().getGlobalSslSetting();
+        if ("VERIFY_FORCED".equalsIgnoreCase(globalSetting)) {
+            return true;
+        }
+        if ("NO_VERIFY_FORCED".equalsIgnoreCase(globalSetting)) {
+            return false;
+        }
+
+        // 2. Check request setting
+        String reqSetting = req.getSslSetting();
+        if ("VERIFY".equalsIgnoreCase(reqSetting)) {
+            return true;
+        }
+        if ("NO_VERIFY".equalsIgnoreCase(reqSetting)) {
+            return false;
+        }
+
+        // 3. Traversal up parent folders/collections recursively
+        CollectionModel parent = getParentCollection(req);
+        while (parent != null) {
+            String parentSetting = parent.getSslSetting();
+            if ("VERIFY".equalsIgnoreCase(parentSetting)) {
+                return true;
+            }
+            if ("NO_VERIFY".equalsIgnoreCase(parentSetting)) {
+                return false;
+            }
+            parent = findCollectionParent(parent);
+        }
+
+        // 4. Default to Global Setting (VERIFY or NO_VERIFY)
+        return !"NO_VERIFY".equalsIgnoreCase(globalSetting);
+    }
+
+    public static boolean resolveSslVerificationStatic(RequestModel req) {
+        MainFrame frame = getInstance();
+        if (frame != null) {
+            return frame.resolveSslVerification(req);
+        }
+        String globalSetting = StorageManager.getInstance().getSettings().getGlobalSslSetting();
+        if ("VERIFY_FORCED".equalsIgnoreCase(globalSetting)) {
+            return true;
+        }
+        if ("NO_VERIFY_FORCED".equalsIgnoreCase(globalSetting)) {
+            return false;
+        }
+        String reqSetting = req.getSslSetting();
+        if ("VERIFY".equalsIgnoreCase(reqSetting)) {
+            return true;
+        }
+        if ("NO_VERIFY".equalsIgnoreCase(reqSetting)) {
+            return false;
+        }
+        return !"NO_VERIFY".equalsIgnoreCase(globalSetting);
     }
 }

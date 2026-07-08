@@ -7,6 +7,8 @@ public class CollectionModel {
     private String id;
     private String name;
     private List<RequestModel> requests = new ArrayList<>();
+    private List<CollectionModel> folders = new ArrayList<>();
+    private String sslSetting = "INHERIT"; // INHERIT, VERIFY, NO_VERIFY
 
     // Collection level configurations
     private String readme = "";
@@ -57,6 +59,20 @@ public class CollectionModel {
     public void setPreRequestScript(String preRequestScript) { this.preRequestScript = preRequestScript; }
     public String getPostRequestScript() { return postRequestScript; }
     public void setPostRequestScript(String postRequestScript) { this.postRequestScript = postRequestScript; }
+    public List<CollectionModel> getFolders() {
+        if (folders == null) {
+            folders = new ArrayList<>();
+        }
+        return folders;
+    }
+    public void setFolders(List<CollectionModel> folders) { this.folders = folders; }
+    public String getSslSetting() {
+        if (sslSetting == null || sslSetting.isBlank()) {
+            sslSetting = "INHERIT";
+        }
+        return sslSetting;
+    }
+    public void setSslSetting(String sslSetting) { this.sslSetting = sslSetting; }
 
     @Override
     public String toString() {

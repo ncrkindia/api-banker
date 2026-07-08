@@ -7,6 +7,7 @@ public class AppSettings {
     private String activeEnvironmentId;
     private boolean enableLogging = true;
     private int fontSize = 16;
+    private String globalSslSetting = "VERIFY"; // VERIFY, NO_VERIFY, VERIFY_FORCED, NO_VERIFY_FORCED
     private int windowWidth = 1300;
     private int windowHeight = 800;
     private boolean windowMaximized = true;
@@ -43,6 +44,13 @@ public class AppSettings {
     public void setEnableLogging(boolean enableLogging) { this.enableLogging = enableLogging; }
     public int getFontSize() { return fontSize; }
     public void setFontSize(int fontSize) { this.fontSize = fontSize; }
+    public String getGlobalSslSetting() {
+        if (globalSslSetting == null || globalSslSetting.isBlank()) {
+            globalSslSetting = "VERIFY";
+        }
+        return globalSslSetting;
+    }
+    public void setGlobalSslSetting(String globalSslSetting) { this.globalSslSetting = globalSslSetting; }
     public int getWindowWidth() { return windowWidth; }
     public void setWindowWidth(int windowWidth) { this.windowWidth = windowWidth; }
     public int getWindowHeight() { return windowHeight; }

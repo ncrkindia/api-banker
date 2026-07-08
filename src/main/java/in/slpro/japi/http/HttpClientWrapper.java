@@ -25,7 +25,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 
 public class HttpClientWrapper {
-    private final HttpClient httpClient;
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
     private final ScriptExecutor scriptExecutor = new ScriptExecutor();
 
@@ -37,10 +36,6 @@ public class HttpClientWrapper {
     }
 
     public HttpClientWrapper() {
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
     }
 
     private String resolveVariables(String input, RequestModel requestModel, EnvironmentModel environment) {
@@ -330,7 +325,8 @@ public class HttpClientWrapper {
             reqBuilder.method(method, bodyPublisher);
 
             // 5. Execute
-            HttpResponse<String> httpResponse = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            boolean verifySsl = in.slpro.japi.ui.MainFrame.resolveSslVerificationStatic(requestModel);
+            HttpResponse<String> httpResponse = getClient(verifySsl).send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
             long executionTimeMs = System.currentTimeMillis() - startTime;
             Map<String, List<String>> headers = httpResponse.headers().map();
 
@@ -467,5 +463,28 @@ public class HttpClientWrapper {
         bos.write(newline);
 
         return bos.toByteArray();
+    }
+
+    private HttpClient getClient(boolean sslVerification) {
+        HttpClient.Builder builder = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NORMAL);
+        if (!sslVerification) {
+            System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
+            try {
+                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+                sslContext.init(null, new javax.net.ssl.TrustManager[]{
+                    new javax.net.ssl.X509TrustManager() {
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    }
+                }, new java.security.SecureRandom());
+                builder.sslContext(sslContext);
+            } catch (Exception ignored) {}
+        } else {
+            System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "false");
+        }
+        return builder.build();
     }
 }

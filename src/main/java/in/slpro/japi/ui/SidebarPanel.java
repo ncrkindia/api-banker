@@ -137,13 +137,26 @@ public class SidebarPanel extends JPanel {
         collectionsRoot.removeAllChildren();
         for (CollectionModel collection : collections) {
             DefaultMutableTreeNode collNode = new DefaultMutableTreeNode(collection);
-            for (RequestModel req : collection.getRequests()) {
-                collNode.add(new DefaultMutableTreeNode(req));
-            }
+            populateCollectionNode(collNode, collection);
             collectionsRoot.add(collNode);
         }
         collectionsTreeModel.reload();
         expandAllNodes(collectionsTree);
+    }
+
+    private void populateCollectionNode(DefaultMutableTreeNode node, CollectionModel collection) {
+        if (collection.getFolders() != null) {
+            for (CollectionModel subFolder : collection.getFolders()) {
+                DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(subFolder);
+                populateCollectionNode(folderNode, subFolder);
+                node.add(folderNode);
+            }
+        }
+        if (collection.getRequests() != null) {
+            for (RequestModel req : collection.getRequests()) {
+                node.add(new DefaultMutableTreeNode(req));
+            }
+        }
     }
 
     private void expandAllNodes(JTree tree) {
@@ -158,6 +171,19 @@ public class SidebarPanel extends JPanel {
         mainFrame.createCollection(name);
     }
 
+    private void createFolder(DefaultMutableTreeNode node) {
+        if (node.getUserObject() instanceof CollectionModel parentCol) {
+            String name = JOptionPane.showInputDialog(this, "Folder name:", "New Folder", JOptionPane.PLAIN_MESSAGE);
+            if (name == null || name.isBlank()) return;
+            CollectionModel newFolder = new CollectionModel();
+            newFolder.setId(java.util.UUID.randomUUID().toString());
+            newFolder.setName(name);
+            parentCol.getFolders().add(newFolder);
+            mainFrame.saveCollections();
+            refreshCollections(mainFrame.getCollections());
+        }
+    }
+
     private void createRequest() {
         TreePath path = collectionsTree.getSelectionPath();
         CollectionModel targetCollection = null;
@@ -170,14 +196,16 @@ public class SidebarPanel extends JPanel {
             }
         }
         if (targetCollection == null) {
-            List<CollectionModel> cols = mainFrame.getCollections();
-            if (cols.isEmpty()) {
+            List<MainFrame.CollectionPathWrapper> wrappers = mainFrame.getAllCollectionsAndFoldersWithPaths();
+            if (wrappers.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Please create a collection first.", "No Collection", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            targetCollection = (CollectionModel) JOptionPane.showInputDialog(this,
-                    "Select collection:", "Add Request", JOptionPane.PLAIN_MESSAGE,
-                    null, cols.toArray(), cols.get(0));
+            MainFrame.CollectionPathWrapper selected = (MainFrame.CollectionPathWrapper) JOptionPane.showInputDialog(this,
+                    "Select collection/folder:", "Add Request", JOptionPane.PLAIN_MESSAGE,
+                    null, wrappers.toArray(), wrappers.get(0));
+            if (selected == null) return;
+            targetCollection = selected.model;
         }
         if (targetCollection == null) return;
         String name = JOptionPane.showInputDialog(this, "Request name:", "New Request", JOptionPane.PLAIN_MESSAGE);
@@ -196,6 +224,8 @@ public class SidebarPanel extends JPanel {
             JMenu addMenu = new JMenu("Add");
             JMenuItem addReqItem = new JMenuItem("Add Request");
             addReqItem.addActionListener(e -> createRequest());
+            JMenuItem addFolderItem = new JMenuItem("Add Folder");
+            addFolderItem.addActionListener(e -> createFolder(node));
             JMenuItem addRunnerItem = new JMenuItem("Add Runner");
             addRunnerItem.addActionListener(e -> mainFrame.addRunnerToCollection(col));
             JMenuItem addJwtItem = new JMenuItem("Add JWT");
@@ -210,6 +240,7 @@ public class SidebarPanel extends JPanel {
             addWsItem.addActionListener(e -> mainFrame.addWebSocketToCollection(col));
             
             addMenu.add(addReqItem);
+            addMenu.add(addFolderItem);
             addMenu.add(addRunnerItem);
             addMenu.add(addJwtItem);
             addMenu.add(addCompItem);

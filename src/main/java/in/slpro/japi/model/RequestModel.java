@@ -25,6 +25,8 @@ public class RequestModel {
     private String postRequestScript = "";
     private List<KeyValueItem> urlencodedData = new ArrayList<>();
     private String type = "request"; // request, runner
+    private boolean sslVerification = true;
+    private String sslSetting = "INHERIT"; // INHERIT, VERIFY, NO_VERIFY
     // History metadata
     private Long timestamp;
     private Integer responseStatus;
@@ -99,6 +101,19 @@ public class RequestModel {
     public void setComparatorTextB(String comparatorTextB) { this.comparatorTextB = comparatorTextB; }
     public int getComparatorMode() { return comparatorMode; }
     public void setComparatorMode(int comparatorMode) { this.comparatorMode = comparatorMode; }
+    public boolean isSslVerification() { return sslVerification; }
+    public void setSslVerification(boolean sslVerification) { this.sslVerification = sslVerification; }
+    public String getSslSetting() {
+        if (sslSetting == null || sslSetting.isBlank()) {
+            if (!sslVerification) {
+                sslSetting = "NO_VERIFY";
+            } else {
+                sslSetting = "INHERIT";
+            }
+        }
+        return sslSetting;
+    }
+    public void setSslSetting(String sslSetting) { this.sslSetting = sslSetting; }
 
     @Override
     public String toString() {

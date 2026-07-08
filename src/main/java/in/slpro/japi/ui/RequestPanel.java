@@ -47,6 +47,7 @@ public class RequestPanel extends JPanel {
     private JPanel authCardPanel;
     private RSyntaxTextArea preScriptArea;
     private RSyntaxTextArea postScriptArea;
+    private JComboBox<String> sslVerifyCombo;
 
     // Auth fields
     private HighlightTextField bearerTokenField;
@@ -312,6 +313,16 @@ public class RequestPanel extends JPanel {
         postScriptArea = buildScriptArea();
         requestTabs.addTab("Pre-request Script", buildScriptTab(preScriptArea, false));
         requestTabs.addTab("Tests", buildScriptTab(postScriptArea, true));
+
+        // Settings tab
+        JPanel settingsTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        settingsTabPanel.setBackground(UIManager.getColor("Panel.background"));
+        settingsTabPanel.add(new JLabel("SSL Verification:"));
+        sslVerifyCombo = new JComboBox<>(new String[]{"Inherit", "Do not verify", "Verify"});
+        sslVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        sslVerifyCombo.setToolTipText("Select SSL verification behavior. 'Inherit' will resolve to Collection/Folder setting recursively.");
+        settingsTabPanel.add(sslVerifyCombo);
+        requestTabs.addTab("Settings", settingsTabPanel);
 
         // Response
         responsePanel = new ResponsePanel();
@@ -785,6 +796,14 @@ public class RequestPanel extends JPanel {
 
             preScriptArea.setText(requestModel.getPreRequestScript() != null ? requestModel.getPreRequestScript() : "");
             postScriptArea.setText(requestModel.getPostRequestScript() != null ? requestModel.getPostRequestScript() : "");
+            String sslSetting = requestModel.getSslSetting();
+            if ("INHERIT".equalsIgnoreCase(sslSetting)) {
+                sslVerifyCombo.setSelectedIndex(0);
+            } else if ("NO_VERIFY".equalsIgnoreCase(sslSetting)) {
+                sslVerifyCombo.setSelectedIndex(1);
+            } else {
+                sslVerifyCombo.setSelectedIndex(2);
+            }
         } finally {
             isSyncing = false;
         }
@@ -813,6 +832,15 @@ public class RequestPanel extends JPanel {
         requestModel.setAuthApiKeyIn((String) apiKeyInCombo.getSelectedItem());
         requestModel.setPreRequestScript(preScriptArea.getText());
         requestModel.setPostRequestScript(postScriptArea.getText());
+        int sslIndex = sslVerifyCombo.getSelectedIndex();
+        if (sslIndex == 0) {
+            requestModel.setSslSetting("INHERIT");
+        } else if (sslIndex == 1) {
+            requestModel.setSslSetting("NO_VERIFY");
+        } else {
+            requestModel.setSslSetting("VERIFY");
+        }
+        requestModel.setSslVerification(sslIndex != 1);
 
         requestModel.setParams(extractKV(paramsModel));
         requestModel.setHeaders(extractKV(headersModel));
@@ -930,6 +958,15 @@ public class RequestPanel extends JPanel {
         m.setAuthApiKeyIn((String) apiKeyInCombo.getSelectedItem());
         m.setPreRequestScript(preScriptArea.getText());
         m.setPostRequestScript(postScriptArea.getText());
+        int sslIndex2 = sslVerifyCombo.getSelectedIndex();
+        if (sslIndex2 == 0) {
+            m.setSslSetting("INHERIT");
+        } else if (sslIndex2 == 1) {
+            m.setSslSetting("NO_VERIFY");
+        } else {
+            m.setSslSetting("VERIFY");
+        }
+        m.setSslVerification(sslIndex2 != 1);
 
         m.setParams(extractKV(paramsModel));
         m.setHeaders(extractKV(headersModel));
