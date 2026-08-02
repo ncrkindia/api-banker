@@ -1,12 +1,12 @@
-# JAPI Release Plan — v1.0.0-beta
+# JAPI Release Plan — v1.1.0-beta
 
-This document outlines the release plan for **JAPI (v1.0.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the final stable release.
+This document outlines the release plan for **JAPI (v1.1.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the final stable release.
 
 ---
 
 ## 1. Release Goals
 
-JAPI's transition to the `1.0.0-beta` pre-release phase aims to achieve the following:
+JAPI's transition to the `1.1.0-beta` pre-release phase aims to achieve the following:
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
 * **Interoperability Check**: Ensure standard Postman Collection (v2.1) and Environment files import and export seamlessly.
@@ -16,7 +16,7 @@ JAPI's transition to the `1.0.0-beta` pre-release phase aims to achieve the foll
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v1.0.0-beta** release:
+Here is the current implementation status of features included in the **v1.1.0-beta** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -44,10 +44,10 @@ Here is the current implementation status of features included in the **v1.0.0-b
 The application is bundled into a standalone offline-distributable archive.
 
 ### Distribution Artifacts
-* **Target executable**: `japi-1.0.0-beta.jar` (Shaded fat JAR containing all dependencies).
+* **Target executable**: `japi-1.1.0-beta.jar` (Shaded fat JAR containing all dependencies).
 * **Package formats**: `.zip` and `.tar.gz` archive containing launch scripts.
 * **Launch scripts**:
-  - `japi.bat`: Script to run the application on Windows (`javaw -jar japi-1.0.0-beta.jar`).
+  - `japi.bat`: Script to run the application on Windows (`javaw -jar japi-1.1.0-beta.jar`).
   - `japi.sh`: Script to run the application on macOS/Linux (configured with executable permissions `0755`).
 
 ### Packaging Pipeline
@@ -58,7 +58,7 @@ mvn clean package -DskipTests
 This produces `target/japi.zip` which unzips to:
 ```
 japi/
-├── japi-1.0.0-beta.jar
+├── japi-1.1.0-beta.jar
 ├── japi.bat
 └── japi.sh
 ```
@@ -97,7 +97,7 @@ gantt
     title JAPI Milestone Schedule (v1.0.0)
     dateFormat  YYYY-MM-DD
     section Pre-Release
-    Beta Release (v1.0.0-beta)     :active, milestone, 2026-07-08, 1d
+    Beta Release (v1.1.0-beta)     :active, milestone, 2026-07-08, 1d
     Beta Feedback & Bug Fixing    :2026-07-08, 14d
     section Release Candidate
     RC1 Packaging & Checkouts     :2026-07-22, 5d

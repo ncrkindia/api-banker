@@ -26,6 +26,8 @@ public class SidebarPanel extends JPanel {
     private DefaultMutableTreeNode historyRoot;
     private JTree historyTree;
 
+    private boolean isRefreshingTree = false;
+
     public SidebarPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout());
@@ -120,16 +122,28 @@ public class SidebarPanel extends JPanel {
 
                 if (SwingUtilities.isRightMouseButton(e)) {
                     collectionsTree.setSelectionPath(path);
+                    if (node.getUserObject() instanceof CollectionModel col) {
+                        mainFrame.openCollection(col);
+                    }
                     showCollectionContextMenu(e.getX(), e.getY(), node);
                 } else if (e.getClickCount() == 2) {
                     if (node.getUserObject() instanceof RequestModel req) {
                         mainFrame.openRequest(req);
-                    }
-                } else if (e.getClickCount() == 1) {
-                    if (node.getUserObject() instanceof CollectionModel col) {
+                    } else if (node.getUserObject() instanceof CollectionModel col) {
                         mainFrame.openCollection(col);
                     }
                 }
+            }
+        });
+
+        collectionsTree.addTreeExpansionListener(new javax.swing.event.TreeExpansionListener() {
+            @Override
+            public void treeExpanded(javax.swing.event.TreeExpansionEvent event) {
+                saveExpandedState();
+            }
+            @Override
+            public void treeCollapsed(javax.swing.event.TreeExpansionEvent event) {
+                saveExpandedState();
             }
         });
 
@@ -137,7 +151,20 @@ public class SidebarPanel extends JPanel {
         return panel;
     }
 
+    private void saveExpandedState() {
+        if (!isRefreshingTree) {
+            java.util.List<String> expandedIds = getExpandedNodeIds(collectionsTree);
+            in.slpro.japi.storage.StorageManager.getInstance().getSettings().setExpandedTreeNodes(expandedIds);
+            in.slpro.japi.storage.StorageManager.getInstance().saveSettings();
+        }
+    }
+
     public void refreshCollections(List<CollectionModel> collections) {
+        isRefreshingTree = true;
+        java.util.List<String> expandedIds = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getExpandedTreeNodes();
+        if (expandedIds == null) {
+            expandedIds = new ArrayList<>();
+        }
         collectionsRoot.removeAllChildren();
         for (CollectionModel collection : collections) {
             DefaultMutableTreeNode collNode = new DefaultMutableTreeNode(collection);
@@ -145,7 +172,47 @@ public class SidebarPanel extends JPanel {
             collectionsRoot.add(collNode);
         }
         collectionsTreeModel.reload();
-        expandAllNodes(collectionsTree);
+        restoreExpandedNodes(collectionsTree, collectionsRoot, expandedIds);
+        isRefreshingTree = false;
+    }
+
+    private List<String> getExpandedNodeIds(JTree tree) {
+        List<String> expandedIds = new ArrayList<>();
+        for (int i = 0; i < tree.getRowCount(); i++) {
+            if (tree.isExpanded(i)) {
+                TreePath path = tree.getPathForRow(i);
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                Object userObject = node.getUserObject();
+                if (userObject instanceof CollectionModel col) {
+                    expandedIds.add("COL_" + col.getId());
+                } else if (userObject instanceof RequestModel req) {
+                    expandedIds.add("REQ_" + req.getId());
+                } else if (userObject instanceof String str) {
+                    expandedIds.add("STR_" + str);
+                }
+            }
+        }
+        return expandedIds;
+    }
+
+    private void restoreExpandedNodes(JTree tree, DefaultMutableTreeNode node, List<String> expandedIds) {
+        Object userObject = node.getUserObject();
+        String id = null;
+        if (userObject instanceof CollectionModel col) {
+            id = "COL_" + col.getId();
+        } else if (userObject instanceof RequestModel req) {
+            id = "REQ_" + req.getId();
+        } else if (userObject instanceof String str) {
+            id = "STR_" + str;
+        }
+
+        if (id != null && expandedIds.contains(id)) {
+            tree.expandPath(new TreePath(node.getPath()));
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            restoreExpandedNodes(tree, (DefaultMutableTreeNode) node.getChildAt(i), expandedIds);
+        }
     }
 
     private void populateCollectionNode(DefaultMutableTreeNode node, CollectionModel collection) {
@@ -163,11 +230,7 @@ public class SidebarPanel extends JPanel {
         }
     }
 
-    private void expandAllNodes(JTree tree) {
-        for (int i = 0; i < tree.getRowCount(); i++) {
-            tree.expandRow(i);
-        }
-    }
+
 
     private void createCollection() {
         String name = JOptionPane.showInputDialog(this, "Collection name:", "New Collection",
@@ -419,7 +482,6 @@ public class SidebarPanel extends JPanel {
         }
 
         historyTreeModel.reload();
-        expandAllNodes(historyTree);
     }
 
     // ─── Renderers ────────────────────────────────────────────────────────────
@@ -435,27 +497,32 @@ public class SidebarPanel extends JPanel {
                     setFont(getFont().deriveFont(Font.BOLD));
                     // Keep default FlatLaf folder icon
                 } else if (node.getUserObject() instanceof RequestModel req) {
+                    Color fgColor = selected ? UIManager.getColor("Tree.selectionForeground") : UIManager.getColor("Tree.foreground");
+                    if (fgColor == null) fgColor = UIManager.getColor("Label.foreground");
+                    if (fgColor == null) fgColor = selected ? Color.WHITE : Color.BLACK;
+                    String fgHex = toHex(fgColor);
                     if ("runner".equals(req.getType())) {
-                        Color runnerColor = new Color(255, 108, 55); // Postman Orange
-                        setText("<html><span style='color:" + toHex(runnerColor) + ";font-weight:bold;'>RUNNER</span> "
-                                + req.getName() + "</html>");
+                        Color runnerColor = UIManager.getColor("AccentColor");
+                        if (runnerColor == null) runnerColor = new Color(26, 115, 232);
+                        setText("<html><span style='color:" + toHex(runnerColor) + ";font-weight:bold;'>RUNNER</span> <span style='color:" + fgHex + "'>"
+                                + req.getName() + "</span></html>");
                     } else if ("comparator".equals(req.getType())) {
                         Color compColor = new Color(142, 68, 173); // Purple
-                        setText("<html><span style='color:" + toHex(compColor) + ";font-weight:bold;'>COMPARE</span> "
-                                + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(compColor) + ";font-weight:bold;'>COMPARE</span> <span style='color:" + fgHex + "'>"
+                                + req.getName() + "</span></html>");
                     } else if ("mockserver".equals(req.getType())) {
                         Color mockColor = new Color(41, 128, 185); // Blue
-                        setText("<html><span style='color:" + toHex(mockColor) + ";font-weight:bold;'>MOCK</span> "
-                                + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(mockColor) + ";font-weight:bold;'>MOCK</span> <span style='color:" + fgHex + "'>"
+                                + req.getName() + "</span></html>");
                     } else if ("websocket".equals(req.getType())) {
                         Color wsColor = new Color(46, 204, 113); // Green
-                        setText("<html><span style='color:" + toHex(wsColor) + ";font-weight:bold;'>WS</span> "
-                                + req.getName() + "</html>");
+                        setText("<html><span style='color:" + toHex(wsColor) + ";font-weight:bold;'>WS</span> <span style='color:" + fgHex + "'>"
+                                + req.getName() + "</span></html>");
                     } else {
                         String method = req.getMethod() != null ? req.getMethod() : "GET";
                         Color methodColor = getMethodColor(method);
                         setText("<html><span style='color:" + toHex(methodColor) + ";font-weight:bold;'>" +
-                                method + "</span> " + req.getName() + "</html>");
+                                method + "</span> <span style='color:" + fgHex + "'>" + req.getName() + "</span></html>");
                     }
                     setFont(getFont().deriveFont(Font.PLAIN));
                     setIcon(null); // Clear generic file icon next to request methods
@@ -505,8 +572,12 @@ public class SidebarPanel extends JPanel {
                     String displayUrl = url.isEmpty() ? "(No URL)"
                             : (url.length() > 40 ? url.substring(0, 40) + "…" : url);
                     Color methodColor = getMethodColor(method);
+                    Color fgColor = selected ? UIManager.getColor("Tree.selectionForeground") : UIManager.getColor("Tree.foreground");
+                    if (fgColor == null) fgColor = UIManager.getColor("Label.foreground");
+                    if (fgColor == null) fgColor = selected ? Color.WHITE : Color.BLACK;
+                    String fgHex = toHex(fgColor);
                     setText("<html><span style='color:" + toHex(methodColor) + ";font-weight:bold;'>" +
-                            method + "</span> " + displayUrl + "</html>");
+                            method + "</span> <span style='color:" + fgHex + "'>" + displayUrl + "</span></html>");
 
                     // Tooltip showing full URL + status
                     StringBuilder tip = new StringBuilder("<html>");
@@ -525,7 +596,11 @@ public class SidebarPanel extends JPanel {
                     setIcon(null);
                 } else {
                     // Date header node (Year, Month, or Date)
-                    setText("<html><b>" + node.getUserObject() + "</b></html>");
+                    Color fgColor = selected ? UIManager.getColor("Tree.selectionForeground") : UIManager.getColor("Tree.foreground");
+                    if (fgColor == null) fgColor = UIManager.getColor("Label.foreground");
+                    if (fgColor == null) fgColor = selected ? Color.WHITE : Color.BLACK;
+                    String fgHex = toHex(fgColor);
+                    setText("<html><b style='color:" + fgHex + "'>" + node.getUserObject() + "</b></html>");
                     setFont(tree.getFont().deriveFont(Font.BOLD, tree.getFont().getSize() - 1f));
                     setToolTipText(null);
                     setIcon(null);

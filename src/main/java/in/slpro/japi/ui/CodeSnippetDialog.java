@@ -56,7 +56,16 @@ public class CodeSnippetDialog extends JDialog {
         codeArea.setAntiAliasingEnabled(true);
         codeArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         codeArea.setHighlightCurrentLine(false);
+        try {
+            if ("dark".equals(in.slpro.japi.storage.StorageManager.getInstance().getSettings().getTheme())) {
+                org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(
+                        getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/dark.xml"));
+                theme.apply(codeArea);
+            }
+        } catch (Exception ignored) {}
+
         codeArea.setBackground(UIManager.getColor("Workspace.background"));
+        codeArea.setForeground(UIManager.getColor("Label.foreground"));
         codeArea.setCaretColor(UIManager.getColor("Label.foreground"));
 
         RTextScrollPane scrollPane = new RTextScrollPane(codeArea);
@@ -72,7 +81,6 @@ public class CodeSnippetDialog extends JDialog {
         ));
 
         copyBtn = new JButton("Copy to Clipboard");
-        copyBtn.setPreferredSize(new Dimension(150, 30));
         Color accent = UIManager.getColor("AccentColor");
         copyBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         copyBtn.setForeground(Color.WHITE);
@@ -95,6 +103,10 @@ public class CodeSnippetDialog extends JDialog {
         // Initialize display
         updateCodeStyle();
         generateCode();
+
+        int fontSize = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getFontSize();
+        if (fontSize < 10) fontSize = 16;
+        FontScaleHelper.scaleFonts(this, fontSize);
     }
 
     private void updateCodeStyle() {

@@ -9,6 +9,7 @@ public class CollectionModel {
     private List<RequestModel> requests = new ArrayList<>();
     private List<CollectionModel> folders = new ArrayList<>();
     private String sslSetting = "INHERIT"; // INHERIT, VERIFY, NO_VERIFY
+    private String redirectSetting = "INHERIT"; // INHERIT, YES, NO
 
     // Collection level configurations
     private String readme = "";
@@ -39,6 +40,11 @@ public class CollectionModel {
 
     public String getReadme() { return readme; }
     public void setReadme(String readme) { this.readme = readme; }
+    public String getRedirectSetting() {
+        if (redirectSetting == null) return "INHERIT";
+        return redirectSetting;
+    }
+    public void setRedirectSetting(String redirectSetting) { this.redirectSetting = redirectSetting; }
     public String getAuthType() { return authType; }
     public void setAuthType(String authType) { this.authType = authType; }
     public String getAuthToken() { return authToken; }

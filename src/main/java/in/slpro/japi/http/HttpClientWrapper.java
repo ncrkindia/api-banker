@@ -326,7 +326,8 @@ public class HttpClientWrapper {
 
             // 5. Execute
             boolean verifySsl = in.slpro.japi.ui.MainFrame.resolveSslVerificationStatic(requestModel);
-            HttpResponse<String> httpResponse = getClient(verifySsl).send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            boolean followRedirects = in.slpro.japi.ui.MainFrame.resolveRedirectSettingStatic(requestModel);
+            HttpResponse<String> httpResponse = getClient(verifySsl, followRedirects).send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
             long executionTimeMs = System.currentTimeMillis() - startTime;
             Map<String, List<String>> headers = httpResponse.headers().map();
 
@@ -351,12 +352,38 @@ public class HttpClientWrapper {
 
             if (!silentMode && ConsoleLogger.getInstance().isEnableLogging()) {
                 Map<String, List<String>> reqHeaders = reqBuilder.build().headers().map();
-                ConsoleLogger.getInstance().logRequest(method, resolvedUrl, statusCode, executionTimeMs,
+                
+                // Log intermediate redirects
+                java.util.List<HttpResponse<String>> prevResponses = new java.util.ArrayList<>();
+                java.util.Optional<HttpResponse<String>> prev = httpResponse.previousResponse();
+                while (prev.isPresent()) {
+                    prevResponses.add(0, prev.get()); // add to beginning to keep chronological order
+                    prev = prev.get().previousResponse();
+                }
+                
+                for (HttpResponse<String> pr : prevResponses) {
+                    ConsoleLogger.getInstance().logRequest(pr.request().method(), pr.request().uri().toString(), 
+                            pr.statusCode(), 0, pr.request().headers().map(), "", pr.headers().map(), "");
+                }
+                
+                ConsoleLogger.getInstance().logRequest(method, httpResponse.uri().toString(), statusCode, executionTimeMs,
                         reqHeaders, resolvedBodyStr, headers, responseBody);
             }
 
             ResponseModel response = new ResponseModel(statusCode, statusText, executionTimeMs, sizeBytes, responseBody, headers);
-            response.setActualUrl(resolvedUrl);
+            response.setActualUrl(httpResponse.uri().toString());
+            
+            // Capture redirects for Collection Runner
+            java.util.List<ResponseModel> redirects = new java.util.ArrayList<>();
+            java.util.Optional<HttpResponse<String>> p = httpResponse.previousResponse();
+            while (p.isPresent()) {
+                HttpResponse<String> pr = p.get();
+                ResponseModel rm = new ResponseModel(pr.statusCode(), getStatusText(pr.statusCode()), 0, 0, "", pr.headers().map());
+                rm.setActualUrl(pr.request().uri().toString());
+                redirects.add(0, rm);
+                p = pr.previousResponse();
+            }
+            response.setRedirects(redirects);
 
             // Execute test scripts: Collection-level first, then Request-level
             ScriptResult collTestResult = new ScriptResult();
@@ -465,10 +492,10 @@ public class HttpClientWrapper {
         return bos.toByteArray();
     }
 
-    private HttpClient getClient(boolean sslVerification) {
+    private HttpClient getClient(boolean sslVerification, boolean followRedirects) {
         HttpClient.Builder builder = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
-                .followRedirects(HttpClient.Redirect.NORMAL);
+                .followRedirects(followRedirects ? HttpClient.Redirect.NORMAL : HttpClient.Redirect.NEVER);
         if (!sslVerification) {
             System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
             try {
@@ -481,6 +508,10 @@ public class HttpClientWrapper {
                     }
                 }, new java.security.SecureRandom());
                 builder.sslContext(sslContext);
+
+                javax.net.ssl.SSLParameters sslParams = new javax.net.ssl.SSLParameters();
+                sslParams.setEndpointIdentificationAlgorithm("");
+                builder.sslParameters(sslParams);
             } catch (Exception ignored) {}
         } else {
             System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "false");

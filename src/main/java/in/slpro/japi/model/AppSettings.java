@@ -8,11 +8,13 @@ public class AppSettings {
     private boolean enableLogging = true;
     private int fontSize = 16;
     private String globalSslSetting = "VERIFY"; // VERIFY, NO_VERIFY, VERIFY_FORCED, NO_VERIFY_FORCED
+    private String globalRedirectSetting = "YES"; // YES, NO, YES_FORCED, NO_FORCED
     private int windowWidth = 1300;
     private int windowHeight = 800;
     private boolean windowMaximized = true;
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
+    private java.util.List<String> expandedTreeNodes = new java.util.ArrayList<>();
 
     private int selectedTabIndex = -1;
 
@@ -51,6 +53,13 @@ public class AppSettings {
         return globalSslSetting;
     }
     public void setGlobalSslSetting(String globalSslSetting) { this.globalSslSetting = globalSslSetting; }
+    public String getGlobalRedirectSetting() {
+        if (globalRedirectSetting == null || globalRedirectSetting.isBlank()) {
+            globalRedirectSetting = "YES";
+        }
+        return globalRedirectSetting;
+    }
+    public void setGlobalRedirectSetting(String globalRedirectSetting) { this.globalRedirectSetting = globalRedirectSetting; }
     public int getWindowWidth() { return windowWidth; }
     public void setWindowWidth(int windowWidth) { this.windowWidth = windowWidth; }
     public int getWindowHeight() { return windowHeight; }
@@ -61,6 +70,8 @@ public class AppSettings {
     public void setSelectedTabIndex(int selectedTabIndex) { this.selectedTabIndex = selectedTabIndex; }
     public java.util.List<OpenTabState> getOpenTabs() { return openTabs; }
     public void setOpenTabs(java.util.List<OpenTabState> openTabs) { this.openTabs = openTabs; }
+    public java.util.List<String> getExpandedTreeNodes() { return expandedTreeNodes; }
+    public void setExpandedTreeNodes(java.util.List<String> expandedTreeNodes) { this.expandedTreeNodes = expandedTreeNodes; }
 
     public int getConsoleWidth() { return consoleWidth; }
     public void setConsoleWidth(int consoleWidth) { this.consoleWidth = consoleWidth; }

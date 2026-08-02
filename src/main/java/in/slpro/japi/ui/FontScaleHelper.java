@@ -29,6 +29,14 @@ public class FontScaleHelper {
             table.setRowHeight(size + 12);
         }
 
+        if (comp instanceof AbstractButton btn) {
+            if (!"×".equals(btn.getText())) {
+                int padY = Math.max(2, size / 5);
+                int padX = Math.max(6, size / 2);
+                btn.setMargin(new Insets(padY, padX, padY, padX));
+            }
+        }
+
         if (comp instanceof JComponent jcomp) {
             if (jcomp.getBorder() instanceof TitledBorder titledBorder) {
                 Font borderFont = titledBorder.getTitleFont();

@@ -92,6 +92,7 @@ public class CollectionRunnerPanel extends JPanel {
     // Run statistics & metadata
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private File currentRunDir;
 
     // Aggregate statistics helper
     private static class RequestStats {
@@ -222,7 +223,7 @@ public class CollectionRunnerPanel extends JPanel {
         stopBtn.setEnabled(false);
         stopBtn.addActionListener(e -> stopRun());
 
-        JButton reportBtn = new JButton("Export Report");
+        JButton reportBtn = new JButton("Export Metrics");
         reportBtn.addActionListener(e -> {
             JPopupMenu menu = new JPopupMenu();
             JMenuItem excelItem = new JMenuItem("Export as Excel (.xlsx)");
@@ -242,6 +243,19 @@ public class CollectionRunnerPanel extends JPanel {
             menu.addSeparator();
             menu.add(htmlItem);
             menu.add(csvItem);
+
+            menu.addSeparator();
+            JMenu logsMenu = new JMenu("Export Logs");
+            JMenuItem sumLogItem = new JMenuItem("Summary Only");
+            sumLogItem.addActionListener(evt -> exportLogs("summary"));
+            JMenuItem dumpLogItem = new JMenuItem("Dump Only");
+            dumpLogItem.addActionListener(evt -> exportLogs("dump"));
+            JMenuItem bothLogItem = new JMenuItem("Summary + Dump");
+            bothLogItem.addActionListener(evt -> exportLogs("full"));
+            logsMenu.add(sumLogItem);
+            logsMenu.add(dumpLogItem);
+            logsMenu.add(bothLogItem);
+            menu.add(logsMenu);
             menu.show(reportBtn, 0, reportBtn.getHeight());
         });
 
@@ -816,7 +830,7 @@ public class CollectionRunnerPanel extends JPanel {
         return name.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase();
     }
 
-    private File getLogFile() {
+    private File getLogDir() {
         String logsDir = StorageManager.getInstance().getSettings().getLogsDirectory();
         File logsFolder = new File(logsDir);
         if (!logsFolder.exists())
@@ -825,14 +839,18 @@ public class CollectionRunnerPanel extends JPanel {
         String cleanColl = sanitizeFilename(collection.getName());
         String cleanRunner = sanitizeFilename(runnerModel.getName());
         String dirName = cleanColl + "-" + cleanRunner;
-        File runDir = new File(logsFolder, dirName);
-        if (!runDir.exists()) {
-            runDir.mkdirs();
+        File runGroupDir = new File(logsFolder, dirName);
+        if (!runGroupDir.exists()) {
+            runGroupDir.mkdirs();
         }
 
         LocalDateTime start = (startTime != null) ? startTime : LocalDateTime.now();
         String fileStr = start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
-        return new File(runDir, fileStr + ".log");
+        File specificRunDir = new File(runGroupDir, fileStr);
+        if (!specificRunDir.exists()) {
+            specificRunDir.mkdirs();
+        }
+        return specificRunDir;
     }
 
     private EnvironmentModel resolveSelectedEnvironment() {
@@ -904,7 +922,8 @@ public class CollectionRunnerPanel extends JPanel {
         progressBar.setMaximum(totalTotalReqs);
         progressBar.setValue(0);
 
-        File logFile = saveLogs ? getLogFile() : null;
+        currentRunDir = saveLogs ? getLogDir() : null;
+        File runDir = currentRunDir;
 
         AtomicInteger completedCount = new AtomicInteger(0);
         AtomicInteger passedCount = new AtomicInteger(0);
@@ -917,9 +936,13 @@ public class CollectionRunnerPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 PrintWriter logWriter = null;
-                if (logFile != null) {
+                PrintWriter dumpWriter = null;
+                if (runDir != null) {
                     try {
-                        logWriter = new PrintWriter(new FileWriter(logFile, StandardCharsets.UTF_8, true));
+                        logWriter = new PrintWriter(
+                                new FileWriter(new File(runDir, "summary.log"), StandardCharsets.UTF_8, true));
+                        dumpWriter = new PrintWriter(
+                                new FileWriter(new File(runDir, "dump.log"), StandardCharsets.UTF_8, true));
                         String startedStr = startTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                         logWriter.println("=== Execution Log ===");
                         logWriter.println("Collection Name: " + collection.getName());
@@ -930,12 +953,18 @@ public class CollectionRunnerPanel extends JPanel {
                         logWriter.println("Load Profile: Fixed (Threads: " + vusers + ")");
                         logWriter.println("Limit: Iterations = " + iterations);
                         logWriter.println("=================================================");
+
+                        dumpWriter.println("=== Full Request/Response Dump ===");
+                        dumpWriter.println("Collection Name: " + collection.getName());
+                        dumpWriter.println("Started: " + startedStr);
+                        dumpWriter.println("=================================================");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
 
                 final PrintWriter finalWriter = logWriter;
+                final PrintWriter finalDumpWriter = dumpWriter;
                 HttpClientWrapper client = new HttpClientWrapper();
                 client.setSilentMode(true);
 
@@ -1005,6 +1034,122 @@ public class CollectionRunnerPanel extends JPanel {
                                             logTime, req.getMethod(), req.getName(), response.getStatusCode(), dur);
                                 }
                             }
+                            if (finalDumpWriter != null) {
+                                synchronized (finalDumpWriter) {
+                                    String logTime = java.time.LocalDateTime.now().format(
+                                            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                                    finalDumpWriter.println("-------------------------------------------------");
+                                    finalDumpWriter.println("Time: " + logTime);
+                                    finalDumpWriter.println("Request Name: " + req.getName());
+                                    finalDumpWriter.println("URL: " + req.getMethod() + " "
+                                            + (response.getActualUrl() != null ? response.getActualUrl()
+                                                    : req.getUrl()));
+
+                                    finalDumpWriter.println("\n[Request Headers]");
+                                    if (req.getHeaders() != null) {
+                                        for (KeyValueItem kv : req.getHeaders()) {
+                                            if (kv.isEnabled() && kv.getKey() != null && !kv.getKey().isBlank()) {
+                                                finalDumpWriter.println(kv.getKey() + ": "
+                                                        + (kv.getValue() != null ? kv.getValue() : ""));
+                                            }
+                                        }
+                                    }
+
+                                    finalDumpWriter.println("\n[Authorization]");
+                                    String authType = req.getAuthType();
+                                    if ("inherit".equalsIgnoreCase(authType) || authType == null
+                                            || authType.isEmpty()) {
+                                        authType = collection.getAuthType();
+                                        finalDumpWriter.println("Inherited from Collection:");
+                                    }
+                                    finalDumpWriter.println("Type: " + (authType != null ? authType : "none"));
+                                    if ("bearer".equalsIgnoreCase(authType)) {
+                                        finalDumpWriter.println(
+                                                "Token: " + (req.getAuthToken() != null && !req.getAuthToken().isEmpty()
+                                                        ? req.getAuthToken()
+                                                        : collection.getAuthToken()));
+                                    } else if ("basic".equalsIgnoreCase(authType)) {
+                                        finalDumpWriter.println("Username: "
+                                                + (req.getAuthUsername() != null && !req.getAuthUsername().isEmpty()
+                                                        ? req.getAuthUsername()
+                                                        : collection.getAuthUsername()));
+                                        finalDumpWriter.println("Password: "
+                                                + (req.getAuthPassword() != null && !req.getAuthPassword().isEmpty()
+                                                        ? req.getAuthPassword()
+                                                        : collection.getAuthPassword()));
+                                    } else if ("apiKey".equalsIgnoreCase(authType)) {
+                                        finalDumpWriter.println("Key Name: "
+                                                + (req.getAuthApiKeyName() != null && !req.getAuthApiKeyName().isEmpty()
+                                                        ? req.getAuthApiKeyName()
+                                                        : collection.getAuthApiKeyName()));
+                                        finalDumpWriter.println("Key Value: " + (req.getAuthApiKeyValue() != null
+                                                && !req.getAuthApiKeyValue().isEmpty() ? req.getAuthApiKeyValue()
+                                                        : collection.getAuthApiKeyValue()));
+                                        finalDumpWriter.println("Add To: "
+                                                + (req.getAuthApiKeyIn() != null && !req.getAuthApiKeyIn().isEmpty()
+                                                        ? req.getAuthApiKeyIn()
+                                                        : collection.getAuthApiKeyIn()));
+                                    }
+
+                                    finalDumpWriter.println("\n[Request Body]");
+                                    finalDumpWriter.println("Type: " + req.getBodyType());
+                                    if ("raw".equalsIgnoreCase(req.getBodyType())) {
+                                        finalDumpWriter.println(req.getBodyRawContent());
+                                    } else if ("form-data".equalsIgnoreCase(req.getBodyType())
+                                            && req.getFormData() != null) {
+                                        for (KeyValueItem kv : req.getFormData()) {
+                                            if (kv.isEnabled())
+                                                finalDumpWriter.println(kv.getKey() + "=" + kv.getValue() + " (type="
+                                                        + kv.getType() + ")");
+                                        }
+                                    } else if (("form".equalsIgnoreCase(req.getBodyType())
+                                            || "x-www-form-urlencoded".equalsIgnoreCase(req.getBodyType()))) {
+                                        List<KeyValueItem> items = req.getUrlencodedData();
+                                        if (items == null || items.isEmpty())
+                                            items = req.getFormData();
+                                        if (items != null) {
+                                            for (KeyValueItem kv : items) {
+                                                if (kv.isEnabled())
+                                                    finalDumpWriter.println(kv.getKey() + "=" + kv.getValue());
+                                            }
+                                        }
+                                    }
+
+                                    if (response.getRedirects() != null && !response.getRedirects().isEmpty()) {
+                                        finalDumpWriter.println("\n[Redirect History]");
+                                        for (int i = 0; i < response.getRedirects().size(); i++) {
+                                            ResponseModel rm = response.getRedirects().get(i);
+                                            finalDumpWriter.println("  Redirect " + (i + 1) + ": " + rm.getStatusCode()
+                                                    + " " + rm.getStatusText());
+                                            finalDumpWriter.println("  URL: " + rm.getActualUrl());
+                                            if (rm.getHeaders() != null) {
+                                                for (Map.Entry<String, List<String>> entry : rm.getHeaders()
+                                                        .entrySet()) {
+                                                    finalDumpWriter.println("  " + entry.getKey() + ": "
+                                                            + String.join(", ", entry.getValue()));
+                                                }
+                                            }
+                                            finalDumpWriter.println();
+                                        }
+                                    }
+
+                                    finalDumpWriter.println("\n[Final Response Status]");
+                                    finalDumpWriter.println(response.getStatusCode() + " " + response.getStatusText());
+                                    finalDumpWriter.println("Latency: " + dur + "ms");
+                                    finalDumpWriter.println("Size: " + response.getSizeBytes() + " bytes");
+                                    finalDumpWriter.println("\nResponse Headers:");
+                                    if (response.getHeaders() != null) {
+                                        for (Map.Entry<String, List<String>> entry : response.getHeaders().entrySet()) {
+                                            finalDumpWriter.println(
+                                                    entry.getKey() + ": " + String.join(", ", entry.getValue()));
+                                        }
+                                    }
+                                    finalDumpWriter.println("\nResponse Body:");
+                                    finalDumpWriter.println(response.getBody());
+                                    finalDumpWriter.println("-------------------------------------------------\n");
+                                    finalDumpWriter.flush();
+                                }
+                            }
 
                             if (delay > 0) {
                                 try {
@@ -1029,6 +1174,14 @@ public class CollectionRunnerPanel extends JPanel {
                                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                     }
                     finalWriter.close();
+                }
+                if (finalDumpWriter != null) {
+                    synchronized (finalDumpWriter) {
+                        finalDumpWriter.println("=================================================");
+                        finalDumpWriter.println("Finished: "
+                                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                    }
+                    finalDumpWriter.close();
                 }
                 return null;
             }
@@ -1244,7 +1397,9 @@ public class CollectionRunnerPanel extends JPanel {
         }
 
         JFileChooser chooser = new JFileChooser();
-        String safeName = sanitizeFilename(collection.getName()) + "-report." + format;
+        String datetime = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
+        String safeName = sanitizeFilename(collection.getName()) + "-" + datetime + "." + format;
         chooser.setSelectedFile(new File(safeName));
         chooser.setDialogTitle("Export Execution Report (" + format.toUpperCase() + ")");
 
@@ -1270,10 +1425,53 @@ public class CollectionRunnerPanel extends JPanel {
         }
     }
 
+    private void exportLogs(String type) {
+        if (currentRunDir == null || !currentRunDir.exists()) {
+            JOptionPane.showMessageDialog(this,
+                    "No logs were saved for this run. Ensure 'Save Logs' is checked before running.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JFileChooser chooser = new JFileChooser();
+        String datetime = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
+        String safeName = sanitizeFilename(collection.getName()) + "-" + datetime + "-" + type + ".log";
+        chooser.setSelectedFile(new File(safeName));
+        chooser.setDialogTitle("Export Logs (" + type.toUpperCase() + ")");
+
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
+        File file = chooser.getSelectedFile();
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
+            if ("summary".equals(type) || "full".equals(type)) {
+                File summaryFile = new File(currentRunDir, "summary.log");
+                if (summaryFile.exists()) {
+                    pw.println("================= SUMMARY LOG =================");
+                    java.nio.file.Files.lines(summaryFile.toPath()).forEach(pw::println);
+                }
+            }
+            if ("dump".equals(type) || "full".equals(type)) {
+                File dumpFile = new File(currentRunDir, "dump.log");
+                if (dumpFile.exists()) {
+                    pw.println("\n================= DUMP LOG =================");
+                    java.nio.file.Files.lines(dumpFile.toPath()).forEach(pw::println);
+                }
+            }
+            showToast(this, "Logs exported successfully to: " + file.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to export logs: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private byte[] getChartImageBytes(boolean isStatusCodes) throws Exception {
         BufferedImage img = new BufferedImage(800, 400, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = img.createGraphics();
-        g2.setColor(Color.WHITE);
+        Color bg = UIManager.getColor("Panel.background");
+        g2.setColor(bg != null ? bg : Color.WHITE);
         g2.fillRect(0, 0, 800, 400);
         chartPanel.drawChart(g2, 800, 400, isStatusCodes);
         g2.dispose();
@@ -1292,17 +1490,25 @@ public class CollectionRunnerPanel extends JPanel {
 
         document.open();
 
+        boolean isDark = UIManager.getBoolean("FlatLaf.dark");
+        Color pdfFg = isDark ? new Color(220, 220, 220) : Color.BLACK;
+
+        Color accentColor = UIManager.getColor("AccentColor");
+        if (accentColor == null)
+            accentColor = new Color(26, 115, 232);
+
         // Title block
         com.lowagie.text.Font titleFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 18,
-                com.lowagie.text.Font.BOLD, new Color(255, 108, 55));
-        com.lowagie.text.Paragraph title = new com.lowagie.text.Paragraph("JAPI PERFORMANCE RUNNER REPORT", titleFont);
+                com.lowagie.text.Font.BOLD, accentColor);
+        com.lowagie.text.Paragraph title = new com.lowagie.text.Paragraph("JAPI Collection Performance Metrics",
+                titleFont);
         title.setAlignment(com.lowagie.text.Element.ALIGN_CENTER);
         title.setSpacingAfter(15);
         document.add(title);
 
         // Metadata / Load Profile
         com.lowagie.text.Font metaFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 10,
-                com.lowagie.text.Font.NORMAL);
+                com.lowagie.text.Font.NORMAL, pdfFg);
         document.add(new com.lowagie.text.Paragraph("Collection: " + collection.getName(), metaFont));
         document.add(new com.lowagie.text.Paragraph("Runner Model: " + runnerModel.getName(), metaFont));
         document.add(new com.lowagie.text.Paragraph("Run Started: " + (startTime != null ? startTime.toString() : "-")
@@ -1326,7 +1532,7 @@ public class CollectionRunnerPanel extends JPanel {
         com.lowagie.text.Font cellHeaderFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 11,
                 com.lowagie.text.Font.BOLD, Color.WHITE);
         com.lowagie.text.Font cellValFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12,
-                com.lowagie.text.Font.BOLD);
+                com.lowagie.text.Font.BOLD, pdfFg);
 
         String[] headers = { "Total Requests", "Passed", "Failed", "Avg Duration" };
         String[] vals = { totalReqLabel.getText(), passedLabel.getText(), failedLabel.getText(),
@@ -1338,6 +1544,7 @@ public class CollectionRunnerPanel extends JPanel {
             com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(
                     new com.lowagie.text.Paragraph(headers[i], cellHeaderFont));
             cell.setBackgroundColor(bgColors[i]);
+            cell.setBorderColor(isDark ? new Color(68, 68, 68) : Color.LIGHT_GRAY);
             cell.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
             cell.setPadding(8);
             summaryTable.addCell(cell);
@@ -1347,6 +1554,8 @@ public class CollectionRunnerPanel extends JPanel {
             com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(
                     new com.lowagie.text.Paragraph(vals[i], cellValFont));
             cell.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
+            cell.setBackgroundColor(isDark ? new Color(30, 31, 34) : Color.WHITE);
+            cell.setBorderColor(isDark ? new Color(68, 68, 68) : Color.LIGHT_GRAY);
             cell.setPadding(10);
             summaryTable.addCell(cell);
         }
@@ -1354,7 +1563,7 @@ public class CollectionRunnerPanel extends JPanel {
 
         // Add visual charts
         com.lowagie.text.Font sectionFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 14,
-                com.lowagie.text.Font.BOLD);
+                com.lowagie.text.Font.BOLD, pdfFg);
         document.add(new com.lowagie.text.Paragraph("Performance Analytics Charts", sectionFont));
         document.add(new com.lowagie.text.Paragraph("\n"));
 
@@ -1386,16 +1595,18 @@ public class CollectionRunnerPanel extends JPanel {
         aggTable.setWidths(new float[] { 3f, 1f, 1.2f, 1.5f, 1.2f, 1f, 1f, 1.2f });
 
         com.lowagie.text.Font tableHeaderFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 9,
-                com.lowagie.text.Font.BOLD);
-        com.lowagie.text.Font tableRowFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 8);
+                com.lowagie.text.Font.BOLD, pdfFg);
+        com.lowagie.text.Font tableRowFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 8,
+                com.lowagie.text.Font.NORMAL, pdfFg);
         com.lowagie.text.Font totalRowFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 8,
-                com.lowagie.text.Font.BOLD);
+                com.lowagie.text.Font.BOLD, pdfFg);
 
         String[] colHeaders = { "Name", "Method", "Samples", "Codes", "Avg", "Min", "Max", "Success %" };
         for (String colHeader : colHeaders) {
             com.lowagie.text.pdf.PdfPCell hCell = new com.lowagie.text.pdf.PdfPCell(
                     new com.lowagie.text.Paragraph(colHeader, tableHeaderFont));
-            hCell.setBackgroundColor(new Color(240, 240, 240));
+            hCell.setBackgroundColor(isDark ? new Color(30, 31, 34) : new Color(240, 240, 240));
+            hCell.setBorderColor(isDark ? new Color(68, 68, 68) : Color.LIGHT_GRAY);
             hCell.setPadding(5);
             aggTable.addCell(hCell);
         }
@@ -1404,22 +1615,15 @@ public class CollectionRunnerPanel extends JPanel {
             boolean isTotal = "TOTAL".equals(aggregateModel.getValueAt(i, 0));
             com.lowagie.text.Font rowF = isTotal ? totalRowFont : tableRowFont;
 
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 0)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 1)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 2)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 3)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 4)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 5)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 6)), rowF)));
-            aggTable.addCell(new com.lowagie.text.pdf.PdfPCell(
-                    new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, 14)), rowF)));
+            for (int j = 0; j < 8; j++) {
+                int colIdx = j == 7 ? 14 : j; // Map success %
+                com.lowagie.text.pdf.PdfPCell dCell = new com.lowagie.text.pdf.PdfPCell(
+                        new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, colIdx)), rowF));
+                dCell.setBorderColor(isDark ? new Color(68, 68, 68) : Color.LIGHT_GRAY);
+                if (isDark)
+                    dCell.setBackgroundColor(new Color(43, 45, 49));
+                aggTable.addCell(dCell);
+            }
         }
 
         document.add(aggTable);
@@ -1568,24 +1772,46 @@ public class CollectionRunnerPanel extends JPanel {
             String sysUser = System.getProperty("user.name");
             String genAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
+            boolean isDark = UIManager.getBoolean("FlatLaf.dark");
+            String bg = isDark ? "#2b2d31" : "#f8f9fa";
+            String fg = isDark ? "#e0e0e0" : "#333";
+            String cardBg = isDark ? "#313338" : "#fff";
+            String thBg = isDark ? "#2b2d31" : "#f1f3f5";
+            String totalBg = isDark ? "#404249" : "#eaeded";
+            String border = isDark ? "#444" : "#eee";
+
+            Color accentColor = UIManager.getColor("AccentColor");
+            if (accentColor == null)
+                accentColor = new Color(26, 115, 232);
+            String accentHex = String.format("#%02x%02x%02x", accentColor.getRed(), accentColor.getGreen(),
+                    accentColor.getBlue());
+
             pw.println(
                     "<!DOCTYPE html><html><head><title>JAPI Execution Report - " + collection.getName() + "</title>");
-            pw.println("<style>body{font-family:'Segoe UI',sans-serif;margin:20px;background:#f8f9fa;color:#333;}");
+            pw.println("<style>body{font-family:'Segoe UI',sans-serif;margin:20px;background:" + bg + ";color:" + fg
+                    + ";}");
             pw.println(
-                    ".header{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.05);margin-bottom:20px;}");
+                    ".header{background:" + cardBg
+                            + ";padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin-bottom:20px;border-top: 4px solid "
+                            + accentHex + ";}");
             pw.println(".metrics{display:flex;gap:15px;margin-bottom:20px;}");
             pw.println(
-                    ".card{background:#fff;padding:15px;border-radius:6px;flex:1;box-shadow:0 1px 3px rgba(0,0,0,0.05);}");
+                    ".card{background:" + cardBg
+                            + ";padding:15px;border-radius:6px;flex:1;box-shadow:0 1px 3px rgba(0,0,0,0.1);}");
             pw.println(
-                    "table{width:100%;border-collapse:collapse;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:30px;}");
+                    "table{width:100%;border-collapse:collapse;background:" + cardBg
+                            + ";box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:30px;}");
             pw.println(
-                    "th,td{padding:10px;text-align:left;border-bottom:1px solid #eee;}th{background:#f1f3f5;} tr.total{font-weight:bold;background:#eaeded;}</style></head><body>");
+                    "th,td{padding:10px;text-align:left;border-bottom:1px solid " + border + ";}th{background:" + thBg
+                            + ";} tr.total{font-weight:bold;background:" + totalBg + ";}</style></head><body>");
 
             pw.println(
                     "<div style='text-align:right; font-size:12px; color:#888; margin-bottom:10px;'>SLPRO JAPI Studio &copy; 2026</div>");
 
-            pw.println("<div class='header'><h2>Execution Report: " + collection.getName() + "</h2>");
-            pw.println("<p><b>Runner:</b> " + runnerModel.getName() + " | <b>Run By:</b> " + sysUser + "</p>");
+            pw.println("<div class='header'><h2 style='color:" + accentHex
+                    + "; margin-top:0;'>JAPI Collection Performance Metrics</h2>");
+            pw.println("<p><b>Collection:</b> " + collection.getName() + " | <b>Runner:</b> " + runnerModel.getName()
+                    + " | <b>Run By:</b> " + sysUser + "</p>");
             pw.println("<p><b>Started At:</b> " + (startTime != null ? startTime : "-") + " | <b>Finished At:</b> "
                     + (endTime != null ? endTime : "-") + "</p>");
             pw.println("<p><b>Environment:</b> " + (env != null ? env.getName() : "None")
@@ -1671,6 +1897,19 @@ public class CollectionRunnerPanel extends JPanel {
 
     private static class PDFBrandingEvent extends com.lowagie.text.pdf.PdfPageEventHelper {
         @Override
+        public void onStartPage(com.lowagie.text.pdf.PdfWriter writer, com.lowagie.text.Document document) {
+            boolean isDark = UIManager.getBoolean("FlatLaf.dark");
+            if (isDark) {
+                com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContentUnder();
+                cb.saveState();
+                cb.setColorFill(new Color(43, 45, 49));
+                cb.rectangle(0, 0, document.getPageSize().getWidth(), document.getPageSize().getHeight());
+                cb.fill();
+                cb.restoreState();
+            }
+        }
+
+        @Override
         public void onEndPage(com.lowagie.text.pdf.PdfWriter writer, com.lowagie.text.Document document) {
             com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
             cb.saveState();
@@ -1681,8 +1920,9 @@ public class CollectionRunnerPanel extends JPanel {
                         com.lowagie.text.pdf.BaseFont.HELVETICA_BOLD, com.lowagie.text.pdf.BaseFont.CP1252,
                         com.lowagie.text.pdf.BaseFont.NOT_EMBEDDED);
                 cb.setFontAndSize(bf, 8);
-                cb.setColorFill(new Color(255, 108, 55)); // Postman orange
-                cb.showTextAligned(com.lowagie.text.pdf.PdfContentByte.ALIGN_LEFT, "JAPI PERFORMANCE REPORT",
+                Color accentColor = UIManager.getColor("AccentColor");
+                cb.setColorFill((accentColor != null) ? accentColor : new Color(26, 115, 232));
+                cb.showTextAligned(com.lowagie.text.pdf.PdfContentByte.ALIGN_LEFT, "JAPI Performance Metrics",
                         document.left(), document.top() + 10, 0);
 
                 com.lowagie.text.pdf.BaseFont bf2 = com.lowagie.text.pdf.BaseFont.createFont(
@@ -1690,7 +1930,7 @@ public class CollectionRunnerPanel extends JPanel {
                         com.lowagie.text.pdf.BaseFont.NOT_EMBEDDED);
                 cb.setFontAndSize(bf2, 8);
                 cb.setColorFill(Color.GRAY);
-                cb.showTextAligned(com.lowagie.text.pdf.PdfContentByte.ALIGN_RIGHT, "SLPRO Studio", document.right(),
+                cb.showTextAligned(com.lowagie.text.pdf.PdfContentByte.ALIGN_RIGHT, "SL Pro", document.right(),
                         document.top() + 10, 0);
             } catch (Exception ignored) {
             }
@@ -1715,7 +1955,7 @@ public class CollectionRunnerPanel extends JPanel {
                 cb.setFontAndSize(bf, 8);
                 cb.setColorFill(Color.GRAY);
                 cb.showTextAligned(com.lowagie.text.pdf.PdfContentByte.ALIGN_LEFT,
-                        "Confidential - Generated by Japi - from SL Pro", document.left(), document.bottom() - 15, 0);
+                        "Confidential - Generated by JAPI - from SL Pro", document.left(), document.bottom() - 15, 0);
                 cb.showTextAligned(com.lowagie.text.pdf.PdfContentByte.ALIGN_RIGHT, "Page " + writer.getPageNumber(),
                         document.right(), document.bottom() - 15, 0);
             } catch (Exception ignored) {
@@ -1787,7 +2027,7 @@ public class CollectionRunnerPanel extends JPanel {
     private void collectRequestsRecursive(CollectionModel col, List<RequestModel> list) {
         if (col.getRequests() != null) {
             for (RequestModel req : col.getRequests()) {
-                if (!"runner".equalsIgnoreCase(req.getType())) {
+                if (req.getType() == null || "request".equalsIgnoreCase(req.getType())) {
                     list.add(req);
                 }
             }

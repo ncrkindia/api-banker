@@ -27,6 +27,7 @@ public class RequestModel {
     private String type = "request"; // request, runner
     private boolean sslVerification = true;
     private String sslSetting = "INHERIT"; // INHERIT, VERIFY, NO_VERIFY
+    private String redirectSetting = "INHERIT"; // INHERIT, YES, NO
     // History metadata
     private Long timestamp;
     private Integer responseStatus;
@@ -114,6 +115,13 @@ public class RequestModel {
         return sslSetting;
     }
     public void setSslSetting(String sslSetting) { this.sslSetting = sslSetting; }
+    public String getRedirectSetting() {
+        if (redirectSetting == null || redirectSetting.isBlank()) {
+            redirectSetting = "INHERIT";
+        }
+        return redirectSetting;
+    }
+    public void setRedirectSetting(String redirectSetting) { this.redirectSetting = redirectSetting; }
 
     @Override
     public String toString() {

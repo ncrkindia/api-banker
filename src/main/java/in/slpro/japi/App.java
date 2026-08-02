@@ -39,15 +39,30 @@ public class App {
         try {
             if ("dark".equals(theme)) {
                 FlatDarkLaf.setup();
+                
+                Color primaryAccentDark = new Color(138, 180, 248); // #8AB4F8
+                
+                UIManager.put("AccentColor", primaryAccentDark);
+                
                 UIManager.put("Button.arc", 4);
                 UIManager.put("Component.arc", 4);
                 UIManager.put("TextComponent.arc", 4);
                 UIManager.put("ProgressBar.arc", 4);
 
+                // Focus rings and borders
+                UIManager.put("Component.focusColor", primaryAccentDark);
+                UIManager.put("Component.focusedBorderColor", primaryAccentDark);
+                UIManager.put("Button.focusColor", primaryAccentDark);
+                UIManager.put("Button.focusedBorderColor", primaryAccentDark);
+
                 UIManager.put("TabbedPane.showTabSeparators", true);
+                UIManager.put("TabbedPane.underlineColor", primaryAccentDark);
+                UIManager.put("TabbedPane.focusColor", primaryAccentDark);
                 UIManager.put("TabbedPane.tabHeight", 34);
                 UIManager.put("TabbedPane.selectedBackground", new Color(45, 48, 52));
                 UIManager.put("TabbedPane.hoverColor", new Color(60, 63, 67));
+                UIManager.put("TabbedPane.foreground", new Color(200, 200, 200));
+                UIManager.put("TabbedPane.selectedForeground", Color.WHITE);
 
                 Color darkBg = new Color(30, 30, 30);
                 Color panelBg = new Color(40, 44, 52);
@@ -68,7 +83,7 @@ public class App {
             } else {
                 FlatLightLaf.setup();
 
-                Color postmanOrange = new Color(255, 108, 55); // #FF6C37
+                Color primaryAccent = new Color(26, 115, 232); // #1A73E8
                 Color lightBg = new Color(255, 255, 255);
                 Color panelBg = new Color(248, 249, 250);
                 Color darkText = new Color(33, 33, 33);
@@ -82,7 +97,7 @@ public class App {
                 UIManager.put("ProgressBar.arc", 4);
 
                 // Accent
-                UIManager.put("AccentColor", postmanOrange);
+                UIManager.put("AccentColor", primaryAccent);
 
                 // Tabs
                 UIManager.put("TabbedPane.showTabSeparators", true);
@@ -92,15 +107,15 @@ public class App {
                 UIManager.put("TabbedPane.foreground", darkText);
                 UIManager.put("TabbedPane.selectedForeground", Color.BLACK);
                 UIManager.put("TabbedPane.hoverColor", selectBg);
-                UIManager.put("TabbedPane.underlineColor", postmanOrange);
+                UIManager.put("TabbedPane.underlineColor", primaryAccent);
                 UIManager.put("TabbedPane.inactiveUnderlineColor", lightBg);
-                UIManager.put("TabbedPane.focusColor", postmanOrange);
+                UIManager.put("TabbedPane.focusColor", primaryAccent);
 
                 // Focus rings and borders
-                UIManager.put("Component.focusColor", postmanOrange);
-                UIManager.put("Component.focusedBorderColor", postmanOrange);
-                UIManager.put("Button.focusColor", postmanOrange);
-                UIManager.put("Button.focusedBorderColor", postmanOrange);
+                UIManager.put("Component.focusColor", primaryAccent);
+                UIManager.put("Component.focusedBorderColor", primaryAccent);
+                UIManager.put("Button.focusColor", primaryAccent);
+                UIManager.put("Button.focusedBorderColor", primaryAccent);
                 UIManager.put("Button.background", lightBg);
                 UIManager.put("Button.hoverBackground", selectBg);
 

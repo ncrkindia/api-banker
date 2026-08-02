@@ -36,4 +36,8 @@ public class ResponseModel {
     public void setHeaders(Map<String, List<String>> headers) { this.headers = headers; }
     public String getActualUrl() { return actualUrl; }
     public void setActualUrl(String actualUrl) { this.actualUrl = actualUrl; }
+    
+    private List<ResponseModel> redirects = new java.util.ArrayList<>();
+    public List<ResponseModel> getRedirects() { return redirects; }
+    public void setRedirects(List<ResponseModel> redirects) { this.redirects = redirects; }
 }

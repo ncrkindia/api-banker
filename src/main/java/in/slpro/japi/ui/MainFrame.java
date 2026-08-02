@@ -41,6 +41,8 @@ public class MainFrame extends JFrame {
     public CollectionModel getParentCollection(RequestModel req) {
         return findRequestParent(req);
     }
+    
+    public List<RequestModel> getHistoryList() { return history; }
 
     public static CollectionModel findParentCollection(RequestModel req) {
         MainFrame frame = getInstance();
@@ -168,6 +170,8 @@ public class MainFrame extends JFrame {
         newReqItem.addActionListener(e -> openNewRequest());
         JMenuItem importItem = new JMenuItem("Import ");
         importItem.addActionListener(e -> importPostmanFiles());
+        JMenuItem exportItem = new JMenuItem("Export...");
+        exportItem.addActionListener(e -> openExportTab());
         JMenuItem settingsItem = new JMenuItem("Settings...");
         settingsItem.addActionListener(e -> openSettings());
         JMenuItem exitItem = new JMenuItem("Exit");
@@ -175,6 +179,7 @@ public class MainFrame extends JFrame {
         fileMenu.add(newReqItem);
         fileMenu.addSeparator();
         fileMenu.add(importItem);
+        fileMenu.add(exportItem);
         fileMenu.addSeparator();
         fileMenu.add(settingsItem);
         fileMenu.addSeparator();
@@ -681,7 +686,9 @@ public class MainFrame extends JFrame {
         welcomePane.setEditable(false);
         welcomePane.setBackground(UIManager.getColor("Panel.background"));
 
-        String accentHex = "#FF6C37"; // Postman orange
+        Color accentColor = UIManager.getColor("AccentColor");
+        if (accentColor == null) accentColor = new Color(26, 115, 232);
+        String accentHex = String.format("#%02x%02x%02x", accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue());
         String textHex = "#555555";
         String cardBgHex = "#FFFFFF";
 
@@ -768,6 +775,21 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRequest(req);
+    }
+
+    private void openExportTab() {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component c = workspaceTabs.getComponentAt(i);
+            if (c instanceof ExportPanel) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+        ExportPanel panel = new ExportPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Export", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Export", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
     }
 
     public void openJwtDecoder() {
@@ -2184,5 +2206,66 @@ public class MainFrame extends JFrame {
             return false;
         }
         return !"NO_VERIFY".equalsIgnoreCase(globalSetting);
+    }
+
+    public boolean resolveRedirectSetting(RequestModel req) {
+        if (req == null) {
+            return true;
+        }
+        // 1. Check Global forced options first
+        String globalSetting = storage.getSettings().getGlobalRedirectSetting();
+        if ("YES_FORCED".equalsIgnoreCase(globalSetting)) {
+            return true;
+        }
+        if ("NO_FORCED".equalsIgnoreCase(globalSetting)) {
+            return false;
+        }
+
+        // 2. Check request setting
+        String reqSetting = req.getRedirectSetting();
+        if ("YES".equalsIgnoreCase(reqSetting)) {
+            return true;
+        }
+        if ("NO".equalsIgnoreCase(reqSetting)) {
+            return false;
+        }
+
+        // 3. Traversal up parent folders/collections recursively
+        CollectionModel parent = getParentCollection(req);
+        while (parent != null) {
+            String parentSetting = parent.getRedirectSetting();
+            if ("YES".equalsIgnoreCase(parentSetting)) {
+                return true;
+            }
+            if ("NO".equalsIgnoreCase(parentSetting)) {
+                return false;
+            }
+            parent = findCollectionParent(parent);
+        }
+
+        // 4. Default to Global Setting (YES or NO)
+        return !"NO".equalsIgnoreCase(globalSetting);
+    }
+
+    public static boolean resolveRedirectSettingStatic(RequestModel req) {
+        MainFrame frame = getInstance();
+        if (frame != null) {
+            return frame.resolveRedirectSetting(req);
+        }
+        String globalSetting = StorageManager.getInstance().getSettings().getGlobalRedirectSetting();
+        if ("YES_FORCED".equalsIgnoreCase(globalSetting)) {
+            return true;
+        }
+        if ("NO_FORCED".equalsIgnoreCase(globalSetting)) {
+            return false;
+        }
+        String reqSetting = req.getRedirectSetting();
+        if ("YES".equalsIgnoreCase(reqSetting)) {
+            return true;
+        }
+        if ("NO".equalsIgnoreCase(reqSetting)) {
+            return false;
+        }
+        return !"NO".equalsIgnoreCase(globalSetting);
     }
 }

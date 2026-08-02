@@ -46,10 +46,10 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
 Here is a list of features queued for future development iterations:
 
 ### Protocol Enhancements
-* [ ] **Multipart/Form-Data Support**: Add a file/text form-data selector inside the Request Body tab to upload binary files.
-* [ ] **Cookie Jar Manager**: Capture response cookies and attach them to outgoing requests of matching domains.
+* [x] **Multipart/Form-Data Support**: Add a file/text form-data selector inside the Request Body tab to upload binary files.
+* [x] **Cookie Jar Manager**: Capture response cookies and attach them to outgoing requests of matching domains.
 * [ ] **WebSocket Client**: A dedicated tab style to establish connection, send frame payloads, and stream real-time events.
-* [ ] **GraphQL Support**: An editor pane to write GraphQL queries, variables, and fetch introspection schemas.
+* [x] **GraphQL Support**: An editor pane to write GraphQL queries, variables, and fetch introspection schemas.
 
 ### Automation & Scripting
 * [x] **Pre-request & Test Scripts**: Embed a JavaScript engine (e.g., Nashorn or GraalVM JavaScript) to run pre-request setups and validation assertions (similar to Postman's `pm.test` API).

@@ -15,6 +15,7 @@ public class SettingsPanel extends JPanel {
     private JComboBox<String> themeCombo;
     private JCheckBox loggingCheck;
     private JComboBox<String> sslPolicyCombo;
+    private JComboBox<String> redirectPolicyCombo;
 
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -135,10 +136,10 @@ public class SettingsPanel extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1;
         sslPolicyCombo = new JComboBox<>(new String[] {
-            "Verify",
-            "Don't Verify",
-            "Verify (FORCED)",
-            "Don't Verify (FORCED)"
+                "Verify",
+                "Don't Verify",
+                "Verify (FORCED)",
+                "Don't Verify (FORCED)"
         });
         sslPolicyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         String currentSsl = storage.getSettings().getGlobalSslSetting();
@@ -153,9 +154,38 @@ public class SettingsPanel extends JPanel {
         }
         contentPanel.add(sslPolicyCombo, gbc);
 
-        // Empty space filler
+        // Global Redirect row
         gbc.gridx = 0;
         gbc.gridy = 5;
+        gbc.weightx = 0;
+        JLabel redirectLabel = new JLabel("Auto Redirect Policy (302):");
+        redirectLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(redirectLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        redirectPolicyCombo = new JComboBox<>(new String[] {
+                "Yes (Follow)",
+                "No (Don't Follow)",
+                "Yes (FORCED)",
+                "No (FORCED)"
+        });
+        redirectPolicyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        String currentRedirect = storage.getSettings().getGlobalRedirectSetting();
+        if ("NO".equalsIgnoreCase(currentRedirect)) {
+            redirectPolicyCombo.setSelectedIndex(1);
+        } else if ("YES_FORCED".equalsIgnoreCase(currentRedirect)) {
+            redirectPolicyCombo.setSelectedIndex(2);
+        } else if ("NO_FORCED".equalsIgnoreCase(currentRedirect)) {
+            redirectPolicyCombo.setSelectedIndex(3);
+        } else {
+            redirectPolicyCombo.setSelectedIndex(0);
+        }
+        contentPanel.add(redirectPolicyCombo, gbc);
+
+        // Empty space filler
+        gbc.gridx = 0;
+        gbc.gridy = 6;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -171,14 +201,23 @@ public class SettingsPanel extends JPanel {
         saveBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         saveBtn.setForeground(Color.WHITE);
         saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        saveBtn.setPreferredSize(new Dimension(130, 32));
         saveBtn.addActionListener(e -> {
-            storage.updateDataDirectory(dirField.getText().trim());
+            String newDir = dirField.getText().trim();
+            boolean dirChanged = !newDir.equals(storage.getSettings().getDataDirectory());
+
+            storage.updateDataDirectory(newDir);
+
+            if (dirChanged) {
+                storage.saveCollections(mainFrame.getCollections());
+                storage.saveEnvironments(mainFrame.getEnvironments());
+                storage.saveHistory(mainFrame.getHistoryList());
+            }
+
             storage.updateLogsDirectory(logsDirField.getText().trim());
             storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
             storage.getSettings().setEnableLogging(loggingCheck.isSelected());
             in.slpro.japi.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
-            
+
             int sslIndex = sslPolicyCombo.getSelectedIndex();
             String sslVal = "VERIFY";
             if (sslIndex == 1) {
@@ -189,14 +228,13 @@ public class SettingsPanel extends JPanel {
                 sslVal = "NO_VERIFY_FORCED";
             }
             storage.getSettings().setGlobalSslSetting(sslVal);
-            
+
             storage.saveSettings();
             MainFrame.showToast(this, "Settings saved. Restart JAPI to apply theme changes.");
         });
 
         JButton cancelBtn = new JButton("Close Tab");
         cancelBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cancelBtn.setPreferredSize(new Dimension(100, 32));
         cancelBtn.addActionListener(e -> {
             mainFrame.closeTab(this);
         });

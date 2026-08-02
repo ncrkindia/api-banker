@@ -1,9 +1,9 @@
-# JAPI - Offline-First API Testing Client (v1.0.0-beta)
+# JAPI - Offline-First API Testing Client (v1.1.0-beta)
 
 JAPI is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, JAPI lets developers design, run, test, and manage REST requests locally on their machines without any registration, telemetry, or external network dependencies.
 
 > [!NOTE]
-> **Pre-Release Beta Version**: This version (v1.0.0-beta) is a pre-release candidate. It features a complete offline toolset, environment resolution, and a JavaScript-based collection runner, and is currently open for public beta testing and feedback.
+> **Pre-Release Beta Version**: This version (v1.1.0-beta) is a pre-release candidate. It features a complete offline toolset, environment resolution, and a JavaScript-based collection runner, and is currently open for public beta testing and feedback.
 
 ---
 
@@ -22,6 +22,7 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 * **Authorization Support**: Native support for common auth methods, including **Bearer Token**, **Basic Auth**, and custom **API Key** headers.
 * **Per-Request SSL Verification**: Granular control via settings to enable or disable SSL certificate verification for individual requests to support testing environments with self-signed certificates.
 * **Flexible SSL Management**: Enabled to trust local self-signed SSL certificates automatically, allowing seamless testing of local development setups (`http://localhost`, etc.).
+* **Hierarchical Auto-Redirect (302) Control**: Configurable redirect governance that bubbles up from the Request layer to the Collection layer, up to the Global App Settings (which supports `Forced` overrides) mimicking the SSL governance strategy.
 
 ### ⚙️ Environments & Variables
 * **Dynamic Variable Interpolation**: Inject environment and collection variables in double braces (e.g. `{{host}}`) directly into URLs, request headers, query parameters, auth values, and body payloads.
@@ -32,9 +33,10 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 
 ### 🧪 Automation, Scripting & Mocking
 * **Pre & Post Request Scripts**: Support for scripting to dynamically execute JavaScript code before a request is sent, or parse and assert responses (e.g. capturing tokens from auth responses to set environment variables dynamically).
-* **Collection Runner**: Sequence executor to run all requests in a collection sequentially, featuring a progress dashboard and success/failure statistics reporting.
+* **Collection Runner**: Sequence executor to run all requests in a collection sequentially, featuring a progress dashboard and success/failure statistics reporting. Automatically filters out non-HTTP nodes (like mock servers) to ensure clean test runs.
 * **History Logging**: Chronological history of executed requests with filter searching.
 * **Isolated Performance & Server Logging**: Separates logs for mock server runs and collection execution runs. Log outputs are stored in a configurable folder, populated with parent collection metadata (names, IDs, ports, timestamps) for robust post-execution audits.
+* **Comprehensive Dump Logs**: Collection runs generate highly detailed `dump.log` files that capture request headers, full request bodies, authorization configurations, and complete chronological histories of intermediate redirect paths.
 
 ### 🎨 Developer Experience (DX)
 * **Pinning & Tab Management**: Standard tab controls including Pin/Unpin, Rename, Close others, Close to the left, Close to the right, and Close all.
@@ -42,7 +44,9 @@ JAPI is a lightweight, high-performance, and **completely offline** desktop API 
 * **Zoom Support**: Scale the UI, labels, editor font size, and text layouts globally using `Ctrl + +` / `Ctrl + =` (Zoom In) and `Ctrl + -` (Zoom Out).
 * **Save Hotkey**: Save your current request, collection state, or mock server configuration instantly using `Ctrl + S`.
 * **Postman Interoperability**: Built-in support to import and export collections and environments in standard Postman formats. The importer supports selecting multiple files simultaneously and automatically detects whether they are Collections or Environments to import them seamlessly in a single action.
-* **Configurable Storage Directories**: Customize both your local workspace **Data Directory** and **Logs Directory** on-the-fly using the integrated Settings tab and built-in folder browser.
+* **Multi-File Bulk Exporter**: Select multiple Collections and Environments from an intuitive checklist tree and export them all at once to a selected target directory as individual files.
+* **Configurable Storage Directories**: Customize both your local workspace **Config Directory** and **Logs Directory** on-the-fly using the integrated Settings tab and built-in folder browser. Changing your Config Directory automatically migrates all existing collections, environments, and history to the new location without any data loss.
+* **Smart UI State Preservation**: Complex components, like the hierarchical Collection Tree, maintain their exact expansion states and focus rings even when items are added, deleted, or structurally modified.
 
 ---
 
@@ -72,7 +76,7 @@ To compile, build, and package the application into a single executable shaded J
 mvn clean package -DskipTests
 ```
 
-This outputs a shaded executable JAR under `target/japi-1.0.0-beta.jar`.
+This outputs a shaded executable JAR under `target/japi-1.1.0-beta.jar`.
 
 ### Run the Application
 
@@ -85,7 +89,7 @@ mvn compile exec:java -Dexec.mainClass="in.slpro.japi.App"
 #### Executing the JAR directly
 Once built, you can launch the compiled shaded JAR file:
 ```bash
-java -jar target/japi-1.0.0-beta.jar
+java -jar target/japi-1.1.0-beta.jar
 ```
 
 #### Using Launch Scripts (Distribution Bundle)

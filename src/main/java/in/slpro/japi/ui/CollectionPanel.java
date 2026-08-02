@@ -61,6 +61,7 @@ public class CollectionPanel extends JPanel {
     // Tests (Post-request) Script tab
     private RSyntaxTextArea postScriptArea;
     private JComboBox<String> sslVerifyCombo;
+    private JComboBox<String> redirectVerifyCombo;
 
     public CollectionPanel(MainFrame mainFrame, CollectionModel collectionModel) {
         this.mainFrame = mainFrame;
@@ -360,14 +361,27 @@ public class CollectionPanel extends JPanel {
         tabbedPane.addTab("Tests", buildScriptTab(postScriptArea, true));
 
         // 6. Settings Tab
-        JPanel settingsTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        JPanel settingsTabPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        settingsTabPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         settingsTabPanel.setBackground(UIManager.getColor("Panel.background"));
+        
         settingsTabPanel.add(new JLabel("SSL Verification:"));
         sslVerifyCombo = new JComboBox<>(new String[]{"Inherit", "Do not verify", "Verify"});
         sslVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         sslVerifyCombo.setToolTipText("Select SSL verification behavior for this collection/folder. 'Inherit' resolves to parent collection/folder setting recursively, or global setting.");
         settingsTabPanel.add(sslVerifyCombo);
-        tabbedPane.addTab("Settings", settingsTabPanel);
+
+        settingsTabPanel.add(new JLabel("Auto Redirect (302):"));
+        redirectVerifyCombo = new JComboBox<>(new String[]{"Inherit", "No (Don't follow)", "Yes (Follow)"});
+        redirectVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        redirectVerifyCombo.setToolTipText("Select redirect behavior for this collection/folder. 'Inherit' resolves to parent collection/folder setting recursively, or global setting.");
+        settingsTabPanel.add(redirectVerifyCombo);
+        
+        JPanel settingsOuter = new JPanel(new BorderLayout());
+        settingsOuter.setBackground(UIManager.getColor("Panel.background"));
+        settingsOuter.add(settingsTabPanel, BorderLayout.NORTH);
+        
+        tabbedPane.addTab("Settings", settingsOuter);
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -629,6 +643,15 @@ public class CollectionPanel extends JPanel {
         } else {
             sslVerifyCombo.setSelectedIndex(2);
         }
+        
+        String redirectSetting = collectionModel.getRedirectSetting();
+        if ("INHERIT".equalsIgnoreCase(redirectSetting)) {
+            redirectVerifyCombo.setSelectedIndex(0);
+        } else if ("NO".equalsIgnoreCase(redirectSetting)) {
+            redirectVerifyCombo.setSelectedIndex(1);
+        } else {
+            redirectVerifyCombo.setSelectedIndex(2);
+        }
         this.originalModelJson = new com.google.gson.Gson().toJson(collectionModel);
     }
 
@@ -664,6 +687,15 @@ public class CollectionPanel extends JPanel {
         } else {
             collectionModel.setSslSetting("VERIFY");
         }
+        
+        int redirectIndex = redirectVerifyCombo.getSelectedIndex();
+        if (redirectIndex == 0) {
+            collectionModel.setRedirectSetting("INHERIT");
+        } else if (redirectIndex == 1) {
+            collectionModel.setRedirectSetting("NO");
+        } else {
+            collectionModel.setRedirectSetting("YES");
+        }
 
         mainFrame.saveCollections();
         MainFrame.showToast(this, "Collection \"" + collectionModel.getName() + "\" saved.");
@@ -675,6 +707,7 @@ public class CollectionPanel extends JPanel {
         m.setId(collectionModel.getId());
         m.setName(collectionModel.getName());
         m.setRequests(collectionModel.getRequests());
+        m.setFolders(collectionModel.getFolders());
 
         m.setReadme(readmeArea.getText());
         m.setAuthType((String) authTypeCombo.getSelectedItem());
@@ -706,6 +739,15 @@ public class CollectionPanel extends JPanel {
             m.setSslSetting("NO_VERIFY");
         } else {
             m.setSslSetting("VERIFY");
+        }
+        
+        int redirectIndex2 = redirectVerifyCombo.getSelectedIndex();
+        if (redirectIndex2 == 0) {
+            m.setRedirectSetting("INHERIT");
+        } else if (redirectIndex2 == 1) {
+            m.setRedirectSetting("NO");
+        } else {
+            m.setRedirectSetting("YES");
         }
         return m;
     }

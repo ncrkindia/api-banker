@@ -48,6 +48,7 @@ public class RequestPanel extends JPanel {
     private RSyntaxTextArea preScriptArea;
     private RSyntaxTextArea postScriptArea;
     private JComboBox<String> sslVerifyCombo;
+    private JComboBox<String> redirectVerifyCombo;
 
     // Auth fields
     private HighlightTextField bearerTokenField;
@@ -315,14 +316,27 @@ public class RequestPanel extends JPanel {
         requestTabs.addTab("Tests", buildScriptTab(postScriptArea, true));
 
         // Settings tab
-        JPanel settingsTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        JPanel settingsTabPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        settingsTabPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         settingsTabPanel.setBackground(UIManager.getColor("Panel.background"));
+        
         settingsTabPanel.add(new JLabel("SSL Verification:"));
         sslVerifyCombo = new JComboBox<>(new String[]{"Inherit", "Do not verify", "Verify"});
         sslVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         sslVerifyCombo.setToolTipText("Select SSL verification behavior. 'Inherit' will resolve to Collection/Folder setting recursively.");
         settingsTabPanel.add(sslVerifyCombo);
-        requestTabs.addTab("Settings", settingsTabPanel);
+
+        settingsTabPanel.add(new JLabel("Auto Redirect (302):"));
+        redirectVerifyCombo = new JComboBox<>(new String[]{"Inherit", "No (Don't follow)", "Yes (Follow)"});
+        redirectVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        redirectVerifyCombo.setToolTipText("Select redirect behavior. 'Inherit' will resolve to Collection/Folder setting recursively.");
+        settingsTabPanel.add(redirectVerifyCombo);
+        
+        JPanel settingsOuter = new JPanel(new BorderLayout());
+        settingsOuter.setBackground(UIManager.getColor("Panel.background"));
+        settingsOuter.add(settingsTabPanel, BorderLayout.NORTH);
+        
+        requestTabs.addTab("Settings", settingsOuter);
 
         // Response
         responsePanel = new ResponsePanel();
@@ -804,6 +818,15 @@ public class RequestPanel extends JPanel {
             } else {
                 sslVerifyCombo.setSelectedIndex(2);
             }
+            
+            String redirectSetting = requestModel.getRedirectSetting();
+            if ("INHERIT".equalsIgnoreCase(redirectSetting)) {
+                redirectVerifyCombo.setSelectedIndex(0);
+            } else if ("NO".equalsIgnoreCase(redirectSetting)) {
+                redirectVerifyCombo.setSelectedIndex(1);
+            } else {
+                redirectVerifyCombo.setSelectedIndex(2);
+            }
         } finally {
             isSyncing = false;
         }
@@ -841,6 +864,15 @@ public class RequestPanel extends JPanel {
             requestModel.setSslSetting("VERIFY");
         }
         requestModel.setSslVerification(sslIndex != 1);
+        
+        int redirectIndex = redirectVerifyCombo.getSelectedIndex();
+        if (redirectIndex == 0) {
+            requestModel.setRedirectSetting("INHERIT");
+        } else if (redirectIndex == 1) {
+            requestModel.setRedirectSetting("NO");
+        } else {
+            requestModel.setRedirectSetting("YES");
+        }
 
         requestModel.setParams(extractKV(paramsModel));
         requestModel.setHeaders(extractKV(headersModel));
@@ -967,6 +999,15 @@ public class RequestPanel extends JPanel {
             m.setSslSetting("VERIFY");
         }
         m.setSslVerification(sslIndex2 != 1);
+        
+        int redirectIndex2 = redirectVerifyCombo.getSelectedIndex();
+        if (redirectIndex2 == 0) {
+            m.setRedirectSetting("INHERIT");
+        } else if (redirectIndex2 == 1) {
+            m.setRedirectSetting("NO");
+        } else {
+            m.setRedirectSetting("YES");
+        }
 
         m.setParams(extractKV(paramsModel));
         m.setHeaders(extractKV(headersModel));
