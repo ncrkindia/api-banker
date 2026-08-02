@@ -4,6 +4,17 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 
+/**
+ * FontScaleHelper
+ *
+ * <p>
+ * Core functionality and implementation logic for FontScaleHelper.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class FontScaleHelper {
     public static void scaleFonts(Component comp, int size) {
         if (comp == null) return;

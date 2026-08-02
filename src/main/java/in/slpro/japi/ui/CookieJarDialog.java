@@ -8,6 +8,17 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * CookieJarDialog
+ *
+ * <p>
+ * Core functionality and implementation logic for CookieJarDialog.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CookieJarDialog extends JDialog {
     private final JTable table;
     private final DefaultTableModel tableModel;

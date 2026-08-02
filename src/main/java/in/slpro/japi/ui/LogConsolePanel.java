@@ -17,6 +17,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * LogConsolePanel
+ *
+ * <p>
+ * Core functionality and implementation logic for LogConsolePanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener {
     private final List<LogEntry> displayedEntries = new ArrayList<>();
     private final DefaultTableModel tableModel;

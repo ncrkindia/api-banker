@@ -11,6 +11,17 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.Base64;
 
+/**
+ * JwtDecoderPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for JwtDecoderPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class JwtDecoderPanel extends JPanel {
     private final RequestModel requestModel;
     private final RSyntaxTextArea inputArea;

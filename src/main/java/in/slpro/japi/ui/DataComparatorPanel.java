@@ -31,6 +31,20 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+/**
+ * DataComparatorPanel
+ *
+ * <p>
+ * This panel provides a powerful split-view utility for A/B testing API responses or
+ * arbitrary text payloads. It supports structural node-by-node comparisons for JSON
+ * and XML formats (by alphabetically sorting nodes and keys before diffing), 
+ * rendering an inline HTML diff view using Google's diff-match-patch logic.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class DataComparatorPanel extends JPanel {
     private final RequestModel requestModel;
     private final RSyntaxTextArea leftArea;
@@ -39,6 +53,18 @@ public class DataComparatorPanel extends JPanel {
     private final JComboBox<String> compareTypeCombo;
     private int currentFontSize = 12;
 
+    /**
+     * Constructs the Data Comparator utility interface.
+     * <p>
+     * Initializes the dual {@link RSyntaxTextArea} text inputs (Text A vs Text B), 
+     * the format selector (Raw, JSON, XML), and the diff-rendered HTML output pane.
+     * Binds the current text states and format mode to a persistent RequestModel for
+     * workspace state recovery.
+     * </p>
+     * 
+     * @param mainFrame The root application window.
+     * @param requestModel The persistent state container where the comparator's inputs are stored.
+     */
     public DataComparatorPanel(MainFrame mainFrame, RequestModel requestModel) {
         this.requestModel = requestModel;
         setLayout(new BorderLayout(10, 10));

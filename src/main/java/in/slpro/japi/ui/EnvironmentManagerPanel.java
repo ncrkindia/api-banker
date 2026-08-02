@@ -12,6 +12,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * EnvironmentManagerPanel
+ *
+ * <p>
+ * This panel provides a dedicated workspace tab for creating, editing, and deleting
+ * environments and their associated key-value variables. It handles the UI logic for
+ * importing/exporting Postman environment JSONs and saving the active environment state
+ * back into the {@link StorageManager}.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class EnvironmentManagerPanel extends JPanel {
     private final MainFrame mainFrame;
     private final List<EnvironmentModel> environments;
@@ -21,6 +35,17 @@ public class EnvironmentManagerPanel extends JPanel {
     private final JTextField envNameField;
     private int selectedEnvIndex = -1;
 
+    /**
+     * Constructs the Environment Manager interface.
+     * <p>
+     * Initializes the Left-Hand Side (LHS) list of available environments, and the 
+     * Right-Hand Side (RHS) editable table for key-value variables. Clones the global
+     * environment list into a local working copy to allow isolated editing before
+     * committing changes via the "Save All" action.
+     * </p>
+     * 
+     * @param mainFrame The root application window (for routing import/export and save actions).
+     */
     public EnvironmentManagerPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         this.environments = new ArrayList<>(mainFrame.getEnvironments());

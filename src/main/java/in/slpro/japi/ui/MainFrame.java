@@ -12,6 +12,21 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 
+/**
+ * MainFrame
+ *
+ * <p>
+ * This is the central UI Controller and Root Window for the JAPI application.
+ * It manages the primary layout (Sidebar vs Workspace), handles global application state,
+ * routes actions from the Menu Bar, and orchestrates the lifecycle of all Workspace Tabs
+ * (Requests, Environments, Mock Server, etc.). It acts as the central event bus for 
+ * saving, restoring, and persisting UI state across sessions.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class MainFrame extends JFrame {
     private final StorageManager storage;
     private List<CollectionModel> collections;
@@ -34,21 +49,51 @@ public class MainFrame extends JFrame {
     private static MainFrame instance;
     public static File lastFileChooserDirectory = null;
 
+    /**
+     * @return The singleton instance of the MainFrame.
+     */
     public static MainFrame getInstance() {
         return instance;
     }
 
+    /**
+     * Locates the parent {@link CollectionModel} (folder/collection) that contains the given request.
+     * 
+     * @param req The request to search for.
+     * @return The parent CollectionModel, or null if not found.
+     */
     public CollectionModel getParentCollection(RequestModel req) {
         return findRequestParent(req);
     }
     
+    /**
+     * @return The global list of previously executed requests (History).
+     */
     public List<RequestModel> getHistoryList() { return history; }
 
+    /**
+     * A static helper to locate the parent collection of a request without needing a direct reference
+     * to the MainFrame instance.
+     * 
+     * @param req The RequestModel.
+     * @return The parent CollectionModel.
+     */
     public static CollectionModel findParentCollection(RequestModel req) {
         MainFrame frame = getInstance();
         return frame != null ? frame.getParentCollection(req) : null;
     }
 
+    /**
+     * Constructs the primary application window.
+     * <p>
+     * This constructor handles the bootstrap phase of the UI:
+     * 1. Loads persisted state (Collections, Environments, History) via {@link StorageManager}.
+     * 2. Restores window dimensions, maximized state, and font scaling.
+     * 3. Initializes the internal UI components (Sidebar, Workspace).
+     * 4. Ensures the default "__others__" collection exists for orphan requests.
+     * 5. Binds global hotkeys and applies the selected FlatLaf theme.
+     * </p>
+     */
     public MainFrame() {
         instance = this;
         this.storage = StorageManager.getInstance();
@@ -94,6 +139,14 @@ public class MainFrame extends JFrame {
         updateFontSize(currentFontSize);
     }
 
+    /**
+     * Initializes the core UI hierarchy.
+     * <p>
+     * Sets up the global JMenuBar, the structural JSplitPane separating the Sidebar from the Workspace,
+     * and initializes the CardLayout responsible for toggling between the Welcome screen and the Tabbed Pane.
+     * Finally, it restores any previously open tabs from the user's last session via {@link AppSettings}.
+     * </p>
+     */
     private void initUI() {
         // Menu bar
         setJMenuBar(buildMenuBar());

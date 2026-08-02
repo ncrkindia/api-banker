@@ -33,6 +33,22 @@ import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 
+/**
+ * CollectionRunnerPanel
+ *
+ * <p>
+ * This panel is the core execution UI for the JAPI Collection Runner.
+ * It provides a comprehensive interface for setting up, executing, and monitoring
+ * batch API requests. It supports configuring virtual users (VUsers), iterations,
+ * and request delays. It executes the requests in an isolated thread pool, tracks
+ * live metrics (Pass, Fail, Avg Response Time), renders a real-time scatter plot
+ * chart, and manages the exporting of extensive HTML/PDF reports and execution logs.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CollectionRunnerPanel extends JPanel {
     private final MainFrame mainFrame;
     private final CollectionModel collection;
@@ -113,6 +129,21 @@ public class CollectionRunnerPanel extends JPanel {
 
     private final Map<String, RequestStats> aggregateStatsMap = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs the Collection Runner interface for a specific Collection.
+     * <p>
+     * Initializes the Left-Hand Side (LHS) configuration panel where users can select
+     * the target Environment, toggle individual requests to run, and configure load
+     * parameters (Iterations, Delay, VUsers). Also sets up the Right-Hand Side (RHS)
+     * monitoring panel containing the real-time Visual Scatter Plot, aggregate statistics
+     * table, and detailed execution logs table.
+     * </p>
+     * 
+     * @param mainFrame The root application window (for navigating and reading global state).
+     * @param collection The target Collection to execute.
+     * @param runnerModel A persistent RequestModel (acting as a configuration container) 
+     *                    where user-selected runner settings are stored and loaded from.
+     */
     public CollectionRunnerPanel(MainFrame mainFrame, CollectionModel collection, RequestModel runnerModel) {
         this.mainFrame = mainFrame;
         this.collection = collection;

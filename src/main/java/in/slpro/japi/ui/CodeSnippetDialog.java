@@ -12,6 +12,17 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ItemEvent;
 
+/**
+ * CodeSnippetDialog
+ *
+ * <p>
+ * Core functionality and implementation logic for CodeSnippetDialog.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CodeSnippetDialog extends JDialog {
     private final RequestModel requestModel;
     private final EnvironmentModel environment;

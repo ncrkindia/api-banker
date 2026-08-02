@@ -24,12 +24,39 @@ import java.io.File;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 
+/**
+ * HttpClientWrapper
+ *
+ * <p>
+ * This class serves as the core networking engine for JAPI. It is responsible for
+ * taking a {@link RequestModel} and translating it into an actual {@link java.net.http.HttpRequest}.
+ * 
+ * It manages the entire lifecycle of an HTTP call including:
+ * <ul>
+ *   <li>Resolving Postman-style {{variables}} dynamically from Collections and Environments.</li>
+ *   <li>Executing pre-request and post-request JavaScript code via {@link ScriptExecutor}.</li>
+ *   <li>Injecting cookies using the {@link CookieJar}.</li>
+ *   <li>Constructing Authorization headers (Bearer, Basic, API Key).</li>
+ *   <li>Building complex request payloads (Raw, Form-Data, URLEncoded, GraphQL).</li>
+ * </ul>
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class HttpClientWrapper {
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
     private final ScriptExecutor scriptExecutor = new ScriptExecutor();
 
     private boolean silentMode = false;
 
+    /**
+     * Enables or disables silent mode. When silent mode is active, the wrapper will not
+     * dispatch real-time request and response logs to the central {@link ConsoleLogger}.
+     * 
+     * @param silentMode true to suppress console logging, false otherwise.
+     */
     public void setSilentMode(boolean silentMode) {
         this.silentMode = silentMode;
         this.scriptExecutor.setSilentMode(silentMode);
@@ -38,6 +65,17 @@ public class HttpClientWrapper {
     public HttpClientWrapper() {
     }
 
+    /**
+     * Resolves variables matching the {@code {{variable_name}}} syntax found within the input string.
+     * The method queries the provided {@link EnvironmentModel} first; if the variable is not found,
+     * it falls back to the parent {@link CollectionModel} variables. If neither provides a resolution,
+     * the original placeholder string is preserved.
+     *
+     * @param input The raw input string containing potential variable placeholders.
+     * @param requestModel The current request being executed (used to trace parent collections).
+     * @param environment The active environment containing overriding variable definitions.
+     * @return The interpolated string with fully resolved variables.
+     */
     private String resolveVariables(String input, RequestModel requestModel, EnvironmentModel environment) {
         if (input == null) return input;
         CollectionModel collection = MainFrame.findParentCollection(requestModel);
@@ -69,6 +107,15 @@ public class HttpClientWrapper {
         return sb.toString();
     }
 
+    /**
+     * Merges two distinct {@link ScriptResult} objects (typically one from the collection level
+     * and one from the request level) into a single consolidated result object containing all logs,
+     * assertions, and script errors.
+     * 
+     * @param r1 The first script result (e.g., Collection-level).
+     * @param r2 The second script result (e.g., Request-level).
+     * @return A merged ScriptResult instance.
+     */
     private ScriptResult mergeScriptResults(ScriptResult r1, ScriptResult r2) {
         ScriptResult merged = new ScriptResult();
         if (r1 != null) {
@@ -120,8 +167,14 @@ public class HttpClientWrapper {
     }
 
     /**
-     * Executes the request with full pre-request and test script support,
-     * returning both the response and the script execution results.
+     * Executes the API request described by the given {@link RequestModel} within the context of 
+     * the provided {@link EnvironmentModel}. This includes evaluating all pre-request and 
+     * post-request (test) scripts attached to both the Request and its parent Collection.
+     * 
+     * @param requestModel The configuration and definition of the request to be fired.
+     * @param environment The active environment state for variable interpolation.
+     * @return An {@link ExecutionResult} encapsulating the final HTTP response along with metadata 
+     *         from script executions.
      */
     public ExecutionResult executeWithScripts(RequestModel requestModel, EnvironmentModel environment) {
         long startTime = System.currentTimeMillis();
@@ -416,6 +469,12 @@ public class HttpClientWrapper {
         }
     }
 
+    /**
+     * Maps standard HTTP Status codes into their corresponding human-readable reason phrases.
+     * 
+     * @param code The HTTP status code.
+     * @return The human-readable string representation of the code.
+     */
     private String getStatusText(int code) {
         return switch (code) {
             case 200 -> "OK"; case 201 -> "Created"; case 204 -> "No Content";
@@ -429,6 +488,12 @@ public class HttpClientWrapper {
         };
     }
 
+    /**
+     * Converts a raw Java network Exception into a user-friendly error message.
+     * 
+     * @param e The exception thrown during network execution.
+     * @return A clear, descriptive error string (e.g. "Connection refused: ...").
+     */
     private String getErrorMessage(Exception e) {
         if (e instanceof java.net.ConnectException) return "Connection refused: " + e.getMessage();
         if (e instanceof java.net.UnknownHostException) return "Unknown host: " + e.getMessage();
@@ -446,6 +511,17 @@ public class HttpClientWrapper {
         return result.getResponse();
     }
 
+    /**
+     * Serializes a list of Form-Data key-value pairs into a standardized MultiPart HTTP byte payload,
+     * including resolving any embedded variables and handling actual physical file uploads.
+     * 
+     * @param items The form-data parameters to serialize.
+     * @param boundary The unique multipart boundary string.
+     * @param requestModel The parent request context (for variable resolution).
+     * @param environment The active environment (for variable resolution).
+     * @return The generated MultiPart byte array payload ready for HTTP transmission.
+     * @throws Exception If an error occurs reading an attached file.
+     */
     private byte[] buildMultipartBody(List<KeyValueItem> items, String boundary, RequestModel requestModel, EnvironmentModel environment) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] newline = "\r\n".getBytes(StandardCharsets.UTF_8);
@@ -492,6 +568,14 @@ public class HttpClientWrapper {
         return bos.toByteArray();
     }
 
+    /**
+     * Dynamically builds a {@link java.net.http.HttpClient} instance enforcing custom configurations 
+     * such as Follow Redirects flags and strict/loose SSL Certification verification requirements.
+     * 
+     * @param sslVerification True if strict SSL verification should be enforced.
+     * @param followRedirects True if the client should automatically follow HTTP 3xx redirects.
+     * @return The configured HttpClient instance ready to send requests.
+     */
     private HttpClient getClient(boolean sslVerification, boolean followRedirects) {
         HttpClient.Builder builder = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))

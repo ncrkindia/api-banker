@@ -7,6 +7,17 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.util.regex.Matcher;
 
+/**
+ * HighlightTextField
+ *
+ * <p>
+ * Core functionality and implementation logic for HighlightTextField.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class HighlightTextField extends JTextField {
     private CollectionModel collectionModel;
     private MainFrame mainFrame;

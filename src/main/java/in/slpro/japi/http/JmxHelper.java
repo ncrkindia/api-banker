@@ -22,8 +22,30 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JmxHelper
+ *
+ * <p>
+ * Utility class providing robust bidirectional parsing and generation 
+ * of Apache JMeter (.jmx) XML test plan files. It allows JAPI to seamlessly 
+ * import requests from external performance tests or export JAPI collections
+ * into a format ready for distributed load testing.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class JmxHelper {
 
+    /**
+     * Parses a standard Apache JMeter (.jmx) XML file and converts its
+     * HTTP Samplers into a list of JAPI {@link RequestModel}s.
+     * 
+     * @param file The JMeter .jmx file to parse.
+     * @return A List of extracted RequestModels representing the HTTP requests in the plan.
+     * @throws Exception If XML parsing fails or the file format is completely unrecognized.
+     */
     public static List<RequestModel> importJmx(File file) throws Exception {
         List<RequestModel> list = new ArrayList<>();
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -61,6 +83,15 @@ public class JmxHelper {
         return list;
     }
 
+    /**
+     * Generates a fully compatible Apache JMeter (.jmx) XML file from a given
+     * JAPI {@link CollectionModel}. This creates a standard Test Plan, Thread Group,
+     * and maps each JAPI request into an HTTPSamplerProxy.
+     * 
+     * @param col The JAPI Collection to export.
+     * @param file The target file where the generated XML will be saved.
+     * @throws Exception If the XML Document cannot be generated or transformed to the output file.
+     */
     public static void exportJmx(CollectionModel col, File file) throws Exception {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
@@ -190,6 +221,14 @@ public class JmxHelper {
         transformer.transform(source, result);
     }
 
+    /**
+     * Helper method to extract the value of a specific JMeter property node 
+     * (e.g., 'HTTPSampler.domain') from a given parent XML element.
+     * 
+     * @param parent The parent XML Element node to search within.
+     * @param propName The exact name attribute of the target property node.
+     * @return The text content of the property if found; otherwise an empty string.
+     */
     private static String getPropValue(Element parent, String propName) {
         NodeList list = parent.getChildNodes();
         for (int i = 0; i < list.getLength(); i++) {
@@ -204,6 +243,14 @@ public class JmxHelper {
         return "";
     }
 
+    /**
+     * Helper method to append a String property node to a parent XML element.
+     * 
+     * @param doc The active XML Document being built.
+     * @param parent The parent XML Element to attach the property to.
+     * @param name The name of the property.
+     * @param val The string value of the property.
+     */
     private static void addStringProp(Document doc, Element parent, String name, String val) {
         Element p = doc.createElement("stringProp");
         p.setAttribute("name", name);
@@ -211,6 +258,14 @@ public class JmxHelper {
         parent.appendChild(p);
     }
 
+    /**
+     * Helper method to append a Boolean property node to a parent XML element.
+     * 
+     * @param doc The active XML Document being built.
+     * @param parent The parent XML Element to attach the property to.
+     * @param name The name of the property.
+     * @param val The boolean value of the property.
+     */
     private static void addBoolProp(Document doc, Element parent, String name, boolean val) {
         Element p = doc.createElement("boolProp");
         p.setAttribute("name", name);

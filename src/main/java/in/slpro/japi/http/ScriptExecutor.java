@@ -8,20 +8,46 @@ import org.mozilla.javascript.*;
 import java.util.*;
 
 /**
- * Executes pre-request and test scripts using Mozilla Rhino JavaScript engine.
- * Provides a Postman-compatible pm.* API for writing assertions, accessing
- * request/response data, and manipulating environment variables.
+ * ScriptExecutor
+ *
+ * <p>
+ * This class leverages the Mozilla Rhino JavaScript engine to execute custom JS scripts 
+ * defined by the user in the Pre-Request or Post-Request (Test) tabs of the UI.
+ * It builds a restricted JavaScript context and injects a Postman-compatible `pm.*` API
+ * so that standard scripts can manipulate variables, read responses, and perform assertions
+ * (e.g. `pm.expect(pm.response.code).to.equal(200)`).
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
  */
 public class ScriptExecutor {
     private boolean silentMode = false;
 
+    /**
+     * Enables or disables silent mode. When silent mode is active, any `console.log`
+     * statements or syntax errors from the JS execution will not be forwarded to the
+     * central application {@link in.slpro.japi.logger.ConsoleLogger}.
+     * 
+     * @param silentMode true to suppress console logging, false otherwise.
+     */
     public void setSilentMode(boolean silentMode) {
         this.silentMode = silentMode;
     }
 
     /**
-     * Executes a pre-request script. Has access to pm.environment, pm.variables,
-     * pm.request, and console, but NOT pm.response or pm.test.
+     * Executes a user-defined Pre-Request JavaScript string.
+     * <p>
+     * The script has access to `pm.environment`, `pm.variables`, `pm.request`, 
+     * and `console`. Because this runs before the HTTP request is dispatched, 
+     * `pm.response` and `pm.test` are undefined and inaccessible.
+     * </p>
+     * 
+     * @param script The raw JavaScript string to execute.
+     * @param request The current Request context (can be read/mutated by the script).
+     * @param environment The active Environment (can be read/mutated by the script).
+     * @return A {@link ScriptResult} containing console logs and potential execution errors.
      */
     public ScriptResult executePreRequestScript(String script, RequestModel request, EnvironmentModel environment) {
         ScriptResult result = new ScriptResult();
@@ -56,8 +82,18 @@ public class ScriptExecutor {
     }
 
     /**
-     * Executes a test script. Has full access to pm.test, pm.expect, pm.response,
-     * pm.environment, pm.variables, pm.request, and console.
+     * Executes a user-defined Post-Request (Test) JavaScript string.
+     * <p>
+     * The script runs after the HTTP request completes. It has full access to 
+     * `pm.environment`, `pm.variables`, `pm.request`, `pm.response`, `pm.test`, 
+     * `pm.expect`, and `console`.
+     * </p>
+     * 
+     * @param script The raw JavaScript string to execute.
+     * @param request The original Request context.
+     * @param response The completed Response context (status, body, headers, time).
+     * @param environment The active Environment.
+     * @return A {@link ScriptResult} containing console logs, test assertions, and potential errors.
      */
     public ScriptResult executeTestScript(String script, RequestModel request, ResponseModel response, EnvironmentModel environment) {
         ScriptResult result = new ScriptResult();
@@ -92,7 +128,17 @@ public class ScriptExecutor {
     }
 
     /**
-     * Injects the pm.* API object tree into the script scope.
+     * Builds and injects the global `pm` API object tree into the Rhino JavaScript scope.
+     * This method wires up Java method callbacks for Javascript functions (e.g., mapping
+     * JS `pm.environment.set()` to the Java EnvironmentModel's `set()` method).
+     * 
+     * @param cx The active Rhino JavaScript Context.
+     * @param scope The active global JS Scope.
+     * @param request The Java RequestModel context to bind.
+     * @param response The Java ResponseModel context to bind (null if pre-request).
+     * @param environment The Java EnvironmentModel context to bind.
+     * @param result The result object to collect assertions.
+     * @param isTestContext True if the scope should include `pm.response` and `pm.test`.
      */
     private void injectPmObject(Context cx, Scriptable scope, RequestModel request,
                                  ResponseModel response, EnvironmentModel environment,
@@ -300,11 +346,18 @@ public class ScriptExecutor {
     }
 
     /**
-     * Builds the chainable pm.expect(value).to.* assertion API.
-     * Supports: .to.equal(v), .to.eql(v), .to.be.a(type), .to.be.below(n), .to.be.above(n),
-     * .to.have.property(name), .to.include(val), .to.be.true, .to.be.false, .to.be.null,
-     * .to.be.undefined, .to.be.ok, .to.have.status(code), .to.have.header(name),
-     * .to.have.jsonBody(path), .to.have.lengthOf(n)
+     * Builds a deeply-chainable assertion API for `pm.expect(value)`.
+     * 
+     * <p>
+     * Constructs JS objects enabling syntax like: 
+     * {@code pm.expect(val).to.not.be.below(5)}
+     * It dynamically resolves assertion logic via anonymous Java functions bound to the Rhino Scope.
+     * </p>
+     * 
+     * @param cx The active Rhino JavaScript Context.
+     * @param scope The active global JS Scope.
+     * @param actual The actual value passed into `pm.expect(actual)`.
+     * @return A Scriptable proxy object representing the root of the `.to...` assertion chain.
      */
     private Scriptable buildExpectChain(Context cx, Scriptable scope, Object actual) {
         Scriptable chain = cx.newObject(scope);
@@ -513,7 +566,12 @@ public class ScriptExecutor {
     }
 
     /**
-     * Injects console.log, console.warn, console.error, console.info into script scope.
+     * Injects the global `console` object (`console.log`, `console.warn`, etc.) into the JS scope.
+     * 
+     * @param cx The active Rhino JavaScript Context.
+     * @param scope The active global JS Scope.
+     * @param result The result object to store logs.
+     * @param source The context identifier (e.g., "Pre-request" or "Test") for log tagging.
      */
     private void injectConsole(Context cx, Scriptable scope, ScriptResult result, String source) {
         Scriptable console = cx.newObject(scope);
@@ -546,7 +604,13 @@ public class ScriptExecutor {
     }
 
     /**
-     * Recursively parses a JSON string into native JavaScript objects within Rhino scope.
+     * A utility bridge that safely parses a JSON string (using Google Gson) and recursively
+     * converts it into native Rhino JavaScript objects so the script can manipulate it naturally.
+     * 
+     * @param cx The active Rhino JavaScript Context.
+     * @param scope The active global JS Scope.
+     * @param json The raw JSON string.
+     * @return A native JavaScript Object, Array, or primitive representing the JSON tree.
      */
     private Object parseJsonToJs(Context cx, Scriptable scope, String json) {
         if (json == null || json.trim().isEmpty()) return Undefined.instance;

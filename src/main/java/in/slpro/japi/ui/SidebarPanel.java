@@ -13,6 +13,21 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.List;
 
+/**
+ * SidebarPanel
+ *
+ * <p>
+ * This panel represents the primary navigation structure of the JAPI IDE.
+ * It provides a dual-tabbed JTree interface for navigating saved {@link CollectionModel}s 
+ * and reviewing the chronological execution {@link RequestModel} History. It acts as the 
+ * drag-and-drop controller for organizing folders and routing node selection events
+ * to the {@link MainFrame} workspace.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class SidebarPanel extends JPanel {
     private final MainFrame mainFrame;
 
@@ -28,6 +43,16 @@ public class SidebarPanel extends JPanel {
 
     private boolean isRefreshingTree = false;
 
+    /**
+     * Constructs the primary Sidebar navigation panel.
+     * <p>
+     * Initializes the split "Collections" and "History" tabs containing standard
+     * Swing JTrees. Configures custom cell renderers for displaying HTTP method-colored
+     * badges, and binds tree selection events to open the corresponding tabs in the workspace.
+     * </p>
+     * 
+     * @param mainFrame The root application window (acting as the event router for tree clicks).
+     */
     public SidebarPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout());

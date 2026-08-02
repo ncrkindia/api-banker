@@ -8,6 +8,20 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * CookieJarPanel
+ *
+ * <p>
+ * This panel provides a UI for managing the persistent {@link CookieJar}.
+ * It allows users to view, search, manually add, edit, and delete cookies 
+ * that are automatically injected into requests. The table visually groups
+ * cookies by Domain and Path.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CookieJarPanel extends JPanel {
     private final MainFrame mainFrame;
     private final JTable table;
@@ -15,6 +29,16 @@ public class CookieJarPanel extends JPanel {
     private final JTextField filterField;
     private int currentFontSize = 14;
 
+    /**
+     * Constructs the Cookie Jar Manager interface.
+     * <p>
+     * Initializes the filterable cookie table, binding its rows to the underlying
+     * {@link CookieJar} singleton. Also initializes the CRUD (Create, Read, Update, Delete)
+     * action buttons and dialogs for manual cookie override scenarios.
+     * </p>
+     * 
+     * @param mainFrame The root application window.
+     */
     public CookieJarPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout());

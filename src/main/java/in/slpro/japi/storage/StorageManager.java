@@ -16,12 +16,34 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * StorageManager
+ *
+ * <p>
+ * Core functionality and implementation logic for StorageManager.
+ * This singleton class handles the persistence of application data, including
+ * {@link AppSettings}, {@link CollectionModel}s, and {@link EnvironmentModel}s.
+ * It manages the underlying file system structures, backward compatibility 
+ * migrations (e.g. migrating single JSON stores to directory-based stores), 
+ * and handles the serialization/deserialization logic using Gson.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class StorageManager {
     private static StorageManager instance;
     private final Gson gson;
     private final File bootstrapFile;
     private AppSettings settings;
 
+    /**
+     * Private constructor to enforce Singleton pattern.
+     * Initializes the Gson serializer, resolves the default user home directory,
+     * and guarantees that the primary bootstrap '.japi' configuration folder exists.
+     * Finally, it loads or provisions the default AppSettings and updates the logger.
+     */
     private StorageManager() {
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         String userHome = System.getProperty("user.home");
@@ -34,6 +56,11 @@ public class StorageManager {
         ConsoleLogger.getInstance().setLogsDirectory(new File(settings.getLogsDirectory()));
     }
 
+    /**
+     * Retrieves the synchronized singleton instance of the StorageManager.
+     * 
+     * @return The active StorageManager instance.
+     */
     public static synchronized StorageManager getInstance() {
         if (instance == null) {
             instance = new StorageManager();
@@ -41,6 +68,10 @@ public class StorageManager {
         return instance;
     }
 
+    /**
+     * Loads settings from the bootstrap config.json file. If the file is missing or 
+     * corrupted, provisions a default {@link AppSettings} model and persists it to disk.
+     */
     private void loadOrCreateSettings() {
         if (bootstrapFile.exists()) {
             try (Reader reader = new FileReader(bootstrapFile, StandardCharsets.UTF_8)) {
@@ -60,6 +91,9 @@ public class StorageManager {
         ConsoleLogger.getInstance().setEnableLogging(settings.isEnableLogging());
     }
 
+    /**
+     * Persists the current {@link AppSettings} state to the bootstrap config.json file.
+     */
     public void saveSettings() {
         try (Writer writer = new FileWriter(bootstrapFile, StandardCharsets.UTF_8)) {
             gson.toJson(settings, writer);
@@ -68,16 +102,32 @@ public class StorageManager {
         }
     }
 
+    /**
+     * Returns the active application settings.
+     * 
+     * @return The active {@link AppSettings} object.
+     */
     public AppSettings getSettings() {
         return settings;
     }
 
+    /**
+     * Updates the primary data directory for the application, persists the configuration,
+     * and automatically provisions the new folder structure.
+     * 
+     * @param newPath The absolute path of the new data directory.
+     */
     public void updateDataDirectory(String newPath) {
         settings.setDataDirectory(newPath);
         saveSettings();
         ensureDataDirExists();
     }
 
+    /**
+     * Updates the logs directory, persists the setting, and updates the ConsoleLogger hook.
+     * 
+     * @param newPath The absolute path of the new logs directory.
+     */
     public void updateLogsDirectory(String newPath) {
         settings.setLogsDirectory(newPath);
         saveSettings();
@@ -95,6 +145,12 @@ public class StorageManager {
         }
     }
 
+    /**
+     * Sanitizes strings (like Collection or Environment names) for safe usage as file system paths.
+     * 
+     * @param name The raw string to sanitize.
+     * @return A sanitized, lowercased version of the string replacing invalid characters with underscores.
+     */
     private String sanitizeFilename(String name) {
         if (name == null || name.isBlank())
             return "unnamed";
@@ -102,6 +158,14 @@ public class StorageManager {
     }
 
     // --- Collections ---
+    
+    /**
+     * Loads all Collection models from the active data directory.
+     * Includes logic to automatically migrate legacy monolithic collections.json files 
+     * into the modern split-file directory structure.
+     * 
+     * @return A list of {@link CollectionModel} instances.
+     */
     public List<CollectionModel> loadCollections() {
         File folder = new File(settings.getDataDirectory(), "collections");
         if (!folder.exists()) {
@@ -139,6 +203,13 @@ public class StorageManager {
         return collections;
     }
 
+    /**
+     * Persists a list of collections to the filesystem. 
+     * This method dynamically manages orphaned files by cleaning up obsolete JSON files
+     * that no longer correspond to an active collection in the workspace.
+     * 
+     * @param collections The list of collections to persist.
+     */
     public void saveCollections(List<CollectionModel> collections) {
         File folder = new File(settings.getDataDirectory(), "collections");
         if (!folder.exists()) {

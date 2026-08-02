@@ -20,6 +20,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
+/**
+ * MockServerPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for MockServerPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class MockServerPanel extends JPanel {
     private final MainFrame mainFrame;
     private final RequestModel model;

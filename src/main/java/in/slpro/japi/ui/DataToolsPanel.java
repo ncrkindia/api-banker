@@ -25,6 +25,17 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
+/**
+ * DataToolsPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for DataToolsPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class DataToolsPanel extends JPanel {
 
     public DataToolsPanel(MainFrame mainFrame) {

@@ -3,6 +3,17 @@ package in.slpro.japi.model;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * ResponseModel
+ *
+ * <p>
+ * Core functionality and implementation logic for ResponseModel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class ResponseModel {
     private int statusCode;
     private String statusText;

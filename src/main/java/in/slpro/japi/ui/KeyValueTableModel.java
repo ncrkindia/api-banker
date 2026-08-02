@@ -4,6 +4,17 @@ import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * KeyValueTableModel
+ *
+ * <p>
+ * Core functionality and implementation logic for KeyValueTableModel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class KeyValueTableModel extends AbstractTableModel {
     private final String[] columns;
     private final List<String[]> rows = new ArrayList<>();

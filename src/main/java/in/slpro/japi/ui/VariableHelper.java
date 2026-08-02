@@ -15,6 +15,17 @@ import java.awt.event.MouseMotionAdapter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * VariableHelper
+ *
+ * <p>
+ * Core functionality and implementation logic for VariableHelper.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class VariableHelper {
     public static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
 

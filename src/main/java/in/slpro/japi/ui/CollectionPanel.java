@@ -19,6 +19,17 @@ import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.commonmark.node.Node;
 
+/**
+ * CollectionPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for CollectionPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CollectionPanel extends JPanel {
     private final MainFrame mainFrame;
     private final CollectionModel collectionModel;

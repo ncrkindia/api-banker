@@ -10,6 +10,17 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ExportPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for ExportPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class ExportPanel extends JPanel {
     private final MainFrame mainFrame;
     private final List<JCheckBox> colCheckboxes = new ArrayList<>();

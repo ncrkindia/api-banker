@@ -4,6 +4,17 @@ import in.slpro.japi.ui.MainFrame;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * VariableHelper
+ *
+ * <p>
+ * Core functionality and implementation logic for VariableHelper.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class VariableHelper {
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
 

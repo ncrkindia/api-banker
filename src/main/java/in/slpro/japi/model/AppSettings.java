@@ -1,5 +1,16 @@
 package in.slpro.japi.model;
 
+/**
+ * AppSettings
+ *
+ * <p>
+ * Core functionality and implementation logic for AppSettings.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class AppSettings {
     private String dataDirectory;
     private String logsDirectory;

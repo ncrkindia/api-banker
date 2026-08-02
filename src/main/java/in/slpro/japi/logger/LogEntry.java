@@ -3,6 +3,17 @@ package in.slpro.japi.logger;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * LogEntry
+ *
+ * <p>
+ * Core functionality and implementation logic for LogEntry.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class LogEntry {
     public enum Level { REQUEST, RESPONSE, ERROR, INFO }
 

@@ -9,6 +9,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * ConsoleLogger
+ *
+ * <p>
+ * Core functionality and implementation logic for ConsoleLogger.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class ConsoleLogger {
     private static ConsoleLogger instance;
     private final List<LogEntry> entries = new CopyOnWriteArrayList<>();

@@ -11,6 +11,20 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * CookieJar
+ *
+ * <p>
+ * This class acts as the centralized persistent Cookie store for the JAPI HTTP Client.
+ * It intercepts incoming HTTP `Set-Cookie` headers from responses, parses their attributes 
+ * (Domain, Path, Max-Age, Secure), and automatically injects them into subsequent outgoing 
+ * requests that match the domain and path requirements. It persists cookies locally to `~/.japi/cookies.json`.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CookieJar {
     private static CookieJar instance;
     private final List<CookieModel> cookies = new ArrayList<>();
@@ -28,6 +42,9 @@ public class CookieJar {
         loadCookies();
     }
 
+    /**
+     * @return The thread-safe singleton instance of the CookieJar.
+     */
     public static synchronized CookieJar getInstance() {
         if (instance == null) {
             instance = new CookieJar();
@@ -86,6 +103,14 @@ public class CookieJar {
         }
     }
 
+    /**
+     * Evaluates all stored cookies against the target URL and constructs a standard
+     * HTTP `Cookie` header string containing all valid, non-expired cookies matching 
+     * the domain and path.
+     * 
+     * @param urlString The target URL being requested.
+     * @return A formatted `Cookie` header string (e.g., "session=123; user=abc"), or null if no matches.
+     */
     public synchronized String getCookieHeaderForUrl(String urlString) {
         try {
             URI uri = new URI(urlString);
@@ -112,6 +137,13 @@ public class CookieJar {
         }
     }
 
+    /**
+     * Parses incoming `Set-Cookie` headers from an HTTP response and stores them
+     * in the persistent jar, respecting domain and path scoping rules.
+     * 
+     * @param urlString The URL of the server that returned the cookies.
+     * @param setCookieHeaders The list of raw `Set-Cookie` header strings.
+     */
     public synchronized void parseAndStoreCookies(String urlString, List<String> setCookieHeaders) {
         if (setCookieHeaders == null || setCookieHeaders.isEmpty()) return;
 

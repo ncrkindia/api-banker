@@ -14,6 +14,21 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * RequestPanel
+ *
+ * <p>
+ * This panel provides the main interface for constructing, editing, and dispatching
+ * individual API requests. It behaves similarly to Postman's request builder, featuring
+ * a URL bar, HTTP method selector, and a comprehensive tabbed view for configuring
+ * Params, Headers, Body, Auth, and Scripts. It also manages the split-pane layout
+ * linking the request builder to the {@link ResponsePanel}.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class RequestPanel extends JPanel {
     private final MainFrame mainFrame;
     private RequestModel requestModel;
@@ -66,6 +81,17 @@ public class RequestPanel extends JPanel {
 
     private static final String[] METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"};
 
+    /**
+     * Constructs the primary Request Builder interface.
+     * <p>
+     * Initializes the Top Bar (Method, URL, Send/Save buttons), the Tabbed Configuration pane
+     * (Params, Headers, Body with dynamic sub-panels, Auth, Scripts), and the bottom 
+     * Response Panel. Binds UI state directly to the provided {@link RequestModel}.
+     * </p>
+     * 
+     * @param mainFrame The root application window (for reading active environments).
+     * @param requestModel The persistent state model containing the request's details.
+     */
     public RequestPanel(MainFrame mainFrame, RequestModel requestModel) {
         this.mainFrame = mainFrame;
         this.requestModel = requestModel;

@@ -3,6 +3,17 @@ package in.slpro.japi.ui;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * SyntaxHighlighter
+ *
+ * <p>
+ * Core functionality and implementation logic for SyntaxHighlighter.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class SyntaxHighlighter {
     public static String highlightJson(String json) {
         if (json == null) return "";

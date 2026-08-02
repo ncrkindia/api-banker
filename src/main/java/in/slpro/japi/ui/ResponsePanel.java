@@ -21,6 +21,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * ResponsePanel
+ *
+ * <p>
+ * Core functionality and implementation logic for ResponsePanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class ResponsePanel extends JPanel {
     private final JLabel statusLabel;
     private final JLabel timeLabel;

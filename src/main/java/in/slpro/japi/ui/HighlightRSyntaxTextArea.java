@@ -7,6 +7,17 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.util.regex.Matcher;
 
+/**
+ * HighlightRSyntaxTextArea
+ *
+ * <p>
+ * Core functionality and implementation logic for HighlightRSyntaxTextArea.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class HighlightRSyntaxTextArea extends RSyntaxTextArea {
     private CollectionModel collectionModel;
     private MainFrame mainFrame;

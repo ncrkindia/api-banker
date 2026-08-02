@@ -13,6 +13,17 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * CodeSnippetGenerator
+ *
+ * <p>
+ * Core functionality and implementation logic for CodeSnippetGenerator.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class CodeSnippetGenerator {
     private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
 

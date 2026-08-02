@@ -23,6 +23,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * ConsoleDialog
+ *
+ * <p>
+ * Core functionality and implementation logic for ConsoleDialog.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener {
     private final JPanel logPanel;
     private final JScrollPane scrollPane;

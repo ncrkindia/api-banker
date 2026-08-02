@@ -9,6 +9,17 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+/**
+ * JsonToolPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for JsonToolPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.1.0-beta
+ * @since 1.0.0
+ */
 public class JsonToolPanel extends JPanel {
     private final RequestModel requestModel;
     private final RSyntaxTextArea inputArea;
