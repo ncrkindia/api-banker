@@ -36,6 +36,7 @@ public class ResponsePanel extends JPanel {
     private final JLabel statusLabel;
     private final JLabel timeLabel;
     private final JLabel sizeLabel;
+    private final JLabel sslLabel;
     private final RSyntaxTextArea bodyArea;
     private final DefaultTableModel headersModel;
     private final JTabbedPane tabs;
@@ -73,6 +74,12 @@ public class ResponsePanel extends JPanel {
         sizeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         sizeLabel.setForeground(new Color(100, 100, 100));
 
+        sslLabel = new JLabel("SSL");
+        sslLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        sslLabel.setOpaque(true);
+        sslLabel.setVisible(false);
+        sslLabel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+
         statusBar.add(new JLabel("Status:"));
         statusBar.add(statusLabel);
         statusBar.add(new JSeparator(JSeparator.VERTICAL));
@@ -81,6 +88,8 @@ public class ResponsePanel extends JPanel {
         statusBar.add(new JSeparator(JSeparator.VERTICAL));
         statusBar.add(new JLabel("Size:"));
         statusBar.add(sizeLabel);
+        statusBar.add(new JSeparator(JSeparator.VERTICAL));
+        statusBar.add(sslLabel);
 
         add(statusBar, BorderLayout.NORTH);
 
@@ -109,9 +118,20 @@ public class ResponsePanel extends JPanel {
 
         searchField = new JTextField(15);
         searchField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { performSearch(true, false); }
-            @Override public void removeUpdate(DocumentEvent e) { performSearch(true, false); }
-            @Override public void changedUpdate(DocumentEvent e) { performSearch(true, false); }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                performSearch(true, false);
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                performSearch(true, false);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                performSearch(true, false);
+            }
         });
         searchField.addActionListener(e -> performSearch(true, true));
         searchPanel.add(searchField);
@@ -161,8 +181,11 @@ public class ResponsePanel extends JPanel {
         tabs.addTab("Body", bodyPanel);
 
         // Headers tab
-        headersModel = new DefaultTableModel(new String[]{"Header", "Value"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+        headersModel = new DefaultTableModel(new String[] { "Header", "Value" }, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         JTable headersTable = new JTable(headersModel);
         headersTable.setRowHeight(24);
@@ -181,8 +204,11 @@ public class ResponsePanel extends JPanel {
         testResultsPanel.add(testSummaryLabel, BorderLayout.NORTH);
 
         // Assertion results table
-        testResultsModel = new DefaultTableModel(new String[]{"Status", "Test Name", "Details"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+        testResultsModel = new DefaultTableModel(new String[] { "Status", "Test Name", "Details" }, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         JTable testTable = new JTable(testResultsModel);
         testTable.setRowHeight(28);
@@ -193,16 +219,19 @@ public class ResponsePanel extends JPanel {
         testTable.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                           boolean hasFocus, int row, int column) {
-                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
+                        column);
                 label.setHorizontalAlignment(SwingConstants.CENTER);
                 label.setFont(new Font("Segoe UI", Font.BOLD, 11));
                 if ("PASS".equals(value)) {
                     label.setForeground(new Color(39, 174, 96));
-                    if (!isSelected) label.setBackground(new Color(39, 174, 96, 30));
+                    if (!isSelected)
+                        label.setBackground(new Color(39, 174, 96, 30));
                 } else if ("FAIL".equals(value)) {
                     label.setForeground(new Color(192, 57, 43));
-                    if (!isSelected) label.setBackground(new Color(192, 57, 43, 30));
+                    if (!isSelected)
+                        label.setBackground(new Color(192, 57, 43, 30));
                 }
                 label.setOpaque(true);
                 return label;
@@ -251,7 +280,8 @@ public class ResponsePanel extends JPanel {
     }
 
     public void showResponse(ResponseModel response) {
-        if (response == null) return;
+        if (response == null)
+            return;
         this.currentResponse = response;
         if (searchField != null) {
             searchField.setText("");
@@ -263,26 +293,56 @@ public class ResponsePanel extends JPanel {
         statusLabel.setText(statusText);
 
         Color statusColor;
-        if (code >= 200 && code < 300) statusColor = new Color(39, 174, 96);
-        else if (code >= 400 && code < 500) statusColor = new Color(230, 126, 34);
-        else if (code >= 500) statusColor = new Color(192, 57, 43);
-        else statusColor = new Color(100, 100, 100);
+        if (code >= 200 && code < 300)
+            statusColor = new Color(39, 174, 96);
+        else if (code >= 400 && code < 500)
+            statusColor = new Color(230, 126, 34);
+        else if (code >= 500)
+            statusColor = new Color(192, 57, 43);
+        else
+            statusColor = new Color(100, 100, 100);
         statusLabel.setForeground(statusColor);
 
-        long ms = response.getExecutionTimeMs();
-        timeLabel.setText(ms + " ms");
-        timeLabel.setForeground(ms < 500 ? new Color(39, 174, 96) : ms < 2000 ? new Color(230, 126, 34) : new Color(192, 57, 43));
+        long totalMs = response.getExecutionTimeMs();
+        long networkMs = response.getNetworkTimeMs();
+        timeLabel.setText(networkMs + " ms");
+        timeLabel.setForeground(networkMs < 500 ? new Color(39, 174, 96)
+                : networkMs < 2000 ? new Color(230, 126, 34) : new Color(192, 57, 43));
+
+        StringBuilder timeBreakdown = new StringBuilder("<html><b style='font-size:11px'>Time Breakdown:</b><br><br>");
+        timeBreakdown.append("<b>Pre-request Scripts:</b> ").append(response.getPreRequestTimeMs()).append(" ms<br>");
+        timeBreakdown.append("<b>Network Request:</b> ").append(networkMs).append(" ms<br>");
+        timeBreakdown.append("<b>Test Scripts:</b> ").append(response.getTestScriptTimeMs()).append(" ms<br><br>");
+        timeBreakdown.append("<b>Total Execution Time:</b> ").append(totalMs).append(" ms<br><br>");
+        timeLabel.setToolTipText(timeBreakdown.toString());
 
         long bytes = response.getSizeBytes();
         sizeLabel.setText(bytes < 1024 ? bytes + " B" : (bytes / 1024) + " KB");
+
+        // SSL Label
+        if (response.getSslDetails() != null && !response.getSslDetails().isBlank()) {
+            sslLabel.setVisible(true);
+            sslLabel.setToolTipText(response.getSslDetails());
+            if (response.isSslValid()) {
+                sslLabel.setForeground(new Color(39, 174, 96));
+                sslLabel.setBackground(new Color(39, 174, 96, 30));
+            } else {
+                sslLabel.setForeground(new Color(192, 57, 43));
+                sslLabel.setBackground(new Color(192, 57, 43, 30));
+            }
+        } else {
+            sslLabel.setVisible(false);
+        }
 
         // Set body
         String body = response.getBody() != null ? response.getBody() : "";
         String contentType = "";
         if (response.getHeaders() != null) {
             List<String> ct = response.getHeaders().get("content-type");
-            if (ct == null) ct = response.getHeaders().get("Content-Type");
-            if (ct != null && !ct.isEmpty()) contentType = ct.get(0).toLowerCase();
+            if (ct == null)
+                ct = response.getHeaders().get("Content-Type");
+            if (ct != null && !ct.isEmpty())
+                contentType = ct.get(0).toLowerCase();
         }
 
         if (contentType.contains("json")) {
@@ -295,7 +355,8 @@ public class ResponsePanel extends JPanel {
                 bodyArea.setText(body);
             }
         } else if (contentType.contains("xml") || contentType.contains("html")) {
-            bodyArea.setSyntaxEditingStyle(contentType.contains("xml") ? SyntaxConstants.SYNTAX_STYLE_XML : SyntaxConstants.SYNTAX_STYLE_HTML);
+            bodyArea.setSyntaxEditingStyle(
+                    contentType.contains("xml") ? SyntaxConstants.SYNTAX_STYLE_XML : SyntaxConstants.SYNTAX_STYLE_HTML);
             bodyArea.setText(body);
         } else {
             bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
@@ -307,7 +368,7 @@ public class ResponsePanel extends JPanel {
         headersModel.setRowCount(0);
         if (response.getHeaders() != null) {
             for (Map.Entry<String, List<String>> entry : response.getHeaders().entrySet()) {
-                headersModel.addRow(new Object[]{entry.getKey(), String.join(", ", entry.getValue())});
+                headersModel.addRow(new Object[] { entry.getKey(), String.join(", ", entry.getValue()) });
             }
         }
 
@@ -332,7 +393,7 @@ public class ResponsePanel extends JPanel {
         // Pre-request script results
         if (preRequestResult != null) {
             if (preRequestResult.hasError()) {
-                testResultsModel.addRow(new Object[]{"FAIL", "Pre-request Script", preRequestResult.getError()});
+                testResultsModel.addRow(new Object[] { "FAIL", "Pre-request Script", preRequestResult.getError() });
                 totalFailed++;
             }
             for (String log : preRequestResult.getConsoleLogs()) {
@@ -343,16 +404,19 @@ public class ResponsePanel extends JPanel {
         // Test script results
         if (testResult != null) {
             if (testResult.hasError()) {
-                testResultsModel.addRow(new Object[]{"FAIL", "Test Script Error", testResult.getError()});
+                testResultsModel.addRow(new Object[] { "FAIL", "Test Script Error", testResult.getError() });
                 totalFailed++;
             }
 
             for (ScriptResult.TestAssertion assertion : testResult.getAssertions()) {
                 String status = assertion.isPassed() ? "PASS" : "FAIL";
-                String details = assertion.isPassed() ? "" : (assertion.getFailureMessage() != null ? assertion.getFailureMessage() : "");
-                testResultsModel.addRow(new Object[]{status, assertion.getName(), details});
-                if (assertion.isPassed()) totalPassed++;
-                else totalFailed++;
+                String details = assertion.isPassed() ? ""
+                        : (assertion.getFailureMessage() != null ? assertion.getFailureMessage() : "");
+                testResultsModel.addRow(new Object[] { status, assertion.getName(), details });
+                if (assertion.isPassed())
+                    totalPassed++;
+                else
+                    totalFailed++;
             }
 
             for (String log : testResult.getConsoleLogs()) {
@@ -371,8 +435,9 @@ public class ResponsePanel extends JPanel {
             testSummaryLabel.setForeground(new Color(39, 174, 96));
             testSummaryLabel.setBackground(new Color(39, 174, 96, 25));
         } else {
-            testSummaryLabel.setText("  ✗ " + totalFailed + " of " + total + " test" + (total != 1 ? "s" : "") + " failed  |  "
-                    + totalPassed + " passed");
+            testSummaryLabel
+                    .setText("  ✗ " + totalFailed + " of " + total + " test" + (total != 1 ? "s" : "") + " failed  |  "
+                            + totalPassed + " passed");
             testSummaryLabel.setForeground(new Color(192, 57, 43));
             testSummaryLabel.setBackground(new Color(192, 57, 43, 25));
         }
@@ -388,7 +453,8 @@ public class ResponsePanel extends JPanel {
         int testTabIdx = tabs.indexOfComponent(testResultsPanel);
         if (testTabIdx >= 0) {
             if (total > 0) {
-                String badge = totalFailed == 0 ? " (" + totalPassed + "/" + total + " ✓)" : " (" + totalPassed + "/" + total + " ✗)";
+                String badge = totalFailed == 0 ? " (" + totalPassed + "/" + total + " ✓)"
+                        : " (" + totalPassed + "/" + total + " ✗)";
                 tabs.setTitleAt(testTabIdx, "Test Results" + badge);
                 tabs.setForegroundAt(testTabIdx, totalFailed == 0 ? new Color(39, 174, 96) : new Color(192, 57, 43));
             } else {
@@ -399,7 +465,8 @@ public class ResponsePanel extends JPanel {
 
         // Auto-switch to Test Results tab if tests were run and there are failures
         if (totalFailed > 0) {
-            if (testTabIdx >= 0) tabs.setSelectedIndex(testTabIdx);
+            if (testTabIdx >= 0)
+                tabs.setSelectedIndex(testTabIdx);
         }
     }
 
@@ -414,6 +481,7 @@ public class ResponsePanel extends JPanel {
         statusLabel.setForeground(new Color(100, 100, 100));
         timeLabel.setText("—");
         sizeLabel.setText("—");
+        sslLabel.setVisible(false);
         bodyArea.setText("");
         headersModel.setRowCount(0);
 
@@ -434,7 +502,8 @@ public class ResponsePanel extends JPanel {
     }
 
     private void performSearch(boolean forward, boolean findNext) {
-        if (searchField == null || bodyArea == null) return;
+        if (searchField == null || bodyArea == null)
+            return;
         String text = searchField.getText();
         if (text == null || text.isEmpty()) {
             bodyArea.setMarkAllHighlightColor(null);
@@ -475,7 +544,8 @@ public class ResponsePanel extends JPanel {
 
     private void exportResponse() {
         if (currentResponse == null || currentResponse.getBody() == null) {
-            JOptionPane.showMessageDialog(this, "No response content to save.", "Export Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No response content to save.", "Export Error",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -486,7 +556,8 @@ public class ResponsePanel extends JPanel {
         String defaultName = "response.txt";
         if (currentResponse.getHeaders() != null) {
             List<String> ct = currentResponse.getHeaders().get("content-type");
-            if (ct == null) ct = currentResponse.getHeaders().get("Content-Type");
+            if (ct == null)
+                ct = currentResponse.getHeaders().get("Content-Type");
             if (ct != null && !ct.isEmpty()) {
                 String type = ct.get(0).toLowerCase();
                 if (type.contains("json")) {

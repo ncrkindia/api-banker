@@ -196,6 +196,7 @@ public class HttpClientWrapper {
         }
 
         ScriptResult preResult = mergeScriptResults(collPreResult, reqPreResult);
+        long preRequestTimeMs = System.currentTimeMillis() - startTime;
 
         // If pre-request script had an error, we can still proceed with the request
         // (Postman behavior — logs error but doesn't block request)
@@ -380,7 +381,11 @@ public class HttpClientWrapper {
             // 5. Execute
             boolean verifySsl = in.slpro.japi.ui.MainFrame.resolveSslVerificationStatic(requestModel);
             boolean followRedirects = in.slpro.japi.ui.MainFrame.resolveRedirectSettingStatic(requestModel);
+            
+            long requestStartTime = System.currentTimeMillis();
             HttpResponse<String> httpResponse = getClient(verifySsl, followRedirects).send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            long networkTimeMs = System.currentTimeMillis() - requestStartTime;
+            
             long executionTimeMs = System.currentTimeMillis() - startTime;
             Map<String, List<String>> headers = httpResponse.headers().map();
 
@@ -425,6 +430,36 @@ public class HttpClientWrapper {
 
             ResponseModel response = new ResponseModel(statusCode, statusText, executionTimeMs, sizeBytes, responseBody, headers);
             response.setActualUrl(httpResponse.uri().toString());
+            response.setPreRequestTimeMs(preRequestTimeMs);
+            response.setNetworkTimeMs(networkTimeMs);
+            
+            // Extract SSL Certificate Details
+            if (httpResponse.sslSession().isPresent()) {
+                try {
+                    java.security.cert.Certificate[] certs = httpResponse.sslSession().get().getPeerCertificates();
+                    if (certs.length > 0 && certs[0] instanceof java.security.cert.X509Certificate) {
+                        java.security.cert.X509Certificate cert = (java.security.cert.X509Certificate) certs[0];
+                        StringBuilder sb = new StringBuilder("<html><b style='font-size:11px'>SSL Certificate Details:</b><br><br>");
+                        sb.append("<b>Subject:</b> ").append(cert.getSubjectX500Principal().getName()).append("<br>");
+                        sb.append("<b>Issuer:</b> ").append(cert.getIssuerX500Principal().getName()).append("<br>");
+                        sb.append("<b>Valid From:</b> ").append(cert.getNotBefore()).append("<br>");
+                        sb.append("<b>Valid Until:</b> ").append(cert.getNotAfter()).append("<br>");
+                        
+                        boolean dateValid = true;
+                        try {
+                            cert.checkValidity();
+                        } catch (Exception e) {
+                            dateValid = false;
+                        }
+                        sb.append("<b>Status:</b> ").append(dateValid ? (verifySsl ? "Verified & Valid" : "Valid (Unverified)") : "Expired/Invalid").append("</html>");
+                        
+                        response.setSslDetails(sb.toString());
+                        response.setSslValid(verifySsl && dateValid);
+                    }
+                } catch (Exception e) {
+                    // Ignore SSL extraction errors
+                }
+            }
             
             // Capture redirects for Collection Runner
             java.util.List<ResponseModel> redirects = new java.util.ArrayList<>();
@@ -433,12 +468,16 @@ public class HttpClientWrapper {
                 HttpResponse<String> pr = p.get();
                 ResponseModel rm = new ResponseModel(pr.statusCode(), getStatusText(pr.statusCode()), 0, 0, "", pr.headers().map());
                 rm.setActualUrl(pr.request().uri().toString());
+                
+                // Set SSL details for redirect if needed (optional)
+                
                 redirects.add(0, rm);
                 p = pr.previousResponse();
             }
             response.setRedirects(redirects);
 
             // Execute test scripts: Collection-level first, then Request-level
+            long testStartTime = System.currentTimeMillis();
             ScriptResult collTestResult = new ScriptResult();
             if (collection != null && collection.getPostRequestScript() != null && !collection.getPostRequestScript().isBlank()) {
                 collTestResult = scriptExecutor.executeTestScript(
@@ -452,6 +491,8 @@ public class HttpClientWrapper {
             }
 
             ScriptResult testResult = mergeScriptResults(collTestResult, reqTestResult);
+            long testScriptTimeMs = System.currentTimeMillis() - testStartTime;
+            response.setTestScriptTimeMs(testScriptTimeMs);
 
             return new ExecutionResult(response, preResult, testResult);
 
@@ -585,10 +626,14 @@ public class HttpClientWrapper {
             try {
                 javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
                 sslContext.init(null, new javax.net.ssl.TrustManager[]{
-                    new javax.net.ssl.X509TrustManager() {
+                    new javax.net.ssl.X509ExtendedTrustManager() {
                         public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
                         public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
                         public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType, java.net.Socket socket) {}
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType, java.net.Socket socket) {}
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType, javax.net.ssl.SSLEngine engine) {}
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType, javax.net.ssl.SSLEngine engine) {}
                     }
                 }, new java.security.SecureRandom());
                 builder.sslContext(sslContext);

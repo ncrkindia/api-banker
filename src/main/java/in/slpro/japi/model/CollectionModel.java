@@ -35,6 +35,21 @@ public class CollectionModel {
     private String authApiKeyName = "";
     private String authApiKeyValue = "";
     private String authApiKeyIn = "header"; // header or query
+    
+    // OAuth 2.0 fields
+    private String oauth2GrantType = "client_credentials"; // authorization_code, implicit, password, client_credentials
+    private String oauth2CallbackUrl = "";
+    private String oauth2AuthUrl = "";
+    private String oauth2AccessTokenUrl = "";
+    private String oauth2ClientId = "";
+    private String oauth2ClientSecret = "";
+    private String oauth2Scope = "";
+    private String oauth2State = "";
+    private String oauth2Username = "";
+    private String oauth2Password = "";
+    private String oauth2ClientAuth = "header"; // header, body
+    private String oauth2AccessToken = "";
+    
     private List<KeyValueItem> variables = new ArrayList<>();
     private String preRequestScript = "";
     private String postRequestScript = "";
@@ -105,6 +120,32 @@ public class CollectionModel {
     
     public String getAuthApiKeyIn() { return authApiKeyIn; }
     public void setAuthApiKeyIn(String authApiKeyIn) { this.authApiKeyIn = authApiKeyIn; }
+    
+    // OAuth 2.0 Getters & Setters
+    public String getOauth2GrantType() { return oauth2GrantType; }
+    public void setOauth2GrantType(String oauth2GrantType) { this.oauth2GrantType = oauth2GrantType; }
+    public String getOauth2CallbackUrl() { return oauth2CallbackUrl; }
+    public void setOauth2CallbackUrl(String oauth2CallbackUrl) { this.oauth2CallbackUrl = oauth2CallbackUrl; }
+    public String getOauth2AuthUrl() { return oauth2AuthUrl; }
+    public void setOauth2AuthUrl(String oauth2AuthUrl) { this.oauth2AuthUrl = oauth2AuthUrl; }
+    public String getOauth2AccessTokenUrl() { return oauth2AccessTokenUrl; }
+    public void setOauth2AccessTokenUrl(String oauth2AccessTokenUrl) { this.oauth2AccessTokenUrl = oauth2AccessTokenUrl; }
+    public String getOauth2ClientId() { return oauth2ClientId; }
+    public void setOauth2ClientId(String oauth2ClientId) { this.oauth2ClientId = oauth2ClientId; }
+    public String getOauth2ClientSecret() { return oauth2ClientSecret; }
+    public void setOauth2ClientSecret(String oauth2ClientSecret) { this.oauth2ClientSecret = oauth2ClientSecret; }
+    public String getOauth2Scope() { return oauth2Scope; }
+    public void setOauth2Scope(String oauth2Scope) { this.oauth2Scope = oauth2Scope; }
+    public String getOauth2State() { return oauth2State; }
+    public void setOauth2State(String oauth2State) { this.oauth2State = oauth2State; }
+    public String getOauth2Username() { return oauth2Username; }
+    public void setOauth2Username(String oauth2Username) { this.oauth2Username = oauth2Username; }
+    public String getOauth2Password() { return oauth2Password; }
+    public void setOauth2Password(String oauth2Password) { this.oauth2Password = oauth2Password; }
+    public String getOauth2ClientAuth() { return oauth2ClientAuth; }
+    public void setOauth2ClientAuth(String oauth2ClientAuth) { this.oauth2ClientAuth = oauth2ClientAuth; }
+    public String getOauth2AccessToken() { return oauth2AccessToken; }
+    public void setOauth2AccessToken(String oauth2AccessToken) { this.oauth2AccessToken = oauth2AccessToken; }
     
     /** @return The list of collection-scoped variables accessible via {{varName}}. */
     public List<KeyValueItem> getVariables() { return variables; }

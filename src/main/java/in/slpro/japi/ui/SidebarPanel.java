@@ -147,9 +147,6 @@ public class SidebarPanel extends JPanel {
 
                 if (SwingUtilities.isRightMouseButton(e)) {
                     collectionsTree.setSelectionPath(path);
-                    if (node.getUserObject() instanceof CollectionModel col) {
-                        mainFrame.openCollection(col);
-                    }
                     showCollectionContextMenu(e.getX(), e.getY(), node);
                 } else if (e.getClickCount() == 2) {
                     if (node.getUserObject() instanceof RequestModel req) {
