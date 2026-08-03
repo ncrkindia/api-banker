@@ -246,6 +246,7 @@ public class HttpClientWrapper {
             String authApiKeyName = requestModel.getAuthApiKeyName();
             String authApiKeyValue = requestModel.getAuthApiKeyValue();
             String authApiKeyIn = requestModel.getAuthApiKeyIn();
+            String oauth2AccessToken = requestModel.getOauth2AccessToken();
 
             if ("inherit".equalsIgnoreCase(authType) || authType == null) {
                 if (collection != null) {
@@ -256,6 +257,7 @@ public class HttpClientWrapper {
                     authApiKeyName = collection.getAuthApiKeyName();
                     authApiKeyValue = collection.getAuthApiKeyValue();
                     authApiKeyIn = collection.getAuthApiKeyIn();
+                    oauth2AccessToken = collection.getOauth2AccessToken();
                 } else {
                     authType = "none";
                 }

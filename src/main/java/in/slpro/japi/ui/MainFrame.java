@@ -845,15 +845,20 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
-    public void openJwtDecoder() {
+    public void openJwtDecoder(String initialToken) {
         RequestModel req = new RequestModel();
         req.setName("JWT Decoder");
         req.setType("jwt");
+        if (initialToken != null) req.setBodyRawContent(initialToken);
         JwtDecoderPanel panel = new JwtDecoderPanel(this, req);
         int idx = workspaceTabs.getTabCount();
         workspaceTabs.addTab("JWT Decoder", panel);
         workspaceTabs.setTabComponentAt(idx, buildTabHeader("JWT Decoder", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
+    }
+
+    public void openJwtDecoder() {
+        openJwtDecoder(null);
     }
 
     public void openJsonTool() {

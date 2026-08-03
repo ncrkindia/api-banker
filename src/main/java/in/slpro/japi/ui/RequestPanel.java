@@ -67,6 +67,19 @@ public class RequestPanel extends JPanel {
 
     // Auth fields
     private HighlightTextField bearerTokenField;
+    private JComboBox<String> oauth2GrantTypeCombo;
+    private HighlightTextField oauth2CallbackUrlField;
+    private HighlightTextField oauth2AuthUrlField;
+    private HighlightTextField oauth2AccessTokenUrlField;
+    private HighlightTextField oauth2ClientIdField;
+    private HighlightTextField oauth2ClientSecretField;
+    private HighlightTextField oauth2ScopeField;
+    private HighlightTextField oauth2StateField;
+    private HighlightTextField oauth2UsernameField;
+    private JPasswordField oauth2PasswordField;
+    private JComboBox<String> oauth2ClientAuthCombo;
+    public HighlightTextField oauth2AccessTokenField;
+    private JButton oauth2GetTokenBtn;
     private JTextField basicUsernameField;
     private JPasswordField basicPasswordField;
     private HighlightTextField apiKeyNameField;
@@ -289,7 +302,7 @@ public class RequestPanel extends JPanel {
         authPanel.setBackground(UIManager.getColor("Panel.background"));
         JPanel authTypeBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         authTypeBar.setBackground(UIManager.getColor("Panel.background"));
-        authTypeCombo = new JComboBox<>(new String[]{"inherit", "none", "bearer", "basic", "apiKey"});
+        authTypeCombo = new JComboBox<>(new String[]{"inherit", "none", "bearer", "basic", "apiKey", "oauth2"});
         authTypeBar.add(new JLabel("Auth Type:"));
         authTypeBar.add(authTypeCombo);
         authPanel.add(authTypeBar, BorderLayout.NORTH);
@@ -330,6 +343,122 @@ public class RequestPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; apiKeyPanel.add(new JLabel("Add to:"), gbc);
         gbc.gridx = 1; gbc.weightx = 0; apiKeyInCombo = new JComboBox<>(new String[]{"header", "query"}); apiKeyPanel.add(apiKeyInCombo, gbc);
         authCardPanel.add(apiKeyPanel, "apiKey");
+
+        // OAuth2 Panel
+        JPanel oauth2Panel = new JPanel(new BorderLayout());
+        oauth2Panel.setBackground(UIManager.getColor("Panel.background"));
+        JPanel oauth2Form = new JPanel(new GridBagLayout());
+        oauth2Form.setBackground(UIManager.getColor("Panel.background"));
+        GridBagConstraints gbcOauth = new GridBagConstraints();
+        gbcOauth.insets = new Insets(4, 4, 4, 4);
+        gbcOauth.anchor = GridBagConstraints.WEST;
+        gbcOauth.fill = GridBagConstraints.HORIZONTAL;
+
+        int rowOauth = 0;
+        
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Grant Type:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2GrantTypeCombo = new JComboBox<>(new String[]{"authorization_code", "implicit", "password", "client_credentials"});
+        oauth2Form.add(oauth2GrantTypeCombo, gbcOauth);
+        rowOauth++;
+        
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Callback URL:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2CallbackUrlField = new HighlightTextField();
+        oauth2Form.add(oauth2CallbackUrlField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Auth URL:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2AuthUrlField = new HighlightTextField();
+        oauth2Form.add(oauth2AuthUrlField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Access Token URL:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2AccessTokenUrlField = new HighlightTextField();
+        oauth2Form.add(oauth2AccessTokenUrlField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Client ID:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2ClientIdField = new HighlightTextField();
+        oauth2Form.add(oauth2ClientIdField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Client Secret:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2ClientSecretField = new HighlightTextField();
+        oauth2Form.add(oauth2ClientSecretField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Scope:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2ScopeField = new HighlightTextField();
+        oauth2Form.add(oauth2ScopeField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("State:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2StateField = new HighlightTextField();
+        oauth2Form.add(oauth2StateField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Username (Password Grant):"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2UsernameField = new HighlightTextField();
+        oauth2Form.add(oauth2UsernameField, gbcOauth);
+        rowOauth++;
+
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Password (Password Grant):"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2PasswordField = new JPasswordField();
+        oauth2Form.add(oauth2PasswordField, gbcOauth);
+        rowOauth++;
+        
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Client Auth:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        oauth2ClientAuthCombo = new JComboBox<>(new String[]{"header", "body"});
+        oauth2Form.add(oauth2ClientAuthCombo, gbcOauth);
+        rowOauth++;
+        
+        gbcOauth.gridx = 0; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 0;
+        oauth2Form.add(new JLabel("Access Token:"), gbcOauth);
+        gbcOauth.gridx = 1; gbcOauth.gridy = rowOauth; gbcOauth.weightx = 1;
+        JPanel atkPanel = new JPanel(new BorderLayout(4, 0));
+        atkPanel.setOpaque(false);
+        oauth2AccessTokenField = new HighlightTextField();
+        atkPanel.add(oauth2AccessTokenField, BorderLayout.CENTER);
+        JButton oauth2DecodeJwtBtn = new JButton("Decode JWT");
+        oauth2DecodeJwtBtn.addActionListener(e -> {
+            String token = oauth2AccessTokenField.getText();
+            if (token != null && !token.isBlank()) {
+                mainFrame.openJwtDecoder(token);
+            }
+        });
+        atkPanel.add(oauth2DecodeJwtBtn, BorderLayout.WEST);
+        oauth2GetTokenBtn = new JButton("Get New Access Token");
+        oauth2GetTokenBtn.addActionListener(e -> {
+            collectModel(); // save fields to model first
+            in.slpro.japi.http.OAuth2Manager.getNewAccessToken(requestModel, this);
+        });
+        atkPanel.add(oauth2GetTokenBtn, BorderLayout.EAST);
+        oauth2Form.add(atkPanel, gbcOauth);
+
+        oauth2Panel.add(new JScrollPane(oauth2Form), BorderLayout.CENTER);
+        authCardPanel.add(oauth2Panel, "oauth2");
+
 
         authTypeCombo.addActionListener(e -> authCardLayout.show(authCardPanel, (String) authTypeCombo.getSelectedItem()));
         authPanel.add(authCardPanel, BorderLayout.CENTER);
@@ -833,6 +962,18 @@ public class RequestPanel extends JPanel {
             apiKeyNameField.setText(requestModel.getAuthApiKeyName() != null ? requestModel.getAuthApiKeyName() : "");
             apiKeyValueField.setText(requestModel.getAuthApiKeyValue() != null ? requestModel.getAuthApiKeyValue() : "");
             apiKeyInCombo.setSelectedItem(requestModel.getAuthApiKeyIn() != null ? requestModel.getAuthApiKeyIn() : "header");
+            oauth2GrantTypeCombo.setSelectedItem(requestModel.getOauth2GrantType() != null ? requestModel.getOauth2GrantType() : "client_credentials");
+            oauth2CallbackUrlField.setText(requestModel.getOauth2CallbackUrl() != null ? requestModel.getOauth2CallbackUrl() : "");
+            oauth2AuthUrlField.setText(requestModel.getOauth2AuthUrl() != null ? requestModel.getOauth2AuthUrl() : "");
+            oauth2AccessTokenUrlField.setText(requestModel.getOauth2AccessTokenUrl() != null ? requestModel.getOauth2AccessTokenUrl() : "");
+            oauth2ClientIdField.setText(requestModel.getOauth2ClientId() != null ? requestModel.getOauth2ClientId() : "");
+            oauth2ClientSecretField.setText(requestModel.getOauth2ClientSecret() != null ? requestModel.getOauth2ClientSecret() : "");
+            oauth2ScopeField.setText(requestModel.getOauth2Scope() != null ? requestModel.getOauth2Scope() : "");
+            oauth2StateField.setText(requestModel.getOauth2State() != null ? requestModel.getOauth2State() : "");
+            oauth2UsernameField.setText(requestModel.getOauth2Username() != null ? requestModel.getOauth2Username() : "");
+            oauth2PasswordField.setText(requestModel.getOauth2Password() != null ? requestModel.getOauth2Password() : "");
+            oauth2ClientAuthCombo.setSelectedItem(requestModel.getOauth2ClientAuth() != null ? requestModel.getOauth2ClientAuth() : "header");
+            oauth2AccessTokenField.setText(requestModel.getOauth2AccessToken() != null ? requestModel.getOauth2AccessToken() : "");
 
             preScriptArea.setText(requestModel.getPreRequestScript() != null ? requestModel.getPreRequestScript() : "");
             postScriptArea.setText(requestModel.getPostRequestScript() != null ? requestModel.getPostRequestScript() : "");
@@ -879,6 +1020,18 @@ public class RequestPanel extends JPanel {
         requestModel.setAuthApiKeyName(apiKeyNameField.getText());
         requestModel.setAuthApiKeyValue(apiKeyValueField.getText());
         requestModel.setAuthApiKeyIn((String) apiKeyInCombo.getSelectedItem());
+        requestModel.setOauth2GrantType((String) oauth2GrantTypeCombo.getSelectedItem());
+        requestModel.setOauth2CallbackUrl(oauth2CallbackUrlField.getText());
+        requestModel.setOauth2AuthUrl(oauth2AuthUrlField.getText());
+        requestModel.setOauth2AccessTokenUrl(oauth2AccessTokenUrlField.getText());
+        requestModel.setOauth2ClientId(oauth2ClientIdField.getText());
+        requestModel.setOauth2ClientSecret(oauth2ClientSecretField.getText());
+        requestModel.setOauth2Scope(oauth2ScopeField.getText());
+        requestModel.setOauth2State(oauth2StateField.getText());
+        requestModel.setOauth2Username(oauth2UsernameField.getText());
+        requestModel.setOauth2Password(new String(oauth2PasswordField.getPassword()));
+        requestModel.setOauth2ClientAuth((String) oauth2ClientAuthCombo.getSelectedItem());
+        requestModel.setOauth2AccessToken(oauth2AccessTokenField.getText());
         requestModel.setPreRequestScript(preScriptArea.getText());
         requestModel.setPostRequestScript(postScriptArea.getText());
         int sslIndex = sslVerifyCombo.getSelectedIndex();
