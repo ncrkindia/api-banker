@@ -26,6 +26,7 @@ public class AppSettings {
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
     private java.util.List<String> expandedTreeNodes = new java.util.ArrayList<>();
+    private java.util.List<KeyValueItem> globalVariables = new java.util.ArrayList<>();
 
     private int selectedTabIndex = -1;
 
@@ -83,6 +84,8 @@ public class AppSettings {
     public void setOpenTabs(java.util.List<OpenTabState> openTabs) { this.openTabs = openTabs; }
     public java.util.List<String> getExpandedTreeNodes() { return expandedTreeNodes; }
     public void setExpandedTreeNodes(java.util.List<String> expandedTreeNodes) { this.expandedTreeNodes = expandedTreeNodes; }
+    public java.util.List<KeyValueItem> getGlobalVariables() { return globalVariables; }
+    public void setGlobalVariables(java.util.List<KeyValueItem> globalVariables) { this.globalVariables = globalVariables; }
 
     public int getConsoleWidth() { return consoleWidth; }
     public void setConsoleWidth(int consoleWidth) { this.consoleWidth = consoleWidth; }

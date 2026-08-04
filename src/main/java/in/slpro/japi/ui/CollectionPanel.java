@@ -326,7 +326,12 @@ public class CollectionPanel extends JPanel {
         authPanel.setBackground(UIManager.getColor("Panel.background"));
         JPanel authTypeBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         authTypeBar.setBackground(UIManager.getColor("Panel.background"));
-        authTypeCombo = new JComboBox<>(new String[]{"none", "bearer", "basic", "apiKey", "oauth2"});
+        boolean isRoot = mainFrame.getCollections().stream().anyMatch(c -> c.getId().equals(collectionModel.getId()));
+        if (isRoot) {
+            authTypeCombo = new JComboBox<>(new String[]{"none", "bearer", "basic", "apiKey", "oauth2"});
+        } else {
+            authTypeCombo = new JComboBox<>(new String[]{"inherit", "none", "bearer", "basic", "apiKey", "oauth2"});
+        }
         authTypeBar.add(new JLabel("Auth Type:"));
         authTypeBar.add(authTypeCombo);
         authPanel.add(authTypeBar, BorderLayout.NORTH);
@@ -335,6 +340,11 @@ public class CollectionPanel extends JPanel {
         authCardPanel = new JPanel(authCardLayout);
         authCardPanel.setBackground(UIManager.getColor("Panel.background"));
         authCardPanel.add(new JPanel(), "none");
+        
+        JPanel inheritPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        inheritPanel.setBackground(UIManager.getColor("Panel.background"));
+        inheritPanel.add(new JLabel("<html><i>Inheriting authorization from parent collection</i></html>"));
+        authCardPanel.add(inheritPanel, "inherit");
 
         JPanel bearerPanel = buildLabeledField("Token:", bearerTokenField = new HighlightTextField());
         authCardPanel.add(bearerPanel, "bearer");
@@ -757,8 +767,16 @@ public class CollectionPanel extends JPanel {
         }
         updateHtmlPreview();
 
-        authTypeCombo.setSelectedItem(collectionModel.getAuthType());
-        authCardLayout.show(authCardPanel, collectionModel.getAuthType());
+        String aType = collectionModel.getAuthType();
+        boolean isRoot = mainFrame.getCollections().stream().anyMatch(c -> c.getId().equals(collectionModel.getId()));
+        if (isRoot && ("inherit".equalsIgnoreCase(aType) || aType == null)) {
+            aType = "none";
+            collectionModel.setAuthType(aType);
+        } else if (aType == null) {
+            aType = "inherit";
+        }
+        authTypeCombo.setSelectedItem(aType);
+        authCardLayout.show(authCardPanel, aType);
         bearerTokenField.setText(collectionModel.getAuthToken());
         basicUsernameField.setText(collectionModel.getAuthUsername());
         basicPasswordField.setText(collectionModel.getAuthPassword());

@@ -221,18 +221,31 @@ public class MainFrame extends JFrame {
         JMenuItem newReqItem = new JMenuItem("New Request");
         newReqItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
         newReqItem.addActionListener(e -> openNewRequest());
-        JMenuItem importItem = new JMenuItem("Import ");
-        importItem.addActionListener(e -> importPostmanFiles());
-        JMenuItem exportItem = new JMenuItem("Export...");
-        exportItem.addActionListener(e -> openExportTab());
+        JMenu importMenu = new JMenu("Import");
+        JMenuItem importJapiItem = new JMenuItem("Japi Files");
+        importJapiItem.addActionListener(e -> importJapiFiles());
+        JMenuItem importPostmanItem = new JMenuItem("Postman Files");
+        importPostmanItem.addActionListener(e -> importPostmanFiles());
+        importMenu.add(importJapiItem);
+        importMenu.add(importPostmanItem);
+
+        JMenu exportMenu = new JMenu("Export");
+        JMenuItem exportJapiItem = new JMenuItem("Japi Files");
+        exportJapiItem.addActionListener(e -> openExportTab("japi"));
+        JMenuItem exportPostmanItem = new JMenuItem("Postman Files");
+        exportPostmanItem.addActionListener(e -> openExportTab("postman"));
+        exportMenu.add(exportJapiItem);
+        exportMenu.add(exportPostmanItem);
+
         JMenuItem settingsItem = new JMenuItem("Settings...");
         settingsItem.addActionListener(e -> openSettings());
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(e -> onClose());
+
         fileMenu.add(newReqItem);
         fileMenu.addSeparator();
-        fileMenu.add(importItem);
-        fileMenu.add(exportItem);
+        fileMenu.add(importMenu);
+        fileMenu.add(exportMenu);
         fileMenu.addSeparator();
         fileMenu.add(settingsItem);
         fileMenu.addSeparator();
@@ -243,10 +256,13 @@ public class MainFrame extends JFrame {
         consoleItem.addActionListener(e -> new ConsoleDialog(this).setVisible(true));
         JMenuItem logConsoleItem = new JMenuItem("Log Console Tab");
         logConsoleItem.addActionListener(e -> openLogConsole());
+        JMenuItem runnerLogsItem = new JMenuItem("Collection Runner Logs");
+        runnerLogsItem.addActionListener(e -> openCollectionRunnerLogs());
         JMenuItem envMgrItem = new JMenuItem("Environment Manager...");
         envMgrItem.addActionListener(e -> openEnvManager());
         viewMenu.add(consoleItem);
         viewMenu.add(logConsoleItem);
+        viewMenu.add(runnerLogsItem);
         viewMenu.add(envMgrItem);
 
         JMenu toolsMenu = new JMenu("Tools");
@@ -801,9 +817,10 @@ public class MainFrame extends JFrame {
                 + "      <h3 style='color:" + accentHex + "; margin-top:0;'>⌨️ Keyboard Shortcuts</h3>"
                 + "      <table style='font-size:13px; width:100%; border-collapse:collapse;'>"
                 + "        <tr><td style='padding:3px 0;'><b>Ctrl + S</b></td><td>Save Active Tab</td></tr>"
-                + "        <tr><td style='padding:3px 0;'><b>Ctrl + = / +</b></td><td>Zoom In UI</td></tr>"
-                + "        <tr><td style='padding:3px 0;'><b>Ctrl + -</b></td><td>Zoom Out UI</td></tr>"
-                + "        <tr><td style='padding:3px 0;'><b>Right-Click Tabs</b></td><td>Pin, Rename, Close Options</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>Ctrl + R</b></td><td>Send/Run Request</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>F2 / Del</b></td><td>Rename / Delete Node</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>Ctrl + C/V/D</b></td><td>Copy / Paste / Duplicate</td></tr>"
+                + "        <tr><td style='padding:3px 0;'><b>Ctrl + = / -</b></td><td>Zoom UI In/Out</td></tr>"
                 + "      </table>"
                 + "    </td>"
                 + "  </tr>"
@@ -830,7 +847,7 @@ public class MainFrame extends JFrame {
         openRequest(req);
     }
 
-    private void openExportTab() {
+    private void openExportTab(String type) {
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             Component c = workspaceTabs.getComponentAt(i);
             if (c instanceof ExportPanel) {
@@ -838,7 +855,7 @@ public class MainFrame extends JFrame {
                 return;
             }
         }
-        ExportPanel panel = new ExportPanel(this);
+        ExportPanel panel = new ExportPanel(this, type);
         int idx = workspaceTabs.getTabCount();
         workspaceTabs.addTab("Export", panel);
         workspaceTabs.setTabComponentAt(idx, buildTabHeader("Export", idx, panel));
@@ -913,6 +930,14 @@ public class MainFrame extends JFrame {
         int idx = workspaceTabs.getTabCount();
         workspaceTabs.addTab("Log Console", panel);
         workspaceTabs.setTabComponentAt(idx, buildTabHeader("Log Console", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
+    public void openCollectionRunnerLogs() {
+        CollectionRunnerLogsPanel panel = new CollectionRunnerLogsPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Collection Runner Logs", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Collection Runner Logs", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -1392,6 +1417,21 @@ public class MainFrame extends JFrame {
                     if (root.has("item") && root.get("item").isJsonArray()) {
                         parsePostmanItemsRecursive(root.getAsJsonArray("item"), col);
                     }
+                    if (root.has("event") && root.get("event").isJsonArray()) {
+                        for (com.google.gson.JsonElement evEl : root.getAsJsonArray("event")) {
+                            com.google.gson.JsonObject ev = evEl.getAsJsonObject();
+                            String listen = ev.has("listen") ? ev.get("listen").getAsString() : "";
+                            if (ev.has("script") && ev.getAsJsonObject("script").has("exec")) {
+                                StringBuilder sb = new StringBuilder();
+                                for (com.google.gson.JsonElement line : ev.getAsJsonObject("script").getAsJsonArray("exec")) {
+                                    sb.append(line.getAsString()).append("\n");
+                                }
+                                String scriptText = sb.toString().replace("pm.", "japi.");
+                                if ("prerequest".equals(listen)) col.setPreRequestScript(scriptText);
+                                else if ("test".equals(listen)) col.setPostRequestScript(scriptText);
+                            }
+                        }
+                    }
                     collections.add(col);
                     int totalRequests = countRequestsRecursive(col);
                     importedCollections.add(col.getName() + " (" + totalRequests + " requests)");
@@ -1464,6 +1504,79 @@ public class MainFrame extends JFrame {
         JOptionPane.showMessageDialog(this, sb.toString(), "Import Summary", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    public void importJapiFiles() {
+        JFileChooser chooser = new JFileChooser(lastFileChooserDirectory);
+        chooser.setDialogTitle("Import Japi Files (Collections/Environments)");
+        chooser.setMultiSelectionEnabled(true);
+        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Japi JSON files (*.json)", "json"));
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
+
+        File[] files = chooser.getSelectedFiles();
+        if (files == null || files.length == 0) return;
+        lastFileChooserDirectory = files[0].getParentFile();
+
+        List<String> importedCollections = new ArrayList<>();
+        List<String> importedEnvironments = new ArrayList<>();
+        List<String> failedFiles = new ArrayList<>();
+
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+
+        for (File file : files) {
+            try (java.io.Reader reader = new java.io.FileReader(file, java.nio.charset.StandardCharsets.UTF_8)) {
+                com.google.gson.JsonObject root = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+                if (root.has("folders") && root.has("requests")) {
+                    CollectionModel col = gson.fromJson(root, CollectionModel.class);
+                    col.setId(UUID.randomUUID().toString()); // new ID to avoid clash
+                    collections.add(col);
+                    importedCollections.add(col.getName());
+                } else if (root.has("variables")) {
+                    EnvironmentModel env = gson.fromJson(root, EnvironmentModel.class);
+                    env.setId(UUID.randomUUID().toString());
+                    environments.add(env);
+                    importedEnvironments.add(env.getName());
+                } else {
+                    failedFiles.add(file.getName() + " (Unknown format)");
+                }
+            } catch (Exception e) {
+                failedFiles.add(file.getName() + " (" + e.getMessage() + ")");
+            }
+        }
+
+        if (!importedCollections.isEmpty()) {
+            saveCollections();
+            sidebarPanel.refreshCollections(collections);
+        }
+
+        if (!importedEnvironments.isEmpty()) {
+            setEnvironments(environments);
+            for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+                Component comp = workspaceTabs.getComponentAt(i);
+                if (comp instanceof EnvironmentManagerPanel emp) {
+                    emp.refreshEnvironments(environments);
+                }
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Import Results:\n\n");
+        if (!importedCollections.isEmpty()) {
+            sb.append("Imported Collections:\n");
+            for (String colName : importedCollections) sb.append(" - ").append(colName).append("\n");
+            sb.append("\n");
+        }
+        if (!importedEnvironments.isEmpty()) {
+            sb.append("Imported Environments:\n");
+            for (String envName : importedEnvironments) sb.append(" - ").append(envName).append("\n");
+            sb.append("\n");
+        }
+        if (!failedFiles.isEmpty()) {
+            sb.append("Failed/Skipped Files:\n");
+            for (String failDetail : failedFiles) sb.append(" - ").append(failDetail).append("\n");
+        }
+        JOptionPane.showMessageDialog(this, sb.toString(), "Import Summary", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     private int countRequestsRecursive(CollectionModel col) {
         int count = col.getRequests().size();
         for (CollectionModel folder : col.getFolders()) {
@@ -1480,12 +1593,42 @@ public class MainFrame extends JFrame {
                 CollectionModel subFolder = new CollectionModel();
                 subFolder.setId(UUID.randomUUID().toString());
                 subFolder.setName(item.has("name") ? item.get("name").getAsString() : "Folder");
+                if (item.has("event") && item.get("event").isJsonArray()) {
+                    for (com.google.gson.JsonElement evEl : item.getAsJsonArray("event")) {
+                        com.google.gson.JsonObject ev = evEl.getAsJsonObject();
+                        String listen = ev.has("listen") ? ev.get("listen").getAsString() : "";
+                        if (ev.has("script") && ev.getAsJsonObject("script").has("exec")) {
+                            StringBuilder sb = new StringBuilder();
+                            for (com.google.gson.JsonElement line : ev.getAsJsonObject("script").getAsJsonArray("exec")) {
+                                sb.append(line.getAsString()).append("\n");
+                            }
+                            String scriptText = sb.toString().replace("pm.", "japi.");
+                            if ("prerequest".equals(listen)) subFolder.setPreRequestScript(scriptText);
+                            else if ("test".equals(listen)) subFolder.setPostRequestScript(scriptText);
+                        }
+                    }
+                }
                 parsePostmanItemsRecursive(item.getAsJsonArray("item"), subFolder);
                 parent.getFolders().add(subFolder);
             } else if (item.has("request")) {
                 RequestModel req = new RequestModel();
                 req.setId(UUID.randomUUID().toString());
                 req.setName(item.has("name") ? item.get("name").getAsString() : "Request");
+                if (item.has("event") && item.get("event").isJsonArray()) {
+                    for (com.google.gson.JsonElement evEl : item.getAsJsonArray("event")) {
+                        com.google.gson.JsonObject ev = evEl.getAsJsonObject();
+                        String listen = ev.has("listen") ? ev.get("listen").getAsString() : "";
+                        if (ev.has("script") && ev.getAsJsonObject("script").has("exec")) {
+                            StringBuilder sb = new StringBuilder();
+                            for (com.google.gson.JsonElement line : ev.getAsJsonObject("script").getAsJsonArray("exec")) {
+                                sb.append(line.getAsString()).append("\n");
+                            }
+                            String scriptText = sb.toString().replace("pm.", "japi.");
+                            if ("prerequest".equals(listen)) req.setPreRequestScript(scriptText);
+                            else if ("test".equals(listen)) req.setPostRequestScript(scriptText);
+                        }
+                    }
+                }
                 com.google.gson.JsonObject reqObj = item.getAsJsonObject("request");
                 req.setMethod(reqObj.has("method") ? reqObj.get("method").getAsString() : "GET");
 
@@ -1583,7 +1726,7 @@ public class MainFrame extends JFrame {
 
     public void exportCollection(CollectionModel col) {
         JFileChooser chooser = new JFileChooser(lastFileChooserDirectory);
-        chooser.setSelectedFile(new File(col.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + ".json"));
+        chooser.setSelectedFile(new File(col.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + "_postman_collection.json"));
         chooser.setDialogTitle("Export Collection");
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
             return;
@@ -1602,6 +1745,32 @@ public class MainFrame extends JFrame {
             com.google.gson.JsonArray items = new com.google.gson.JsonArray();
             exportCollectionRecursive(col, items);
             root.add("item", items);
+            
+            com.google.gson.JsonArray events = new com.google.gson.JsonArray();
+            if (col.getPreRequestScript() != null && !col.getPreRequestScript().isEmpty()) {
+                com.google.gson.JsonObject ev = new com.google.gson.JsonObject();
+                ev.addProperty("listen", "prerequest");
+                com.google.gson.JsonObject script = new com.google.gson.JsonObject();
+                script.addProperty("type", "text/javascript");
+                com.google.gson.JsonArray exec = new com.google.gson.JsonArray();
+                for (String line : col.getPreRequestScript().replace("japi.", "pm.").split("\n")) exec.add(line);
+                script.add("exec", exec);
+                ev.add("script", script);
+                events.add(ev);
+            }
+            if (col.getPostRequestScript() != null && !col.getPostRequestScript().isEmpty()) {
+                com.google.gson.JsonObject ev = new com.google.gson.JsonObject();
+                ev.addProperty("listen", "test");
+                com.google.gson.JsonObject script = new com.google.gson.JsonObject();
+                script.addProperty("type", "text/javascript");
+                com.google.gson.JsonArray exec = new com.google.gson.JsonArray();
+                for (String line : col.getPostRequestScript().replace("japi.", "pm.").split("\n")) exec.add(line);
+                script.add("exec", exec);
+                ev.add("script", script);
+                events.add(ev);
+            }
+            if (events.size() > 0) root.add("event", events);
+            
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
             showToast(this, "Collection exported successfully.");
@@ -1610,11 +1779,37 @@ public class MainFrame extends JFrame {
         }
     }
 
-    private void exportCollectionRecursive(CollectionModel col, com.google.gson.JsonArray items) {
+    public void exportCollectionRecursive(CollectionModel col, com.google.gson.JsonArray items) {
         if (col.getFolders() != null) {
             for (CollectionModel folder : col.getFolders()) {
                 com.google.gson.JsonObject folderObj = new com.google.gson.JsonObject();
                 folderObj.addProperty("name", folder.getName());
+                
+                com.google.gson.JsonArray events = new com.google.gson.JsonArray();
+                if (folder.getPreRequestScript() != null && !folder.getPreRequestScript().isEmpty()) {
+                    com.google.gson.JsonObject ev = new com.google.gson.JsonObject();
+                    ev.addProperty("listen", "prerequest");
+                    com.google.gson.JsonObject script = new com.google.gson.JsonObject();
+                    script.addProperty("type", "text/javascript");
+                    com.google.gson.JsonArray exec = new com.google.gson.JsonArray();
+                    for (String line : folder.getPreRequestScript().replace("japi.", "pm.").split("\n")) exec.add(line);
+                    script.add("exec", exec);
+                    ev.add("script", script);
+                    events.add(ev);
+                }
+                if (folder.getPostRequestScript() != null && !folder.getPostRequestScript().isEmpty()) {
+                    com.google.gson.JsonObject ev = new com.google.gson.JsonObject();
+                    ev.addProperty("listen", "test");
+                    com.google.gson.JsonObject script = new com.google.gson.JsonObject();
+                    script.addProperty("type", "text/javascript");
+                    com.google.gson.JsonArray exec = new com.google.gson.JsonArray();
+                    for (String line : folder.getPostRequestScript().replace("japi.", "pm.").split("\n")) exec.add(line);
+                    script.add("exec", exec);
+                    ev.add("script", script);
+                    events.add(ev);
+                }
+                if (events.size() > 0) folderObj.add("event", events);
+
                 com.google.gson.JsonArray folderItems = new com.google.gson.JsonArray();
                 exportCollectionRecursive(folder, folderItems);
                 folderObj.add("item", folderItems);
@@ -1631,10 +1826,86 @@ public class MainFrame extends JFrame {
                 reqObj.addProperty("method", req.getMethod());
                 com.google.gson.JsonObject url = new com.google.gson.JsonObject();
                 url.addProperty("raw", req.getUrl());
+                try {
+                    String urlStr = req.getUrl();
+                    if (urlStr != null && !urlStr.isEmpty()) {
+                        String withoutProtocol = urlStr;
+                        if (urlStr.contains("://")) {
+                            String[] protoParts = urlStr.split("://", 2);
+                            url.addProperty("protocol", protoParts[0]);
+                            withoutProtocol = protoParts[1];
+                        }
+                        String[] parts = withoutProtocol.split("/", 2);
+                        String hostStr = parts[0];
+                        String pathStr = parts.length > 1 ? parts[1] : "";
+                        
+                        if (hostStr.contains(":")) {
+                            String[] hostParts = hostStr.split(":", 2);
+                            com.google.gson.JsonArray hostArr = new com.google.gson.JsonArray();
+                            for (String h : hostParts[0].split("\\.")) hostArr.add(h);
+                            url.add("host", hostArr);
+                            url.addProperty("port", hostParts[1]);
+                        } else {
+                            com.google.gson.JsonArray hostArr = new com.google.gson.JsonArray();
+                            for (String h : hostStr.split("\\.")) hostArr.add(h);
+                            url.add("host", hostArr);
+                        }
+                        com.google.gson.JsonArray pathArr = new com.google.gson.JsonArray();
+                        for (String p : pathStr.split("/", -1)) pathArr.add(p);
+                        url.add("path", pathArr);
+                    }
+                } catch (Exception ignored) {}
                 reqObj.add("url", url);
                 item.add("request", reqObj);
+                
+                com.google.gson.JsonArray events = new com.google.gson.JsonArray();
+                if (req.getPreRequestScript() != null && !req.getPreRequestScript().isEmpty()) {
+                    com.google.gson.JsonObject ev = new com.google.gson.JsonObject();
+                    ev.addProperty("listen", "prerequest");
+                    com.google.gson.JsonObject script = new com.google.gson.JsonObject();
+                    script.addProperty("type", "text/javascript");
+                    com.google.gson.JsonArray exec = new com.google.gson.JsonArray();
+                    for (String line : req.getPreRequestScript().replace("japi.", "pm.").split("\n")) exec.add(line);
+                    script.add("exec", exec);
+                    ev.add("script", script);
+                    events.add(ev);
+                }
+                if (req.getPostRequestScript() != null && !req.getPostRequestScript().isEmpty()) {
+                    com.google.gson.JsonObject ev = new com.google.gson.JsonObject();
+                    ev.addProperty("listen", "test");
+                    com.google.gson.JsonObject script = new com.google.gson.JsonObject();
+                    script.addProperty("type", "text/javascript");
+                    com.google.gson.JsonArray exec = new com.google.gson.JsonArray();
+                    for (String line : req.getPostRequestScript().replace("japi.", "pm.").split("\n")) exec.add(line);
+                    script.add("exec", exec);
+                    ev.add("script", script);
+                    events.add(ev);
+                }
+                if (events.size() > 0) item.add("event", events);
+                
                 items.add(item);
             }
+        }
+    }
+
+    public void exportJapiCollection(CollectionModel col) {
+        JFileChooser chooser = new JFileChooser(lastFileChooserDirectory);
+        chooser.setSelectedFile(new File(col.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + "_japi_collection.json"));
+        chooser.setDialogTitle("Export Japi Collection");
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+            return;
+        lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
+        try {
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            com.google.gson.JsonObject root = gson.toJsonTree(col).getAsJsonObject();
+            com.google.gson.JsonObject metadata = new com.google.gson.JsonObject();
+            metadata.addProperty("exported_by", "JAPI v" + in.slpro.japi.App.getVersion());
+            metadata.addProperty("exported_at", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
+            root.add("_metadata", metadata);
+            java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
+            showToast(this, "Japi Collection exported successfully.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

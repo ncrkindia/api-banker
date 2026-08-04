@@ -131,6 +131,40 @@ public class SidebarPanel extends JPanel {
         });
         collectionsTree.setEditable(true);
 
+        collectionsTree.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                javax.swing.tree.TreePath path = collectionsTree.getSelectionPath();
+                if (path == null) return;
+                javax.swing.tree.DefaultMutableTreeNode node = (javax.swing.tree.DefaultMutableTreeNode) path.getLastPathComponent();
+                Object uo = node.getUserObject();
+                
+                boolean ctrl = e.isControlDown();
+                int code = e.getKeyCode();
+                
+                if (code == java.awt.event.KeyEvent.VK_F2) {
+                    collectionsTree.startEditingAtPath(path);
+                } else if (code == java.awt.event.KeyEvent.VK_DELETE) {
+                    if (uo instanceof CollectionModel c) mainFrame.deleteCollection(c);
+                    else if (uo instanceof RequestModel r) mainFrame.deleteRequest(r);
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_O) {
+                    if (uo instanceof RequestModel r) mainFrame.openRequest(r);
+                    else {
+                        if (collectionsTree.isExpanded(path)) collectionsTree.collapsePath(path);
+                        else collectionsTree.expandPath(path);
+                    }
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_C) {
+                    clipboardNode = uo;
+                    MainFrame.showToast(SidebarPanel.this, "Copied");
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_V) {
+                    handlePaste(node);
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_D) {
+                    clipboardNode = uo;
+                    handlePaste(node);
+                }
+            }
+        });
+
         collectionsTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -316,6 +350,7 @@ public class SidebarPanel extends JPanel {
         JPopupMenu menu = new JPopupMenu();
         if (node.getUserObject() instanceof CollectionModel col) {
             JMenuItem rename = new JMenuItem("Rename Collection");
+            rename.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
             rename.addActionListener(e -> {
                 collectionsTree.startEditingAtPath(new TreePath(node.getPath()));
             });
@@ -348,47 +383,98 @@ public class SidebarPanel extends JPanel {
             addMenu.add(addWsItem);
 
             JMenuItem delete = new JMenuItem("Delete Collection");
+            delete.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
             delete.addActionListener(e -> {
                 int confirm = JOptionPane.showConfirmDialog(this, "Delete collection \"" + col.getName() + "\"?",
                         "Confirm", JOptionPane.YES_NO_OPTION);
                 if (confirm == JOptionPane.YES_OPTION)
                     mainFrame.deleteCollection(col);
             });
-            JMenuItem importCol = new JMenuItem("Import ");
-            importCol.addActionListener(e -> mainFrame.importPostmanFiles());
-            JMenuItem exportCol = new JMenuItem("Export Collection");
-            exportCol.addActionListener(e -> mainFrame.exportCollection(col));
+            
+            JMenuItem copy = new JMenuItem("Copy");
+            copy.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            copy.addActionListener(e -> {
+                clipboardNode = node.getUserObject();
+                MainFrame.showToast(SidebarPanel.this, "Copied");
+            });
+            JMenuItem paste = new JMenuItem("Paste");
+            paste.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            paste.addActionListener(e -> handlePaste(node));
+            JMenuItem duplicateCol = new JMenuItem("Duplicate");
+            duplicateCol.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            duplicateCol.addActionListener(e -> {
+                clipboardNode = node.getUserObject();
+                handlePaste(node);
+            });
+            JMenu importMenu = new JMenu("Import");
+            JMenuItem importJapiItem = new JMenuItem("Import Japi Files");
+            importJapiItem.addActionListener(e -> mainFrame.importJapiFiles());
+            JMenuItem importPostmanItem = new JMenuItem("Import Postman Files");
+            importPostmanItem.addActionListener(e -> mainFrame.importPostmanFiles());
+            importMenu.add(importJapiItem);
+            importMenu.add(importPostmanItem);
+
+            JMenu exportMenu = new JMenu("Export Collection");
+            JMenuItem exportJapiItem = new JMenuItem("Export as Japi Collection");
+            exportJapiItem.addActionListener(e -> mainFrame.exportJapiCollection(col));
+            JMenuItem exportPostmanItem = new JMenuItem("Export as Postman Collection");
+            exportPostmanItem.addActionListener(e -> mainFrame.exportCollection(col));
+            exportMenu.add(exportJapiItem);
+            exportMenu.add(exportPostmanItem);
 
             boolean isOthers = MainFrame.OTHERS_COLLECTION_ID.equals(col.getId());
 
             menu.add(rename);
             if (isOthers)
                 rename.setEnabled(false);
+            menu.add(copy);
+            menu.add(paste);
+            menu.add(duplicateCol);
+            menu.addSeparator();
             menu.add(addMenu);
             menu.addSeparator();
-            menu.add(importCol);
-            menu.add(exportCol);
+            menu.add(importMenu);
+            menu.add(exportMenu);
             menu.addSeparator();
             menu.add(delete);
             if (isOthers)
                 delete.setEnabled(false);
         } else if (node.getUserObject() instanceof RequestModel req) {
             JMenuItem open = new JMenuItem("Open");
+            open.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_DOWN_MASK));
             open.addActionListener(e -> mainFrame.openRequest(req));
             JMenuItem rename = new JMenuItem("Rename");
+            rename.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
             rename.addActionListener(e -> {
                 collectionsTree.startEditingAtPath(new TreePath(node.getPath()));
             });
             JMenuItem duplicate = new JMenuItem("Duplicate");
-            duplicate.addActionListener(e -> mainFrame.duplicateRequest(req));
+            duplicate.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            duplicate.addActionListener(e -> {
+                clipboardNode = node.getUserObject();
+                handlePaste(node);
+            });
+            JMenuItem copy = new JMenuItem("Copy");
+            copy.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            copy.addActionListener(e -> {
+                clipboardNode = node.getUserObject();
+                MainFrame.showToast(SidebarPanel.this, "Copied");
+            });
+            JMenuItem paste = new JMenuItem("Paste");
+            paste.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            paste.addActionListener(e -> handlePaste(node));
+            
             JMenuItem saveAs = new JMenuItem("Save As...");
             saveAs.addActionListener(e -> mainFrame.saveRequestAs(req));
             JMenuItem moveTo = new JMenuItem("Move to Collection...");
             moveTo.addActionListener(e -> mainFrame.moveRequestToCollection(req));
             JMenuItem delete = new JMenuItem("Delete");
+            delete.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
             delete.addActionListener(e -> mainFrame.deleteRequest(req));
             menu.add(open);
             menu.add(rename);
+            menu.add(copy);
+            menu.add(paste);
             menu.add(duplicate);
             menu.add(saveAs);
             menu.add(moveTo);
@@ -652,6 +738,73 @@ public class SidebarPanel extends JPanel {
             case "DELETE" -> new Color(192, 57, 43);
             default -> new Color(100, 100, 100);
         };
+    }
+
+    private static Object clipboardNode = null;
+
+    private void handlePaste(DefaultMutableTreeNode targetNode) {
+        if (clipboardNode == null) return;
+        Object copied = deepCopyModel(clipboardNode);
+        if (copied == null) return;
+        
+        Object targetUserObj = targetNode.getUserObject();
+        CollectionModel parentCol = null;
+        if (targetUserObj instanceof CollectionModel) {
+            parentCol = (CollectionModel) targetUserObj;
+        } else if (targetUserObj instanceof RequestModel) {
+            parentCol = findParentCollectionOrFolder(targetNode);
+        }
+
+        if (parentCol != null) {
+            if (copied instanceof RequestModel req) {
+                if (parentCol.getRequests() == null) parentCol.setRequests(new ArrayList<>());
+                parentCol.getRequests().add(req);
+            } else if (copied instanceof CollectionModel folder) {
+                if (parentCol.getFolders() == null) parentCol.setFolders(new ArrayList<>());
+                parentCol.getFolders().add(folder);
+            }
+            mainFrame.saveCollections();
+            refreshCollections(mainFrame.getCollections());
+            MainFrame.showToast(this, "Pasted successfully.");
+        }
+    }
+
+    private CollectionModel findParentCollectionOrFolder(DefaultMutableTreeNode node) {
+        javax.swing.tree.TreeNode parent = node.getParent();
+        while (parent != null) {
+            if (parent instanceof DefaultMutableTreeNode dNode) {
+                Object uo = dNode.getUserObject();
+                if (uo instanceof CollectionModel col) return col;
+            }
+            parent = parent.getParent();
+        }
+        return null;
+    }
+
+    private Object deepCopyModel(Object obj) {
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        if (obj instanceof RequestModel) {
+            RequestModel cp = gson.fromJson(gson.toJson(obj), RequestModel.class);
+            cp.setId(java.util.UUID.randomUUID().toString());
+            cp.setName(cp.getName() + " Copy");
+            return cp;
+        } else if (obj instanceof CollectionModel) {
+            CollectionModel cp = gson.fromJson(gson.toJson(obj), CollectionModel.class);
+            reassignIdsRecursive(cp);
+            cp.setName(cp.getName() + " Copy");
+            return cp;
+        }
+        return null;
+    }
+
+    private void reassignIdsRecursive(CollectionModel col) {
+        col.setId(java.util.UUID.randomUUID().toString());
+        if (col.getRequests() != null) {
+            for (RequestModel req : col.getRequests()) req.setId(java.util.UUID.randomUUID().toString());
+        }
+        if (col.getFolders() != null) {
+            for (CollectionModel folder : col.getFolders()) reassignIdsRecursive(folder);
+        }
     }
 
     private static String toHex(Color c) {

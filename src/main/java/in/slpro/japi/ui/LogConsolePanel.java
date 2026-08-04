@@ -278,6 +278,25 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
         });
     }
 
+    private String formatHeaders(java.util.Map<String, java.util.List<String>> headers) {
+        if (headers == null || headers.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (java.util.Map.Entry<String, java.util.List<String>> entry : headers.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(String.join(", ", entry.getValue())).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String escapeCsv(String str) {
+        if (str == null) return "";
+        return str.replace("\"", "\"\"");
+    }
+
+    private String escapeHtml(String str) {
+        if (str == null) return "";
+        return str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>");
+    }
+
     private void exportLogs(String format) {
         JFileChooser chooser = new JFileChooser();
         chooser.setSelectedFile(new File("japi_logs." + format));
@@ -286,23 +305,27 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
             File dest = chooser.getSelectedFile();
             try (PrintWriter pw = new PrintWriter(dest, StandardCharsets.UTF_8)) {
                 if ("csv".equals(format)) {
-                    pw.println("Timestamp,Level,Method,URL,Status,Latency(ms),Size(bytes)");
+                    pw.println("Timestamp,Level,Method,URL,Status,Latency(ms),Size(bytes),Request Headers,Request Body,Response Headers,Response Body");
                     for (LogEntry e : displayedEntries) {
                         String time = LocalDateTime.ofInstant(Instant.ofEpochMilli(e.getTimestamp()), ZoneId.systemDefault())
                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                        pw.printf("\"%s\",\"%s\",\"%s\",\"%s\",%d,%d,%d%n",
-                                time, e.getLevel(), e.getMethod(), e.getUrl(), e.getStatusCode(), e.getDurationMs(), e.getResponseSize());
+                        pw.printf("\"%s\",\"%s\",\"%s\",\"%s\",%d,%d,%d,\"%s\",\"%s\",\"%s\",\"%s\"%n",
+                                time, e.getLevel(), e.getMethod(), e.getUrl(), e.getStatusCode(), e.getDurationMs(), e.getResponseSize(),
+                                escapeCsv(formatHeaders(e.getRequestHeaders())), escapeCsv(e.getRequestBody()),
+                                escapeCsv(formatHeaders(e.getResponseHeaders())), escapeCsv(e.getResponseBody()));
                     }
                 } else if ("html".equals(format)) {
                     pw.println("<html><head><title>Japi Logs Export</title>");
-                    pw.println("<style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } tr:nth-child(even){background-color: #f2f2f2} th { background-color: #2c3e50; color: white; }</style>");
+                    pw.println("<style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; } tr:nth-child(even){background-color: #f2f2f2} th { background-color: #2c3e50; color: white; } pre { white-space: pre-wrap; word-wrap: break-word; }</style>");
                     pw.println("</head><body><h2>Japi Exported Traffic Logs</h2>");
-                    pw.println("<table><tr><th>Timestamp</th><th>Level</th><th>Method</th><th>URL</th><th>Status</th><th>Latency (ms)</th><th>Size (bytes)</th></tr>");
+                    pw.println("<table><tr><th>Timestamp</th><th>Level</th><th>Method</th><th>URL</th><th>Status</th><th>Latency (ms)</th><th>Size (bytes)</th><th>Request Headers</th><th>Request Body</th><th>Response Headers</th><th>Response Body</th></tr>");
                     for (LogEntry e : displayedEntries) {
                         String time = LocalDateTime.ofInstant(Instant.ofEpochMilli(e.getTimestamp()), ZoneId.systemDefault())
                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                        pw.printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%n",
-                                time, e.getLevel(), e.getMethod(), e.getUrl(), e.getStatusCode(), e.getDurationMs(), e.getResponseSize());
+                        pw.printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%s</td><td><pre>%s</pre></td><td>%s</td><td><pre>%s</pre></td></tr>%n",
+                                time, e.getLevel(), e.getMethod(), e.getUrl(), e.getStatusCode(), e.getDurationMs(), e.getResponseSize(),
+                                escapeHtml(formatHeaders(e.getRequestHeaders())), escapeHtml(e.getRequestBody()),
+                                escapeHtml(formatHeaders(e.getResponseHeaders())), escapeHtml(e.getResponseBody()));
                     }
                     pw.println("</table></body></html>");
                 } else {
@@ -313,6 +336,10 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
                         pw.printf("Time: %s | Level: %s | Method: %s | Status: %d | Latency: %d ms | Size: %d bytes%n",
                                 time, e.getLevel(), e.getMethod(), e.getStatusCode(), e.getDurationMs(), e.getResponseSize());
                         pw.println("URL: " + e.getUrl());
+                        pw.println("Request Headers:\n" + formatHeaders(e.getRequestHeaders()));
+                        pw.println("Request Body:\n" + (e.getRequestBody() != null ? e.getRequestBody() : ""));
+                        pw.println("Response Headers:\n" + formatHeaders(e.getResponseHeaders()));
+                        pw.println("Response Body:\n" + (e.getResponseBody() != null ? e.getResponseBody() : ""));
                         pw.println("Trace:");
                         pw.println(e.getMessage());
                         pw.println("=================================================\n");

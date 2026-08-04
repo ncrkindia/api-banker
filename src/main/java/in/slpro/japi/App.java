@@ -14,19 +14,20 @@ import java.awt.*;
  * <p>
  * This class is responsible for initializing the application environment,
  * configuring the global Look and Feel (FlatLaf) based on user preferences,
- * setting up theme-specific UI properties (colors, borders, fonts), and 
+ * setting up theme-specific UI properties (colors, borders, fonts), and
  * launching the primary {@link in.slpro.japi.ui.MainFrame} window.
  * </p>
  * 
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.2.0-beta
+ * @version 1.3.0-beta
  * @since 1.0.0
  */
 public class App {
     /**
      * The main execution method. Retrieves saved user settings from the
      * {@link in.slpro.japi.storage.StorageManager}, applies the appropriate theme,
-     * and schedules the creation of the application GUI on the Event Dispatch Thread (EDT).
+     * and schedules the creation of the application GUI on the Event Dispatch
+     * Thread (EDT).
      *
      * @param args Command line arguments (currently unused)
      */
@@ -60,23 +61,23 @@ public class App {
      * Initializes and configures the FlatLaf Look and Feel with custom UI tokens.
      * 
      * <p>
-     * This method applies specific color palettes, border radii, and accent colors 
-     * for either the "dark" or "light" theme. It also globally sets the default 
+     * This method applies specific color palettes, border radii, and accent colors
+     * for either the "dark" or "light" theme. It also globally sets the default
      * font size across all Swing components.
      * </p>
      * 
-     * @param theme The theme identifier ("dark" or "light") to apply.
+     * @param theme    The theme identifier ("dark" or "light") to apply.
      * @param fontSize The base font size to set for the default UI font.
      */
     public static void setupTheme(String theme, int fontSize) {
         try {
             if ("dark".equals(theme)) {
                 FlatDarkLaf.setup();
-                
+
                 Color primaryAccentDark = new Color(138, 180, 248); // #8AB4F8
-                
+
                 UIManager.put("AccentColor", primaryAccentDark);
-                
+
                 UIManager.put("Button.arc", 4);
                 UIManager.put("Component.arc", 4);
                 UIManager.put("TextComponent.arc", 4);
@@ -203,11 +204,13 @@ public class App {
     private static String version = null;
 
     /**
-     * Retrieves the application version from the embedded {@code app.properties} file.
+     * Retrieves the application version from the embedded {@code app.properties}
+     * file.
      * 
      * <p>
-     * The version property is populated by Maven during the build process. If the 
-     * properties file is missing or the placeholder is unresolved (e.g., when running 
+     * The version property is populated by Maven during the build process. If the
+     * properties file is missing or the placeholder is unresolved (e.g., when
+     * running
      * directly from an IDE), a fallback beta version string is returned.
      * </p>
      * 
@@ -227,7 +230,7 @@ public class App {
             // fallback
         }
         if (version == null || version.isEmpty() || "${project.version}".equals(version)) {
-            version = "1.0.0-beta"; // fallback if running outside jar or un-filtered environment
+            version = "1.3.0-beta"; // fallback if running outside jar or un-filtered environment
         }
         return version;
     }

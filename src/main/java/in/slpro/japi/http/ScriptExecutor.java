@@ -207,6 +207,61 @@ public class ScriptExecutor {
             }
         });
         pm.put("environment", pm, envObj);
+        
+        Scriptable globObj = cx.newObject(scope);
+        globObj.put("get", globObj, new BaseFunction() {
+            @Override
+            public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length < 1) return Undefined.instance;
+                String key = Context.toString(args[0]);
+                java.util.List<KeyValueItem> globalVars = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
+                if (globalVars != null) {
+                    for (KeyValueItem kv : globalVars) {
+                        if (kv.isEnabled() && key.equals(kv.getKey())) {
+                            return kv.getValue();
+                        }
+                    }
+                }
+                return Undefined.instance;
+            }
+        });
+        globObj.put("set", globObj, new BaseFunction() {
+            @Override
+            public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length < 2) return Undefined.instance;
+                String key = Context.toString(args[0]);
+                String value = Context.toString(args[1]);
+                java.util.List<KeyValueItem> globalVars = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
+                if (globalVars != null) {
+                    for (KeyValueItem kv : globalVars) {
+                        if (key.equals(kv.getKey())) {
+                            kv.setValue(value);
+                            kv.setEnabled(true);
+                            in.slpro.japi.storage.StorageManager.getInstance().saveSettings();
+                            return Undefined.instance;
+                        }
+                    }
+                    KeyValueItem newKv = new KeyValueItem(key, value, true);
+                    globalVars.add(newKv);
+                    in.slpro.japi.storage.StorageManager.getInstance().saveSettings();
+                }
+                return Undefined.instance;
+            }
+        });
+        globObj.put("unset", globObj, new BaseFunction() {
+            @Override
+            public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length < 1) return Undefined.instance;
+                String key = Context.toString(args[0]);
+                java.util.List<KeyValueItem> globalVars = in.slpro.japi.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
+                if (globalVars != null) {
+                    globalVars.removeIf(kv -> key.equals(kv.getKey()));
+                    in.slpro.japi.storage.StorageManager.getInstance().saveSettings();
+                }
+                return Undefined.instance;
+            }
+        });
+        pm.put("globals", pm, globObj);
 
         // --- pm.variables (request-scoped transient variables) ---
         Map<String, String> transientVars = new HashMap<>();

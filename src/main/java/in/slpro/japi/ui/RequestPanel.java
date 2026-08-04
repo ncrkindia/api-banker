@@ -510,6 +510,18 @@ public class RequestPanel extends JPanel {
         VariableHelper.attachToTextComponent(bodyArea, requestModel, mainFrame);
         VariableHelper.attachToTextComponent(graphqlQueryArea, requestModel, mainFrame);
         VariableHelper.attachToTextComponent(graphqlVarsArea, requestModel, mainFrame);
+        
+        // Keyboard Shortcuts
+        this.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+            .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.CTRL_DOWN_MASK), "sendRequest");
+        this.getActionMap().put("sendRequest", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (sendBtn != null && sendBtn.isEnabled()) {
+                    sendBtn.doClick();
+                }
+            }
+        });
     }
 
     private JPanel buildLabeledField(String label, JTextField field) {

@@ -149,11 +149,17 @@ public class EnvironmentManagerPanel extends JPanel {
 
         JPanel leftActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftActions.setOpaque(false);
-        JButton importBtn = new JButton("Import");
+        JButton importJapiBtn = new JButton("Import Japi");
+        importJapiBtn.addActionListener(e -> importJapi(varTable));
+        JButton importBtn = new JButton("Import Postman");
         importBtn.addActionListener(e -> importPostman(varTable));
-        JButton exportBtn = new JButton("Export");
+        JButton exportJapiBtn = new JButton("Export Japi");
+        exportJapiBtn.addActionListener(e -> exportCurrentEnvJapi(varTable));
+        JButton exportBtn = new JButton("Export Postman");
         exportBtn.addActionListener(e -> exportCurrentEnv(varTable));
+        leftActions.add(importJapiBtn);
         leftActions.add(importBtn);
+        leftActions.add(exportJapiBtn);
         leftActions.add(exportBtn);
 
         JPanel rightActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -294,7 +300,7 @@ public class EnvironmentManagerPanel extends JPanel {
         saveCurrentToModel(idx);
         EnvironmentModel env = environments.get(idx);
         JFileChooser chooser = new JFileChooser(MainFrame.lastFileChooserDirectory);
-        chooser.setSelectedFile(new java.io.File(env.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + ".json"));
+        chooser.setSelectedFile(new java.io.File(env.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + "_postman_environment.json"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
             return;
         MainFrame.lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
@@ -318,6 +324,40 @@ public class EnvironmentManagerPanel extends JPanel {
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
             MainFrame.showToast(this, "Exported successfully.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void importJapi(JTable varTable) {
+        if (varTable.getCellEditor() != null) {
+            varTable.getCellEditor().stopCellEditing();
+        }
+        if (selectedEnvIndex >= 0)
+            saveCurrentToModel(selectedEnvIndex);
+        mainFrame.setEnvironments(environments);
+        mainFrame.importJapiFiles();
+    }
+
+    private void exportCurrentEnvJapi(JTable varTable) {
+        int idx = envList.getSelectedIndex();
+        if (idx < 0) return;
+        if (varTable.getCellEditor() != null) varTable.getCellEditor().stopCellEditing();
+        saveCurrentToModel(idx);
+        EnvironmentModel env = environments.get(idx);
+        JFileChooser chooser = new JFileChooser(MainFrame.lastFileChooserDirectory);
+        chooser.setSelectedFile(new java.io.File(env.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + "_japi_environment.json"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        MainFrame.lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
+        try {
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            com.google.gson.JsonObject root = gson.toJsonTree(env).getAsJsonObject();
+            com.google.gson.JsonObject metadata = new com.google.gson.JsonObject();
+            metadata.addProperty("exported_by", "JAPI v" + in.slpro.japi.App.getVersion());
+            metadata.addProperty("exported_at", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
+            root.add("_metadata", metadata);
+            java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
+            MainFrame.showToast(this, "Japi Environment Exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }

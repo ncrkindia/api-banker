@@ -1253,6 +1253,15 @@ public class CollectionRunnerPanel extends JPanel {
                 if (chartPanel != null) {
                     chartPanel.repaint();
                 }
+
+                if (currentRunDir != null && currentRunDir.exists()) {
+                    try {
+                        exportCSV(new File(currentRunDir, "metrics.csv"));
+                        exportHTML(new File(currentRunDir, "metrics.html"));
+                        exportExcel(new File(currentRunDir, "metrics.xlsx"));
+                        exportPDF(new File(currentRunDir, "metrics.pdf"));
+                    } catch (Exception ignored) {}
+                }
             }
         };
         worker.execute();

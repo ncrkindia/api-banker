@@ -48,7 +48,7 @@ Here is a list of features queued for future development iterations:
 ### Protocol Enhancements
 * [x] **Multipart/Form-Data Support**: Add a file/text form-data selector inside the Request Body tab to upload binary files.
 * [x] **Cookie Jar Manager**: Capture response cookies and attach them to outgoing requests of matching domains.
-* [ ] **WebSocket Client**: A dedicated tab style to establish connection, send frame payloads, and stream real-time events.
+* [x] **WebSocket Client**: A dedicated tab style to establish connection, send frame payloads, and stream real-time events.
 * [x] **GraphQL Support**: An editor pane to write GraphQL queries, variables, and fetch introspection schemas.
 
 ### Automation & Scripting
@@ -61,3 +61,11 @@ Here is a list of features queued for future development iterations:
 * [x] **Response Search**: Add a search/filter bar inside the Response panel to find text substrings within JSON/HTML payloads.
 * [x] **Response Exporter**: "Save Response to File" button to download response payloads directly.
 * [x] **Code Snippet Generator**: Automatically generate fetch code snippets from the request in other languages (curl, JavaScript fetch, Python requests, Java HttpClient).
+* [x] **Comprehensive Keyboard Shortcuts**: Add tree navigation and manipulation shortcuts (`F2`, `Delete`, `Ctrl+C/V/D`, `Ctrl+O`) and Request Runner shortcuts (`Ctrl+R`).
+
+---
+
+## 4. Release Plan (v1.3.0-beta)
+
+* **Current Status**: Pre-release Beta Testing.
+* **Next Steps**: Code freeze, complete end-to-end user acceptance testing, resolve critical GitHub issues, and prepare for stable v1.0.0 public launch.

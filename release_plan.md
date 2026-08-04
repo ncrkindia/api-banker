@@ -1,22 +1,39 @@
-# JAPI Release Plan — v1.2.0-beta
+# JAPI Release Plan — v1.3.0-beta
 
-This document outlines the release plan for **JAPI (v1.2.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the final stable release.
+This document outlines the release plan for **JAPI (v1.3.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the final stable release.
 
 ---
 
 ## 1. Release Goals
 
-JAPI's transition to the `1.2.0-beta` pre-release phase aims to achieve the following:
+JAPI's transition to the `1.3.0-beta` pre-release phase aims to achieve the following:
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
 * **Interoperability Check**: Ensure standard Postman Collection (v2.1) and Environment files import and export seamlessly.
 * **Stabilization**: Collect community feedback and log reports to fix interface scaling issues, visual bugs, or script engine runtime errors.
 
+### v1.3.0-beta Release Summary
+
+This release introduces comprehensive workflow enhancements and project stabilization leading up to v1.3.0-beta.
+
+**Features & Enhancements:**
+- **Keyboard Shortcuts**: Added full navigation and manipulation shortcuts across the IDE (F2 to rename, Del to delete, Ctrl+C/V/D for tree nodes, Ctrl+R to run requests, Ctrl+O to open).
+- **Postman Interoperability**: Reorganized import/export context menus to explicitly separate Japi and Postman workflows. Added strict file suffixes (`_japi_collection`, `_postman_collection`, etc.).
+- **Log Console Exporting**: Improved logging features allowing full detailed exports (including headers, bodies, auth) and dynamic metric parsing directly from `summary.log`.
+- **Collection Runner Logs**: Added a dedicated workspace tab to manage historical run logs by collection and date, enabling live generation of HTML and CSV metrics reports.
+- **Environment Imports**: Enhanced pre-request/test script support to parse global variables and safely convert Postman `pm.` namespaces to `japi.` seamlessly on import/export.
+- **Version Bump**: Incrementally updated project schemas, pom.xml, Readme, and release plans to track milestone version 1.3.0-beta.
+
+**Fixes:**
+- Fixed recursive collection export visibility bug in MainFrame resolving static lint warnings.
+- Fixed export Postman URL conversion issue when exporting between Japi/Postman JSON standards.
+- Updated the "About Us" panel to display new features, shortcuts, and dynamically read versions correctly.
+
 ---
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v1.2.0-beta** release:
+Here is the current implementation status of features included in the **v1.3.0-beta** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -35,6 +52,7 @@ Here is the current implementation status of features included in the **v1.2.0-b
 | **DX** | Tab Management | Pin, Rename, Close Others, Close to Left/Right options for requests. | **Verified** |
 | **DX** | Location Preserver | Keeps track of and automatically opens all file dialogs in the directory of the last selected file. | **Verified** |
 | **DX** | Multi-File Importer | Import both Collections and Environments from the same multi-selected files via top menu, sidebar, or Environment Manager. | **Verified** |
+| **DX** | Keyboard Shortcuts | Comprehensive navigation shortcuts (F2, Del, Ctrl+C/V/D, Ctrl+R, Ctrl+O). | **Verified** |
  
 > [!NOTE]
    > All settings, including custom data and log directories, persist correctly across application restarts.
@@ -46,10 +64,10 @@ Here is the current implementation status of features included in the **v1.2.0-b
 The application is bundled into a standalone offline-distributable archive.
 
 ### Distribution Artifacts
-* **Target executable**: `japi-1.2.0-beta.jar` (Shaded fat JAR containing all dependencies).
+* **Target executable**: `japi-1.3.0-beta.jar` (Shaded fat JAR containing all dependencies).
 * **Package formats**: `.zip` and `.tar.gz` archive containing launch scripts.
 * **Launch scripts**:
-  - `japi.bat`: Script to run the application on Windows (`javaw -jar japi-1.2.0-beta.jar`).
+  - `japi.bat`: Script to run the application on Windows (`javaw -jar japi-1.3.0-beta.jar`).
   - `japi.sh`: Script to run the application on macOS/Linux (configured with executable permissions `0755`).
 
 ### Packaging Pipeline
@@ -60,7 +78,7 @@ mvn clean package -DskipTests
 This produces `target/japi.zip` which unzips to:
 ```
 japi/
-├── japi-1.2.0-beta.jar
+├── japi-1.3.0-beta.jar
 ├── japi.bat
 └── japi.sh
 ```
@@ -99,12 +117,12 @@ gantt
     title JAPI Milestone Schedule (v1.0.0)
     dateFormat  YYYY-MM-DD
     section Pre-Release
-    Beta Release (v1.2.0-beta)     :active, milestone, 2026-07-08, 1d
-    Beta Feedback & Bug Fixing    :2026-07-08, 14d
+    Beta Release (v1.3.0-beta)     :active, milestone, 2026-08-04, 1d
+    Beta Feedback & Bug Fixing    :2026-08-04, 14d
     section Release Candidate
-    RC1 Packaging & Checkouts     :2026-07-22, 5d
+    RC1 Packaging & Checkouts     :2026-08-18, 5d
     section Stable Release
-    v1.0.0 General Availability   :milestone, 2026-07-28, 1d
+    v1.0.0 General Availability   :milestone, 2026-08-23, 1d
 ```
 
 ### v1.0.0 Entry Criteria
