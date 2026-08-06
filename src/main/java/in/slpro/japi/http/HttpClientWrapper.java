@@ -249,22 +249,35 @@ public class HttpClientWrapper {
             String oauth2AccessToken = requestModel.getOauth2AccessToken();
 
             if ("inherit".equalsIgnoreCase(authType) || authType == null) {
-                if (collection != null) {
-                    authType = collection.getAuthType();
-                    authToken = collection.getAuthToken();
-                    authUsername = collection.getAuthUsername();
-                    authPassword = collection.getAuthPassword();
-                    authApiKeyName = collection.getAuthApiKeyName();
-                    authApiKeyValue = collection.getAuthApiKeyValue();
-                    authApiKeyIn = collection.getAuthApiKeyIn();
-                    oauth2AccessToken = collection.getOauth2AccessToken();
-                } else {
+                CollectionModel currentParent = collection;
+                while (currentParent != null) {
+                    authType = currentParent.getAuthType();
+                    if (authType != null && !authType.equalsIgnoreCase("inherit") && !authType.isEmpty()) {
+                        authToken = currentParent.getAuthToken();
+                        authUsername = currentParent.getAuthUsername();
+                        authPassword = currentParent.getAuthPassword();
+                        authApiKeyName = currentParent.getAuthApiKeyName();
+                        authApiKeyValue = currentParent.getAuthApiKeyValue();
+                        authApiKeyIn = currentParent.getAuthApiKeyIn();
+                        oauth2AccessToken = currentParent.getOauth2AccessToken();
+                        break;
+                    }
+                    if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                        currentParent = in.slpro.japi.ui.MainFrame.getInstance().findFolderParent(currentParent);
+                    } else {
+                        currentParent = null;
+                    }
+                }
+                if (currentParent == null || authType == null || "inherit".equalsIgnoreCase(authType) || authType.isEmpty()) {
                     authType = "none";
                 }
             }
 
             if ("bearer".equalsIgnoreCase(authType)) {
                 String token = resolveVariables(authToken, requestModel, environment);
+                if (token != null && !token.isBlank()) reqBuilder.header("Authorization", "Bearer " + token);
+            } else if ("oauth2".equalsIgnoreCase(authType)) {
+                String token = resolveVariables(oauth2AccessToken, requestModel, environment);
                 if (token != null && !token.isBlank()) reqBuilder.header("Authorization", "Bearer " + token);
             } else if ("basic".equalsIgnoreCase(authType)) {
                 String creds = authUsername + ":" + authPassword;

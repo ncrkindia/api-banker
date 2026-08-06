@@ -1,9 +1,9 @@
-# JAPI - Offline-First API Testing Client (v1.3.0-beta)
+# JAPI - Offline-First API Testing Client (v1.4.0-beta)
 
 JAPI is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, JAPI lets developers design, run, test, and manage REST requests locally on their machines without any registration, telemetry, or external network dependencies.
 
 > [!NOTE]
-> **Pre-Release Beta Version**: This version (v1.3.0-beta) is a pre-release candidate. It features a complete offline toolset, environment resolution, and a JavaScript-based collection runner, and is currently open for public beta testing and feedback.
+> **Pre-Release Beta Version**: This version (v1.4.0-beta) is a pre-release candidate. It features a complete offline toolset, environment resolution, and a JavaScript-based collection runner, and is currently open for public beta testing and feedback.
 
 ---
 
@@ -76,7 +76,7 @@ To compile, build, and package the application into a single executable shaded J
 mvn clean package -DskipTests
 ```
 
-This outputs a shaded executable JAR under `target/japi-1.3.0-beta.jar`.
+This outputs a shaded executable JAR under `target/japi-1.4.0-beta.jar`.
 
 ### Run the Application
 
@@ -89,7 +89,7 @@ mvn compile exec:java -Dexec.mainClass="in.slpro.japi.App"
 #### Executing the JAR directly
 Once built, you can launch the compiled shaded JAR file:
 ```bash
-java -jar target/japi-1.3.0-beta.jar
+java -jar target/japi-1.4.0-beta.jar
 ```
 
 #### Using Launch Scripts (Distribution Bundle)

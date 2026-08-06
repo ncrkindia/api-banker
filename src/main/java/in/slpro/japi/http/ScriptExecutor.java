@@ -263,6 +263,79 @@ public class ScriptExecutor {
         });
         pm.put("globals", pm, globObj);
 
+        // --- pm.collectionVariables ---
+        Scriptable collVarsObj = cx.newObject(scope);
+        collVarsObj.put("get", collVarsObj, new BaseFunction() {
+            @Override
+            public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length < 1 || request == null) return Undefined.instance;
+                String key = Context.toString(args[0]);
+                CollectionModel parentCol = null;
+                if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                    parentCol = in.slpro.japi.ui.MainFrame.findParentCollection(request);
+                }
+                if (parentCol != null && parentCol.getVariables() != null) {
+                    for (KeyValueItem kv : parentCol.getVariables()) {
+                        if (kv.isEnabled() && key.equals(kv.getKey())) {
+                            return kv.getValue();
+                        }
+                    }
+                }
+                return Undefined.instance;
+            }
+        });
+        collVarsObj.put("set", collVarsObj, new BaseFunction() {
+            @Override
+            public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length < 2 || request == null) return Undefined.instance;
+                String key = Context.toString(args[0]);
+                String value = Context.toString(args[1]);
+                CollectionModel parentCol = null;
+                if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                    parentCol = in.slpro.japi.ui.MainFrame.findParentCollection(request);
+                }
+                if (parentCol != null) {
+                    if (parentCol.getVariables() == null) {
+                        parentCol.setVariables(new java.util.ArrayList<>());
+                    }
+                    for (KeyValueItem kv : parentCol.getVariables()) {
+                        if (key.equals(kv.getKey())) {
+                            kv.setValue(value);
+                            kv.setEnabled(true);
+                            if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                                in.slpro.japi.storage.StorageManager.getInstance().saveCollections(in.slpro.japi.ui.MainFrame.getInstance().getCollections());
+                            }
+                            return Undefined.instance;
+                        }
+                    }
+                    parentCol.getVariables().add(new KeyValueItem(key, value, true));
+                    if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                        in.slpro.japi.storage.StorageManager.getInstance().saveCollections(in.slpro.japi.ui.MainFrame.getInstance().getCollections());
+                    }
+                }
+                return Undefined.instance;
+            }
+        });
+        collVarsObj.put("unset", collVarsObj, new BaseFunction() {
+            @Override
+            public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length < 1 || request == null) return Undefined.instance;
+                String key = Context.toString(args[0]);
+                CollectionModel parentCol = null;
+                if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                    parentCol = in.slpro.japi.ui.MainFrame.findParentCollection(request);
+                }
+                if (parentCol != null && parentCol.getVariables() != null) {
+                    parentCol.getVariables().removeIf(kv -> key.equals(kv.getKey()));
+                    if (in.slpro.japi.ui.MainFrame.getInstance() != null) {
+                        in.slpro.japi.storage.StorageManager.getInstance().saveCollections(in.slpro.japi.ui.MainFrame.getInstance().getCollections());
+                    }
+                }
+                return Undefined.instance;
+            }
+        });
+        pm.put("collectionVariables", pm, collVarsObj);
+
         // --- pm.variables (request-scoped transient variables) ---
         Map<String, String> transientVars = new HashMap<>();
         Scriptable varsObj = cx.newObject(scope);

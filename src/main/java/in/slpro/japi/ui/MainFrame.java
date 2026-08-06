@@ -1322,6 +1322,20 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
+    public void openGlobalVariables() {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if (workspaceTabs.getComponentAt(i) instanceof GlobalVariablesPanel) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+        GlobalVariablesPanel panel = new GlobalVariablesPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Global Variables", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Global Variables", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
     public void triggerVariableRepaintAll() {
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             Component c = workspaceTabs.getComponentAt(i);
@@ -1431,6 +1445,16 @@ public class MainFrame extends JFrame {
                                 else if ("test".equals(listen)) col.setPostRequestScript(scriptText);
                             }
                         }
+                    }
+                    if (root.has("variable") && root.get("variable").isJsonArray()) {
+                        List<KeyValueItem> vars = new ArrayList<>();
+                        for (com.google.gson.JsonElement varEl : root.getAsJsonArray("variable")) {
+                            com.google.gson.JsonObject vObj = varEl.getAsJsonObject();
+                            String key = vObj.has("key") ? vObj.get("key").getAsString() : "";
+                            String value = vObj.has("value") ? vObj.get("value").getAsString() : "";
+                            vars.add(new KeyValueItem(key, value, true));
+                        }
+                        col.setVariables(vars);
                     }
                     collections.add(col);
                     int totalRequests = countRequestsRecursive(col);
@@ -1745,6 +1769,20 @@ public class MainFrame extends JFrame {
             com.google.gson.JsonArray items = new com.google.gson.JsonArray();
             exportCollectionRecursive(col, items);
             root.add("item", items);
+
+            if (col.getVariables() != null && !col.getVariables().isEmpty()) {
+                com.google.gson.JsonArray varsArr = new com.google.gson.JsonArray();
+                for (KeyValueItem kv : col.getVariables()) {
+                    if (kv.isEnabled()) {
+                        com.google.gson.JsonObject vObj = new com.google.gson.JsonObject();
+                        vObj.addProperty("key", kv.getKey());
+                        vObj.addProperty("value", kv.getValue());
+                        vObj.addProperty("type", "string");
+                        varsArr.add(vObj);
+                    }
+                }
+                if (varsArr.size() > 0) root.add("variable", varsArr);
+            }
             
             com.google.gson.JsonArray events = new com.google.gson.JsonArray();
             if (col.getPreRequestScript() != null && !col.getPreRequestScript().isEmpty()) {
@@ -1809,6 +1847,20 @@ public class MainFrame extends JFrame {
                     events.add(ev);
                 }
                 if (events.size() > 0) folderObj.add("event", events);
+
+                if (folder.getVariables() != null && !folder.getVariables().isEmpty()) {
+                    com.google.gson.JsonArray varsArr = new com.google.gson.JsonArray();
+                    for (KeyValueItem kv : folder.getVariables()) {
+                        if (kv.isEnabled()) {
+                            com.google.gson.JsonObject vObj = new com.google.gson.JsonObject();
+                            vObj.addProperty("key", kv.getKey());
+                            vObj.addProperty("value", kv.getValue());
+                            vObj.addProperty("type", "string");
+                            varsArr.add(vObj);
+                        }
+                    }
+                    if (varsArr.size() > 0) folderObj.add("variable", varsArr);
+                }
 
                 com.google.gson.JsonArray folderItems = new com.google.gson.JsonArray();
                 exportCollectionRecursive(folder, folderItems);
@@ -2286,6 +2338,8 @@ public class MainFrame extends JFrame {
             openCookieJarManager();
         } else if ("envmanager".equals(ts.getType())) {
             openEnvManager();
+        } else if ("globalvars".equals(ts.getType())) {
+            openGlobalVariables();
         }
     }
 
@@ -2346,6 +2400,7 @@ public class MainFrame extends JFrame {
 
     private static class TabHeaderPanel extends JPanel {
         String title;
+        Runnable renameAction;
 
         TabHeaderPanel(String title) {
             super(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -2401,6 +2456,30 @@ public class MainFrame extends JFrame {
         }
         for (CollectionModel sub : col.getFolders()) {
             CollectionModel parent = findRequestParentRecursive(sub, req);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    public CollectionModel findFolderParent(CollectionModel target) {
+        for (CollectionModel col : collections) {
+            if (col == target) return null; // Root collection has no parent
+            CollectionModel parent = findFolderParentRecursive(col, target);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    private CollectionModel findFolderParentRecursive(CollectionModel col, CollectionModel target) {
+        if (col.getFolders().contains(target)) {
+            return col;
+        }
+        for (CollectionModel sub : col.getFolders()) {
+            CollectionModel parent = findFolderParentRecursive(sub, target);
             if (parent != null) {
                 return parent;
             }

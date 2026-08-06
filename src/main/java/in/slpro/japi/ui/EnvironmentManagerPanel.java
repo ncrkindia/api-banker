@@ -8,23 +8,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * EnvironmentManagerPanel
- *
- * <p>
- * This panel provides a dedicated workspace tab for creating, editing, and deleting
- * environments and their associated key-value variables. It handles the UI logic for
- * importing/exporting Postman environment JSONs and saving the active environment state
- * back into the {@link StorageManager}.
- * </p>
- *
- * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
- * @since 1.0.0
  */
 public class EnvironmentManagerPanel extends JPanel {
     private final MainFrame mainFrame;
@@ -35,17 +25,6 @@ public class EnvironmentManagerPanel extends JPanel {
     private final JTextField envNameField;
     private int selectedEnvIndex = -1;
 
-    /**
-     * Constructs the Environment Manager interface.
-     * <p>
-     * Initializes the Left-Hand Side (LHS) list of available environments, and the 
-     * Right-Hand Side (RHS) editable table for key-value variables. Clones the global
-     * environment list into a local working copy to allow isolated editing before
-     * committing changes via the "Save All" action.
-     * </p>
-     * 
-     * @param mainFrame The root application window (for routing import/export and save actions).
-     */
     public EnvironmentManagerPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         this.environments = new ArrayList<>(mainFrame.getEnvironments());
@@ -54,7 +33,7 @@ public class EnvironmentManagerPanel extends JPanel {
 
         // Left panel - environment list
         JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setPreferredSize(new Dimension(200, 0));
+        leftPanel.setPreferredSize(new Dimension(240, 0));
         leftPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1,
                 UIManager.getColor("Separator.foreground") != null ? UIManager.getColor("Separator.foreground")
                         : new Color(220, 220, 220)));
@@ -65,7 +44,7 @@ public class EnvironmentManagerPanel extends JPanel {
         leftHeader.setBorder(new EmptyBorder(8, 10, 8, 10));
         JLabel titleLabel = new JLabel("Environments");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        leftHeader.add(titleLabel, BorderLayout.WEST);
+        leftHeader.add(titleLabel, BorderLayout.CENTER);
 
         JPanel leftBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
         leftBtns.setOpaque(false);
@@ -121,15 +100,18 @@ public class EnvironmentManagerPanel extends JPanel {
         varTable.getColumnModel().getColumn(0).setMaxWidth(30);
         varTable.setRowHeight(24);
 
+        GlobalVariablesPanel.setupTableCopyPaste(varTable, varTableModel);
+
         JPanel varBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         varBtns.setOpaque(false);
         JButton addVarBtn = new JButton("+ Add Variable");
         JButton delVarBtn = new JButton("Delete Row");
         addVarBtn.addActionListener(e -> varTableModel.addRow(new Object[] { true, "", "" }));
         delVarBtn.addActionListener(e -> {
-            int row = varTable.getSelectedRow();
-            if (row >= 0)
-                varTableModel.removeRow(row);
+            Action delAction = varTable.getActionMap().get("deleteRow");
+            if (delAction != null) {
+                delAction.actionPerformed(new ActionEvent(varTable, ActionEvent.ACTION_PERFORMED, null));
+            }
         });
         varBtns.add(addVarBtn);
         varBtns.add(delVarBtn);
@@ -179,10 +161,54 @@ public class EnvironmentManagerPanel extends JPanel {
         add(bottomBar, BorderLayout.SOUTH);
 
         // Load environments
+        loadModel();
+    }
+
+    public void loadModel() {
+        if (envListModel == null) return;
+        int currentIdx = envList.getSelectedIndex();
+        String currentName = null;
+        if (currentIdx >= 0 && currentIdx < environments.size()) {
+            currentName = environments.get(currentIdx).getName();
+            // Force save current to model before we reload from external changes
+            saveCurrentToModel(currentIdx);
+        }
+        
+        // Reset selected index so that the ListSelectionListener doesn't save to the wrong index
+        selectedEnvIndex = -1;
+
+        environments.clear();
+        if (mainFrame.getEnvironments() != null) {
+            // deeply copy to avoid same reference issues but we want real time updates so just clear and copy the list. Wait, mainFrame.getEnvironments() elements are mutable. 
+            // If we want real time updates, we just copy the list.
+            for (EnvironmentModel m : mainFrame.getEnvironments()) {
+                // If we don't clone, the UI edits will mutate the main frame's objects immediately, which contradicts "Save All" button.
+                // Wait, if it contradicts, we should clone them? Yes, in original code it's `new ArrayList<>(mainFrame.getEnvironments());` which copies the list, not the objects.
+                // So editing the table modifies the EnvironmentModel objects directly! 
+                // Ah, the original code doesn't deep copy either. So "Save All" just saves to StorageManager.
+                environments.add(m);
+            }
+        }
+
+        envListModel.clear();
         for (EnvironmentModel env : environments) {
             envListModel.addElement(env.getName());
         }
-        if (!envListModel.isEmpty()) {
+
+        if (currentName != null) {
+            int newIdx = -1;
+            for (int i = 0; i < environments.size(); i++) {
+                if (environments.get(i).getName().equals(currentName)) {
+                    newIdx = i;
+                    break;
+                }
+            }
+            if (newIdx >= 0) {
+                envList.setSelectedIndex(newIdx);
+            } else if (!envListModel.isEmpty()) {
+                envList.setSelectedIndex(0);
+            }
+        } else if (!envListModel.isEmpty()) {
             envList.setSelectedIndex(0);
         }
     }

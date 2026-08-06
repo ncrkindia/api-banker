@@ -19,7 +19,7 @@ import java.awt.*;
  * </p>
  * 
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.3.0-beta
+ * @version 1.4.0-beta
  * @since 1.0.0
  */
 public class App {
@@ -230,7 +230,7 @@ public class App {
             // fallback
         }
         if (version == null || version.isEmpty() || "${project.version}".equals(version)) {
-            version = "1.3.0-beta"; // fallback if running outside jar or un-filtered environment
+            version = "1.4.0-beta"; // fallback if running outside jar or un-filtered environment
         }
         return version;
     }

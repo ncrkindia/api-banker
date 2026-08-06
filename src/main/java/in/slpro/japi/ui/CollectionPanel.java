@@ -688,6 +688,24 @@ public class CollectionPanel extends JPanel {
                 "let val = japi.environment.get(\"variable_name\");\nconsole.log(val);\n");
         addSnippetButton(snippetPanel, scriptArea, "Set env variable",
                 "japi.environment.set(\"variable_name\", \"value\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Clear env variable",
+                "japi.environment.unset(\"variable_name\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Get global variable",
+                "let val = japi.globals.get(\"variable_name\");\nconsole.log(val);\n");
+        addSnippetButton(snippetPanel, scriptArea, "Set global variable",
+                "japi.globals.set(\"variable_name\", \"value\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Clear global variable",
+                "japi.globals.unset(\"variable_name\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Get collection variable",
+                "let val = japi.collectionVariables.get(\"variable_name\");\nconsole.log(val);\n");
+        addSnippetButton(snippetPanel, scriptArea, "Set collection variable",
+                "japi.collectionVariables.set(\"variable_name\", \"value\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Clear collection variable",
+                "japi.collectionVariables.unset(\"variable_name\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Get local variable",
+                "let val = japi.variables.get(\"variable_name\");\n");
+        addSnippetButton(snippetPanel, scriptArea, "Set local variable",
+                "japi.variables.set(\"variable_name\", \"value\");\n");
         addSnippetButton(snippetPanel, scriptArea, "Console log",
                 "console.log(\"Hello from script!\");\n");
 
@@ -887,6 +905,19 @@ public class CollectionPanel extends JPanel {
         m.setAuthApiKeyName(apiKeyNameField.getText());
         m.setAuthApiKeyValue(apiKeyValueField.getText());
         m.setAuthApiKeyIn((String) apiKeyInCombo.getSelectedItem());
+
+        m.setOauth2GrantType((String) oauth2GrantTypeCombo.getSelectedItem());
+        m.setOauth2CallbackUrl(oauth2CallbackUrlField.getText());
+        m.setOauth2AuthUrl(oauth2AuthUrlField.getText());
+        m.setOauth2AccessTokenUrl(oauth2AccessTokenUrlField.getText());
+        m.setOauth2ClientId(oauth2ClientIdField.getText());
+        m.setOauth2ClientSecret(oauth2ClientSecretField.getText());
+        m.setOauth2Scope(oauth2ScopeField.getText());
+        m.setOauth2State(oauth2StateField.getText());
+        m.setOauth2Username(oauth2UsernameField.getText());
+        m.setOauth2Password(new String(oauth2PasswordField.getPassword()));
+        m.setOauth2ClientAuth((String) oauth2ClientAuthCombo.getSelectedItem());
+        m.setOauth2AccessToken(oauth2AccessTokenField.getText());
 
         List<KeyValueItem> vars = new ArrayList<>();
         for (int i = 0; i < variablesModel.getRowCount(); i++) {

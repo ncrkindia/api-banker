@@ -130,6 +130,7 @@ public class SidebarPanel extends JPanel {
             }
         });
         collectionsTree.setEditable(true);
+        collectionsTree.setToggleClickCount(0);
 
         collectionsTree.addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
@@ -149,10 +150,7 @@ public class SidebarPanel extends JPanel {
                     else if (uo instanceof RequestModel r) mainFrame.deleteRequest(r);
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_O) {
                     if (uo instanceof RequestModel r) mainFrame.openRequest(r);
-                    else {
-                        if (collectionsTree.isExpanded(path)) collectionsTree.collapsePath(path);
-                        else collectionsTree.expandPath(path);
-                    }
+                    else if (uo instanceof CollectionModel c) mainFrame.openCollection(c);
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_C) {
                     clipboardNode = uo;
                     MainFrame.showToast(SidebarPanel.this, "Copied");
@@ -355,6 +353,10 @@ public class SidebarPanel extends JPanel {
                 collectionsTree.startEditingAtPath(new TreePath(node.getPath()));
             });
 
+            JMenuItem open = new JMenuItem("Open");
+            open.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+            open.addActionListener(e -> mainFrame.openCollection(col));
+
             JMenu addMenu = new JMenu("Add");
             JMenuItem addReqItem = new JMenuItem("Add Request");
             addReqItem.addActionListener(e -> createRequest());
@@ -424,6 +426,7 @@ public class SidebarPanel extends JPanel {
 
             boolean isOthers = MainFrame.OTHERS_COLLECTION_ID.equals(col.getId());
 
+            menu.add(open);
             menu.add(rename);
             if (isOthers)
                 rename.setEnabled(false);
