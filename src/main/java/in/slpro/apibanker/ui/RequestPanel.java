@@ -31,7 +31,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class RequestPanel extends JPanel {
@@ -846,6 +846,22 @@ public class RequestPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected, boolean hasFocus,
                     int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
+                
+                if (t.getModel().getColumnCount() > 3) {
+                    Object desc = t.getModel().getValueAt(t.convertRowIndexToModel(row), t.getModel().getColumnCount() - 1);
+                    if (desc instanceof String && ((String) desc).contains("<calculated>")) {
+                        if (!isSelected) {
+                            c.setBackground(UIManager.getColor("Panel.background").darker());
+                            c.setForeground(Color.GRAY);
+                        }
+                    } else {
+                        if (!isSelected) {
+                            c.setBackground(t.getBackground());
+                            c.setForeground(t.getForeground());
+                        }
+                    }
+                }
+                
                 if (c instanceof JLabel label && value instanceof String s) {
                     if (s.contains("{{") && s.contains("}}")) {
                         java.util.regex.Matcher matcher = VariableHelper.VAR_PATTERN.matcher(s);
@@ -944,6 +960,12 @@ public class RequestPanel extends JPanel {
 
             @Override
             public boolean isCellEditable(int r, int c) {
+                if (getColumnCount() > 3) {
+                    Object desc = getValueAt(r, 3);
+                    if (desc instanceof String && ((String) desc).contains("<calculated>")) {
+                        return false;
+                    }
+                }
                 return true;
             }
         };
@@ -995,6 +1017,22 @@ public class RequestPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected, boolean hasFocus,
                     int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
+                
+                if (t.getModel().getColumnCount() > 3) {
+                    Object desc = t.getModel().getValueAt(t.convertRowIndexToModel(row), 3);
+                    if (desc instanceof String && ((String) desc).contains("<calculated>")) {
+                        if (!isSelected) {
+                            c.setBackground(UIManager.getColor("Panel.background").darker());
+                            c.setForeground(Color.GRAY);
+                        }
+                    } else {
+                        if (!isSelected) {
+                            c.setBackground(t.getBackground());
+                            c.setForeground(t.getForeground());
+                        }
+                    }
+                }
+                
                 if (c instanceof JLabel label && value instanceof String s) {
                     if (s.contains("{{") && s.contains("}}")) {
                         java.util.regex.Matcher matcher = VariableHelper.VAR_PATTERN.matcher(s);
@@ -1033,6 +1071,7 @@ public class RequestPanel extends JPanel {
         table.getColumnModel().getColumn(2).setCellRenderer(defaultRenderer);
         table.getColumnModel().getColumn(3).setCellRenderer(defaultRenderer);
         table.setRowHeight(24);
+        in.slpro.apibanker.ui.GlobalVariablesPanel.setupTableCopyPaste(table, model);
         return table;
     }
 
@@ -1075,6 +1114,41 @@ public class RequestPanel extends JPanel {
             }
 
             headersModel.setRowCount(0);
+            
+            // 1. Add Default Computed Headers at the top
+            headersModel.addRow(new Object[] { true, "Host", "<calculated at runtime>", "<calculated>" });
+            
+            String bt = requestModel.getBodyType() != null ? requestModel.getBodyType() : "none";
+            if (!"none".equalsIgnoreCase(bt)) {
+                String ct = "";
+                if ("raw".equalsIgnoreCase(bt)) {
+                    String rt = requestModel.getBodyRawType();
+                    if ("JSON".equalsIgnoreCase(rt)) ct = "application/json";
+                    else if ("XML".equalsIgnoreCase(rt)) ct = "application/xml";
+                    else if ("HTML".equalsIgnoreCase(rt)) ct = "text/html";
+                    else ct = "text/plain";
+                } else if ("form-data".equalsIgnoreCase(bt)) {
+                    ct = "multipart/form-data; boundary=<calculated>";
+                } else if ("x-www-form-urlencoded".equalsIgnoreCase(bt) || "form".equalsIgnoreCase(bt)) {
+                    ct = "application/x-www-form-urlencoded";
+                } else if ("graphql".equalsIgnoreCase(bt)) {
+                    ct = "application/json";
+                }
+                
+                // Only show computed Content-Type if user hasn't overridden it
+                boolean userHasCt = false;
+                if (requestModel.getHeaders() != null) {
+                    userHasCt = requestModel.getHeaders().stream().anyMatch(h -> "Content-Type".equalsIgnoreCase(h.getKey()));
+                }
+                if (!ct.isEmpty() && !userHasCt) {
+                    headersModel.addRow(new Object[] { true, "Content-Type", ct, "<calculated>" });
+                }
+                headersModel.addRow(new Object[] { true, "Content-Length", "<calculated at runtime>", "<calculated>" });
+            } else {
+                headersModel.addRow(new Object[] { true, "Content-Length", "<calculated at runtime>", "<calculated>" });
+            }
+            
+            // 2. Add user headers
             if (requestModel.getHeaders() != null) {
                 for (KeyValueItem kv : requestModel.getHeaders()) {
                     headersModel
@@ -1082,7 +1156,6 @@ public class RequestPanel extends JPanel {
                 }
             }
 
-            String bt = requestModel.getBodyType() != null ? requestModel.getBodyType() : "none";
             if ("form".equals(bt)) {
                 bt = "x-www-form-urlencoded";
             }
@@ -1254,10 +1327,10 @@ public class RequestPanel extends JPanel {
             requestModel.setRedirectSetting("YES");
         }
 
-        requestModel.setParams(extractKV(paramsModel));
-        requestModel.setHeaders(extractKV(headersModel));
+        requestModel.setParams(extractKV(paramsModel, false));
+        requestModel.setHeaders(extractKV(headersModel, true));
         requestModel.setFormData(extractFormData(formDataModel));
-        requestModel.setUrlencodedData(extractKV(urlencodedModel));
+        requestModel.setUrlencodedData(extractKV(urlencodedModel, false));
     }
 
     private List<KeyValueItem> extractFormData(DefaultTableModel model) {
@@ -1276,13 +1349,22 @@ public class RequestPanel extends JPanel {
         return list;
     }
 
-    private List<KeyValueItem> extractKV(DefaultTableModel model) {
+    private List<KeyValueItem> extractKV(DefaultTableModel model, boolean isHeader) {
         List<KeyValueItem> list = new ArrayList<>();
         for (int i = 0; i < model.getRowCount(); i++) {
-            boolean enabled = model.getValueAt(i, 0) instanceof Boolean b && b;
-            String key = (String) model.getValueAt(i, 1);
-            String value = (String) model.getValueAt(i, 2);
             String desc = model.getColumnCount() > 3 ? (String) model.getValueAt(i, 3) : "";
+            if (desc != null && desc.contains("<calculated>")) {
+                continue;
+            }
+            String key = (String) model.getValueAt(i, 1);
+            if (isHeader && key != null) {
+                String k = key.trim();
+                if (k.equalsIgnoreCase("Host") || k.equalsIgnoreCase("Content-Length")) {
+                    continue;
+                }
+            }
+            boolean enabled = model.getValueAt(i, 0) instanceof Boolean b && b;
+            String value = (String) model.getValueAt(i, 2);
             KeyValueItem kv = new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled);
             kv.setDescription(desc);
             list.add(kv);
@@ -1402,10 +1484,10 @@ public class RequestPanel extends JPanel {
             m.setRedirectSetting("YES");
         }
 
-        m.setParams(extractKV(paramsModel));
-        m.setHeaders(extractKV(headersModel));
+        m.setParams(extractKV(paramsModel, false));
+        m.setHeaders(extractKV(headersModel, true));
         m.setFormData(extractFormData(formDataModel));
-        m.setUrlencodedData(extractKV(urlencodedModel));
+        m.setUrlencodedData(extractKV(urlencodedModel, false));
         return m;
     }
 
@@ -1570,7 +1652,7 @@ public class RequestPanel extends JPanel {
         snapshot.setOauth2ClientAuth((String) oauth2ClientAuthCombo.getSelectedItem());
         snapshot.setOauth2AccessToken(oauth2AccessTokenField.getText());
 
-        snapshot.setHeaders(extractKV(headersModel));
+        snapshot.setHeaders(extractKV(headersModel, true));
 
         sendBtn.setEnabled(false);
         sendBtn.setText("Introspecting...");
@@ -1758,4 +1840,5 @@ public class RequestPanel extends JPanel {
         repaint();
     }
 }
+
 

@@ -7,6 +7,17 @@ import java.util.List;
  * Holds the results of executing a pre-request or test script,
  * including test assertions (pass/fail), console log output, and any errors.
  */
+/**
+ * ScriptResult
+ *
+ * <p>
+ * Core functionality and implementation logic for ScriptResult.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.0.0-beta
+ * @since 1.0.0
+ */
 public class ScriptResult {
     private final List<TestAssertion> assertions = new ArrayList<>();
     private final List<String> consoleLogs = new ArrayList<>();
@@ -80,3 +91,4 @@ public class ScriptResult {
         }
     }
 }
+

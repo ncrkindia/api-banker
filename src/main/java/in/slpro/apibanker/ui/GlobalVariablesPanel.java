@@ -12,6 +12,17 @@ import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * GlobalVariablesPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for GlobalVariablesPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.0.0-beta
+ * @since 1.0.0
+ */
 public class GlobalVariablesPanel extends JPanel {
     private final MainFrame mainFrame;
     private final DefaultTableModel globalsTableModel;
@@ -142,37 +153,46 @@ public class GlobalVariablesPanel extends JPanel {
                 if (rows.length == 0)
                     return;
 
-                Object[][] deletedData = new Object[rows.length][model.getColumnCount()];
-                for (int i = 0; i < rows.length; i++) {
-                    for (int c = 0; c < model.getColumnCount(); c++) {
-                        deletedData[i][c] = model.getValueAt(rows[i], c);
+                java.util.List<Integer> editableRowsList = new java.util.ArrayList<>();
+                for (int r : rows) {
+                    int modelRow = table.convertRowIndexToModel(r);
+                    if (model.isCellEditable(modelRow, 1)) {
+                        editableRowsList.add(modelRow);
                     }
                 }
+                if (editableRowsList.isEmpty()) return;
+                
+                int[] modelRows = editableRowsList.stream().mapToInt(i -> i).toArray();
+                java.util.Arrays.sort(modelRows);
 
-                int[] sortedRows = java.util.Arrays.copyOf(rows, rows.length);
-                java.util.Arrays.sort(sortedRows);
+                Object[][] deletedData = new Object[modelRows.length][model.getColumnCount()];
+                for (int i = 0; i < modelRows.length; i++) {
+                    for (int c = 0; c < model.getColumnCount(); c++) {
+                        deletedData[i][c] = model.getValueAt(modelRows[i], c);
+                    }
+                }
 
                 if (table.getCellEditor() != null)
                     table.getCellEditor().stopCellEditing();
 
-                for (int i = sortedRows.length - 1; i >= 0; i--) {
-                    model.removeRow(sortedRows[i]);
+                for (int i = modelRows.length - 1; i >= 0; i--) {
+                    model.removeRow(modelRows[i]);
                 }
 
                 undoManager.addEdit(new javax.swing.undo.AbstractUndoableEdit() {
                     @Override
                     public void undo() {
                         super.undo();
-                        for (int i = 0; i < sortedRows.length; i++) {
-                            model.insertRow(sortedRows[i], deletedData[i]);
+                        for (int i = 0; i < modelRows.length; i++) {
+                            model.insertRow(modelRows[i], deletedData[i]);
                         }
                     }
 
                     @Override
                     public void redo() {
                         super.redo();
-                        for (int i = sortedRows.length - 1; i >= 0; i--) {
-                            model.removeRow(sortedRows[i]);
+                        for (int i = modelRows.length - 1; i >= 0; i--) {
+                            model.removeRow(modelRows[i]);
                         }
                     }
                 });
@@ -191,13 +211,17 @@ public class GlobalVariablesPanel extends JPanel {
                     return;
                 StringBuilder sb = new StringBuilder();
                 for (int r : rows) {
-                    Boolean enabled = (Boolean) model.getValueAt(r, 0);
-                    String key = (String) model.getValueAt(r, 1);
-                    String value = (String) model.getValueAt(r, 2);
+                    int modelRow = table.convertRowIndexToModel(r);
+                    if (!model.isCellEditable(modelRow, 1)) continue;
+                    
+                    Boolean enabled = (Boolean) model.getValueAt(modelRow, 0);
+                    String key = (String) model.getValueAt(modelRow, 1);
+                    String value = (String) model.getValueAt(modelRow, 2);
                     sb.append(enabled != null ? enabled : true).append("\t")
                             .append(key != null ? key : "").append("\t")
                             .append(value != null ? value : "").append("\n");
                 }
+                if (sb.length() == 0) return;
                 java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(
                         sb.toString());
                 java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
@@ -290,9 +314,17 @@ public class GlobalVariablesPanel extends JPanel {
 
             private void showPopup(java.awt.event.MouseEvent e) {
                 if (e.isPopupTrigger()) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        int modelRow = table.convertRowIndexToModel(row);
+                        if (!model.isCellEditable(modelRow, 1)) {
+                            return;
+                        }
+                    }
                     popupMenu.show(e.getComponent(), e.getX(), e.getY());
                 }
             }
         });
     }
 }
+

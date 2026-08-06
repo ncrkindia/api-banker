@@ -29,7 +29,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class StorageManager {
@@ -42,14 +42,14 @@ public class StorageManager {
      * Private constructor to enforce Singleton pattern.
      * Initializes the Gson serializer, resolves the default user home directory,
      * and guarantees that the primary bootstrap '.apibanker' configuration folder
-     * exists. Migrates legacy '.japi' configurations if found.
+     * exists. Migrates legacy '.ApiBanker' configurations if found.
      * Finally, it loads or provisions the default AppSettings and updates the
      * logger.
      */
     private StorageManager() {
         this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         String userHome = System.getProperty("user.home");
-        File oldBootstrapDir = new File(userHome, ".japi");
+        File oldBootstrapDir = new File(userHome, ".ApiBanker");
         File newBootstrapDir = new File(userHome, ".apibanker");
 
         if (!newBootstrapDir.exists() && oldBootstrapDir.exists()) {
@@ -68,12 +68,12 @@ public class StorageManager {
         loadOrCreateSettings();
         
         boolean settingsMigrated = false;
-        if (settings.getDataDirectory() != null && settings.getDataDirectory().contains(".japi")) {
-            settings.setDataDirectory(settings.getDataDirectory().replace(".japi", ".apibanker"));
+        if (settings.getDataDirectory() != null && settings.getDataDirectory().contains(".ApiBanker")) {
+            settings.setDataDirectory(settings.getDataDirectory().replace(".ApiBanker", ".apibanker"));
             settingsMigrated = true;
         }
-        if (settings.getLogsDirectory() != null && settings.getLogsDirectory().contains(".japi")) {
-            settings.setLogsDirectory(settings.getLogsDirectory().replace(".japi", ".apibanker"));
+        if (settings.getLogsDirectory() != null && settings.getLogsDirectory().contains(".ApiBanker")) {
+            settings.setLogsDirectory(settings.getLogsDirectory().replace(".ApiBanker", ".apibanker"));
             settingsMigrated = true;
         }
         if (settingsMigrated) {
@@ -387,4 +387,6 @@ public class StorageManager {
         }
     }
 }
+
+
 

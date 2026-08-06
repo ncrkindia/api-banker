@@ -52,7 +52,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class CollectionRunnerPanel extends JPanel {
@@ -2097,4 +2097,5 @@ public class CollectionRunnerPanel extends JPanel {
         return runnerModel;
     }
 }
+
 

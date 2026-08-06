@@ -15,7 +15,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class RequestModel {
@@ -79,7 +79,7 @@ public class RequestModel {
     public RequestModel() {
         this.id = java.util.UUID.randomUUID().toString();
         this.name = "New Request";
-        this.headers.add(new KeyValueItem("User-Agent", "ApiBanker API Client", true));
+        this.headers.add(new KeyValueItem("User-Agent", "ApiBanker Client", true));
         this.headers.add(new KeyValueItem("Accept", "*/*", true));
         this.headers.add(new KeyValueItem("Accept-Encoding", "gzip, deflate, br", true));
         this.headers.add(new KeyValueItem("Connection", "keep-alive", true));

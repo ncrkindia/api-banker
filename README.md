@@ -93,7 +93,7 @@ apibanker/
 
 ## 📜 Version History
 
-* **v1.0.0-beta (Current)** - First official release under the ApiBanker rebranding.
+* **v1.0.0-beta (Current)** - First official release under the ApiBanker rebranding. Includes massive UI/UX improvements to Request Headers (auto-calculated `Host`, `Content-Length`, `Content-Type`), advanced clipboard protection for read-only rows, reversed Log Consoles for immediate latest-entry visibility, and 100% complete JavaDoc coverage across the codebase.
 * *(Legacy: v1.1.0-beta to v1.4.0-beta under JAPI)*.
 
 ## 🤝 Contributing

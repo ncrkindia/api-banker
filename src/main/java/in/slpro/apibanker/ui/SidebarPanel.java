@@ -29,7 +29,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class SidebarPanel extends JPanel {
@@ -857,4 +857,5 @@ public class SidebarPanel extends JPanel {
         return String.format("#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
     }
 }
+
 

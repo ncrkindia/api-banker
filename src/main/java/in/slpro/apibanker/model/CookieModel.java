@@ -8,7 +8,7 @@ package in.slpro.apibanker.model;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class CookieModel {
@@ -125,3 +125,4 @@ public class CookieModel {
         return true;
     }
 }
+

@@ -26,7 +26,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener {
@@ -177,10 +177,10 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
     }
 
     private void addEntryToTable(LogEntry entry) {
-        displayedEntries.add(entry);
+        displayedEntries.add(0, entry);
         String time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.getTimestamp()), ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        tableModel.addRow(new Object[] {
+        tableModel.insertRow(0, new Object[] {
                 time,
                 entry.getLevel(),
                 entry.getMethod() != null ? entry.getMethod() : "N/A",
@@ -393,4 +393,5 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
         ConsoleLogger.getInstance().removeListener(this);
     }
 }
+
 

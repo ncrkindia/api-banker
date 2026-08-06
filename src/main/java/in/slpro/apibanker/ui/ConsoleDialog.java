@@ -32,7 +32,7 @@ import java.util.Map;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener {
@@ -288,26 +288,26 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
         logPanel.repaint();
 
         if (autoScrollCheck.isSelected()) {
-            scrollToBottom();
+            scrollToTop();
         }
     }
 
-    private void scrollToBottom() {
+    private void scrollToTop() {
         SwingUtilities.invokeLater(() -> {
             JScrollBar bar = scrollPane.getVerticalScrollBar();
-            bar.setValue(bar.getMaximum());
+            bar.setValue(0);
         });
     }
 
     private void addEntryPanel(LogEntry entry) {
         if (entry.getUrl() != null && !entry.getUrl().isEmpty()) {
             // Collapsible Network Request Panel
-            logPanel.add(createCollapsibleRequestPanel(entry));
+            logPanel.add(createCollapsibleRequestPanel(entry), 0);
         } else {
             // Simple Script / System console log panel
-            logPanel.add(createScriptLogPanel(entry));
+            logPanel.add(createScriptLogPanel(entry), 0);
         }
-        logPanel.add(Box.createVerticalStrut(1));
+        logPanel.add(Box.createVerticalStrut(1), 1);
     }
 
     private JPanel createScriptLogPanel(LogEntry entry) {
@@ -706,12 +706,22 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
                     return;
             }
 
+            JScrollBar bar = scrollPane.getVerticalScrollBar();
+            int oldVal = bar.getValue();
+            int oldHeight = logPanel.getPreferredSize().height;
+
             addEntryPanel(entry);
             logPanel.revalidate();
             logPanel.repaint();
 
             if (autoScrollCheck.isSelected()) {
-                scrollToBottom();
+                scrollToTop();
+            } else {
+                SwingUtilities.invokeLater(() -> {
+                    int newHeight = logPanel.getPreferredSize().height;
+                    int diff = newHeight - oldHeight;
+                    bar.setValue(oldVal + diff);
+                });
             }
         });
     }
@@ -722,4 +732,5 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
         super.dispose();
     }
 }
+
 

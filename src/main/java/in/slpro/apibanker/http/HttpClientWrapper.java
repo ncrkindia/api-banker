@@ -28,7 +28,8 @@ import java.nio.file.Files;
  * HttpClientWrapper
  *
  * <p>
- * This class serves as the core networking engine for ApiBanker. It is responsible
+ * This class serves as the core networking engine for ApiBanker. It is
+ * responsible
  * for
  * taking a {@link RequestModel} and translating it into an actual
  * {@link java.net.http.HttpRequest}.
@@ -47,7 +48,7 @@ import java.nio.file.Files;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class HttpClientWrapper {
@@ -263,18 +264,37 @@ public class HttpClientWrapper {
 
             // 4. Add headers
             String method = requestModel.getMethod();
+            Map<String, List<String>> combinedHeaders = new java.util.LinkedHashMap<>();
+            
             if (requestModel.getHeaders() != null) {
                 for (KeyValueItem header : requestModel.getHeaders()) {
                     if (!header.isEnabled() || header.getKey() == null || header.getKey().isBlank())
                         continue;
                     try {
-                        reqBuilder.header(resolveVariables(header.getKey(), requestModel, environment),
-                                resolveVariables(header.getValue() != null ? header.getValue() : "", requestModel,
-                                        environment));
+                        String key = resolveVariables(header.getKey(), requestModel, environment).trim();
+                        String val = resolveVariables(header.getValue() != null ? header.getValue() : "", requestModel,
+                                environment).trim();
+                                
+                        if (key.equalsIgnoreCase("Host") || key.equalsIgnoreCase("Content-Length")) {
+                            continue;
+                        }
+                        
+                        final String finalKey = key;
+                        String existingKey = combinedHeaders.keySet().stream()
+                            .filter(k -> k.equalsIgnoreCase(finalKey)).findFirst().orElse(key);
+                            
+                        combinedHeaders.computeIfAbsent(existingKey, k -> new java.util.ArrayList<>()).add(val);
                     } catch (Exception ignored) {
                     }
                 }
             }
+
+            for (Map.Entry<String, List<String>> entry : combinedHeaders.entrySet()) {
+                reqBuilder.header(entry.getKey(), String.join(", ", entry.getValue()));
+            }
+            
+            boolean hasUserAgent = combinedHeaders.keySet().stream().anyMatch(k -> k.equalsIgnoreCase("User-Agent"));
+            boolean hasContentType = combinedHeaders.keySet().stream().anyMatch(k -> k.equalsIgnoreCase("Content-Type"));
 
             // Auth
             String authType = requestModel.getAuthType();
@@ -339,7 +359,9 @@ public class HttpClientWrapper {
                     }
                 }
             }
-            reqBuilder.header("User-Agent", "ApiBanker API Client");
+            if (!hasUserAgent) {
+                reqBuilder.header("User-Agent", "ApiBanker Client");
+            }
 
             // Body
             HttpRequest.BodyPublisher bodyPublisher = HttpRequest.BodyPublishers.noBody();
@@ -351,21 +373,22 @@ public class HttpClientWrapper {
                         resolvedBodyStr = "";
                     bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
                     String rawType = requestModel.getBodyRawType();
-                    if ("JSON".equalsIgnoreCase(rawType))
-                        reqBuilder.header("Content-Type", "application/json");
-                    else if ("XML".equalsIgnoreCase(rawType))
-                        reqBuilder.header("Content-Type", "application/xml");
-                    else if ("HTML".equalsIgnoreCase(rawType))
-                        reqBuilder.header("Content-Type", "text/html");
-                    else
-                        reqBuilder.header("Content-Type", "text/plain");
+                    if ("JSON".equalsIgnoreCase(rawType)) {
+                        if (!hasContentType) reqBuilder.header("Content-Type", "application/json");
+                    } else if ("XML".equalsIgnoreCase(rawType)) {
+                        if (!hasContentType) reqBuilder.header("Content-Type", "application/xml");
+                    } else if ("HTML".equalsIgnoreCase(rawType)) {
+                        if (!hasContentType) reqBuilder.header("Content-Type", "text/html");
+                    } else {
+                        if (!hasContentType) reqBuilder.header("Content-Type", "text/plain");
+                    }
                 } else if ("form-data".equalsIgnoreCase(bodyType)) {
                     String boundary = "ApiBankerBoundary" + System.currentTimeMillis();
                     try {
                         byte[] multipartData = buildMultipartBody(requestModel.getFormData(), boundary, requestModel,
                                 environment);
                         bodyPublisher = HttpRequest.BodyPublishers.ofByteArray(multipartData);
-                        reqBuilder.header("Content-Type", "multipart/form-data; boundary=" + boundary);
+                        if (!hasContentType) reqBuilder.header("Content-Type", "multipart/form-data; boundary=" + boundary);
                         resolvedBodyStr = "[Multipart/Form-Data Payload: " + multipartData.length + " bytes]";
                     } catch (Exception ex) {
                         resolvedBodyStr = "Error building multipart body: " + ex.getMessage();
@@ -393,9 +416,9 @@ public class HttpClientWrapper {
                     }
                     resolvedBodyStr = formSb.toString();
                     bodyPublisher = HttpRequest.BodyPublishers.ofString(resolvedBodyStr, StandardCharsets.UTF_8);
-                    reqBuilder.header("Content-Type", "application/x-www-form-urlencoded");
+                    if (!hasContentType) reqBuilder.header("Content-Type", "application/x-www-form-urlencoded");
                 } else if ("graphql".equalsIgnoreCase(bodyType)) {
-                    reqBuilder.header("Content-Type", "application/json");
+                    if (!hasContentType) reqBuilder.header("Content-Type", "application/json");
                     try {
                         String rawContent = requestModel.getBodyRawContent();
                         String query = "";

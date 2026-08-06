@@ -17,6 +17,17 @@ import java.util.UUID;
 /**
  * EnvironmentManagerPanel
  */
+/**
+ * EnvironmentManagerPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for EnvironmentManagerPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.0.0-beta
+ * @since 1.0.0
+ */
 public class EnvironmentManagerPanel extends JPanel {
     private final MainFrame mainFrame;
     private final List<EnvironmentModel> environments;
@@ -419,4 +430,5 @@ public class EnvironmentManagerPanel extends JPanel {
         }
     }
 }
+
 

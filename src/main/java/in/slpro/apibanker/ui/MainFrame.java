@@ -27,7 +27,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class MainFrame extends JFrame {
@@ -1245,8 +1245,6 @@ public class MainFrame extends JFrame {
                     menu.add(closeAllItem);
 
                     menu.show(e.getComponent(), e.getX(), e.getY());
-                } else if (e.getClickCount() == 2 && renameable && startEditAction != null) {
-                    startEditAction.run();
                 }
             }
         };
@@ -1429,8 +1427,8 @@ public class MainFrame extends JFrame {
         for (File file : files) {
             try {
                 String json = java.nio.file.Files.readString(file.toPath());
-                // TODO: Remove legacy japi support in future release
-                json = json.replace("japi.", "apibanker.");
+                // TODO: Remove legacy ApiBanker support in future release
+                json = json.replace("ApiBanker.", "apibanker.");
                 com.google.gson.JsonElement parsedElement = com.google.gson.JsonParser.parseString(json);
                 if (!parsedElement.isJsonObject()) {
                     failedFiles.add(file.getName() + " (not a JSON Object)");
@@ -1572,8 +1570,8 @@ public class MainFrame extends JFrame {
         for (File file : files) {
             try {
                 String jsonContent = java.nio.file.Files.readString(file.toPath(), java.nio.charset.StandardCharsets.UTF_8);
-                // TODO: Remove legacy japi support in future release
-                jsonContent = jsonContent.replace("japi.", "apibanker.");
+                // TODO: Remove legacy ApiBanker support in future release
+                jsonContent = jsonContent.replace("ApiBanker.", "apibanker.");
                 com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(jsonContent).getAsJsonObject();
                 if (root.has("folders") && root.has("requests")) {
                     CollectionModel col = gson.fromJson(root, CollectionModel.class);
@@ -2729,4 +2727,6 @@ public class MainFrame extends JFrame {
         return !"NO".equalsIgnoreCase(globalSetting);
     }
 }
+
+
 

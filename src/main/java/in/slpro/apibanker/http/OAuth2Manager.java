@@ -25,6 +25,17 @@ import java.net.InetSocketAddress;
 import java.io.InputStream;
 import java.util.Scanner;
 
+/**
+ * OAuth2Manager
+ *
+ * <p>
+ * Core functionality and implementation logic for OAuth2Manager.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.0.0-beta
+ * @since 1.0.0
+ */
 public class OAuth2Manager {
 
     public static void getNewAccessToken(Object model, JPanel panel) {
@@ -287,4 +298,5 @@ public class OAuth2Manager {
         }
     }
 }
+
 

@@ -26,6 +26,10 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 - **Postman Interoperability**: Enhanced `ImportManager` and `ExportManager` to fully parse and persist Collection-level variables when loading/saving standard Postman v2.1 Collections.
 - **Data Tools Suite**: Implemented built-in JSON schema validation, XML structure checks, mock data generation algorithms, and JWT decoding tools.
 - **Collection Runner Logs**: Added a dedicated workspace tab to manage historical run logs by collection and date, enabling live generation of HTML and CSV metrics reports.
+- **Request Headers UI Overhaul**: Implemented dynamic non-editable headers (`Host`, `Content-Length`, `Content-Type`) pinned to the top of the table. Added intelligent `Content-Type` generation based on selected body type, and advanced header merging to combine multiple entries of the same key into a single standard HTTP header.
+- **Enhanced Log Consoles**: Upgraded the Log Consoles (both Dialog and Workspace tabs) to display the latest logs at the top with intelligent auto-scroll stabilization.
+- **Workspace UI Polish**: Disabled double-click to rename on workspace tabs to prevent accidental edits, and disabled Copy/Paste/Delete actions on read-only system headers.
+- **Comprehensive Documentation**: Synchronized the `@version 1.0.0-beta` tag and injected complete JavaDoc blocks across all 50 source files, finalizing the rebranding from Japi to ApiBanker.
 
 **Fixes:**
 - Fixed recursive collection export visibility bug in MainFrame resolving static lint warnings.

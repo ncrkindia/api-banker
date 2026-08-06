@@ -13,6 +13,17 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * CollectionRunnerLogsPanel
+ *
+ * <p>
+ * Core functionality and implementation logic for CollectionRunnerLogsPanel.
+ * </p>
+ *
+ * @author Naveen Chauhan (https://github.com/ncrkindia)
+ * @version 1.0.0-beta
+ * @since 1.0.0
+ */
 public class CollectionRunnerLogsPanel extends JPanel {
     private final DefaultTableModel tableModel;
     private final JTable logTable;
@@ -360,4 +371,5 @@ public class CollectionRunnerLogsPanel extends JPanel {
         }
     }
 }
+
 

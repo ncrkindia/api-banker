@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.1.0-beta
+ * @version 1.0.0-beta
  * @since 1.0.0
  */
 public class SyntaxHighlighter {
@@ -89,3 +89,4 @@ public class SyntaxHighlighter {
         return sb.toString().replace("\n", "<br/>").replace(" ", "&nbsp;");
     }
 }
+
