@@ -79,6 +79,13 @@
             <artifactId>commonmark</artifactId>
             <version>0.21.0</version>
         </dependency>
+
+        <!-- Swagger Parser for OpenAPI / Swagger YAML & JSON parsing -->
+        <dependency>
+            <groupId>io.swagger.parser.v3</groupId>
+            <artifactId>swagger-parser</artifactId>
+            <version>2.1.22</version>
+        </dependency>
     </dependencies>
 
     <build>

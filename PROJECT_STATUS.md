@@ -38,6 +38,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
 * [x] **Response Panel**: Shows colored status tags (2xx green, 3xx blue, 4xx orange, 5xx red), latency durations, response size formatting, pretty-printed JSON/XML highlight viewers, and response header grids.
 * [x] **Environment Dialog**: Full manager interface to add, delete, and modify variables.
 * [x] **Collection Overview (Readme.md) Editor**: Premium dual-mode viewer supporting a Read mode (live-rendered Markdown to HTML using Commonmark) and an Edit mode (full Markdown editing toolbar with Font, Size, Headings, Bold, Italic, Strikethrough, Link, List, Quote, Table, and line helpers, plus keyboard shortcuts).
+* [x] **OpenAPI / Swagger Import**: A full workspace-tab importer for OpenAPI 3.x and Swagger 2.x specifications (JSON or YAML). Features include: selective endpoint picker with color-coded HTTP method badges, configurable Base URL strategy (inline in request URL or as `{{baseUrl}}` Collection Variable), multi-server support with indexed variables (`baseUrl_1`, `baseUrl_2`, ...), automatic `http://localhost` fallback when no server is defined, automatic security scheme mapping (Bearer, Basic Auth, API Key, OAuth2) to the Collection's authentication, and auto-generated professional API documentation placed into the Collection's README covering servers, auth schemes, per-endpoint summaries, path/query/header parameters, and request body content types.
 
 ---
 

@@ -940,7 +940,7 @@ public class CollectionPanel extends JPanel {
         } else {
             redirectVerifyCombo.setSelectedIndex(2);
         }
-        this.originalModelJson = new com.google.gson.Gson().toJson(collectionModel);
+        this.originalModelJson = new com.google.gson.Gson().toJson(collectToNewModel());
     }
 
     public void save() {
@@ -999,7 +999,7 @@ public class CollectionPanel extends JPanel {
 
         mainFrame.saveCollections();
         MainFrame.showToast(this, "Collection \"" + collectionModel.getName() + "\" saved.");
-        this.originalModelJson = new com.google.gson.Gson().toJson(collectionModel);
+        this.originalModelJson = new com.google.gson.Gson().toJson(collectToNewModel());
     }
 
     public CollectionModel collectToNewModel() {

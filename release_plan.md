@@ -24,6 +24,7 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 - **Authentication Inheritance**: Rewrote the Auth inheritance engine to recursively climb the hierarchical tree, allowing deep nested folders to inherit auth seamlessly from the root Collection.
 - **OAuth 2.0 Integrations**: Complete serialization of all OAuth 2.0 configuration properties and automatic integration with native Postman Collections export.
 - **Postman Interoperability**: Enhanced `ImportManager` and `ExportManager` to fully parse and persist Collection-level variables when loading/saving standard Postman v2.1 Collections.
+- **OpenAPI / Swagger Import**: Full-panel importer for OpenAPI 3.x and Swagger 2.x specs (JSON and YAML). Users can analyze a spec file, selectively pick endpoints to import, configure how the Base URL is stored (inline in request URL or as indexed `{{baseUrl}}` Collection Variables for multi-server specs), and automatically map security schemes (Bearer, Basic, API Key, OAuth2) to the Collection auth. Falls back to `http://localhost` when no server is defined. Generates professional API documentation in the Collection README with servers, auth schemes, per-endpoint summaries, parameters (path, query, header), and request body content types.
 - **Data Tools Suite**: Implemented built-in JSON schema validation, XML structure checks, mock data generation algorithms, and JWT decoding tools.
 - **Collection Runner Logs**: Added a dedicated workspace tab to manage historical run logs by collection and date, enabling live generation of HTML and CSV metrics reports.
 - **Request Headers UI Overhaul**: Implemented dynamic non-editable headers (`Host`, `Content-Length`, `Content-Type`) pinned to the top of the table. Added intelligent `Content-Type` generation based on selected body type, and advanced header merging to combine multiple entries of the same key into a single standard HTTP header.
@@ -52,6 +53,7 @@ Here is the current implementation status of features included in the **v1.0.0-b
 | **Tools** | Collection Runner | Batch request execution with real-time scatter plot charting. | ✅ Complete |
 | **Tools** | Data/Mock Utilities | JSON Schema validators and mass data generation scripts. | ✅ Complete |
 | **Interop** | Import/Export Managers | Support for Postman v2.1 (Collections, Env) and Apache JMeter (.jmx). | ✅ Complete |
+| **Interop** | OpenAPI / Swagger Import | Import OpenAPI 3.x / Swagger 2.x (JSON & YAML). Selective endpoint picker, Base URL strategy (inline or `{{baseUrl}}` variable), multi-server indexed vars, security scheme mapping, and auto-generated Collection README documentation. | ✅ Complete |
 | **UI/UX** | Dark Mode & Scaling | FlatLaf Dark/Light themes and Ctrl+Scroll dynamic font scaling. | ✅ Complete |
 | **UI/UX** | Global Variables Tab | Full independent tab for managing workspace global states. | ✅ Complete |
 
