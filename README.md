@@ -1,130 +1,101 @@
-# JAPI - Offline-First API Testing Client (v1.4.0-beta)
+# ApiBanker - The Offline-First API Toolkit (v1.0.0-beta)
 
-JAPI is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, JAPI lets developers design, run, test, and manage REST requests locally on their machines without any registration, telemetry, or external network dependencies.
+**ApiBanker** (formerly JAPI) is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, ApiBanker lets developers design, run, test, and manage REST/GraphQL/WebSocket requests locally on their machines without any registration, telemetry, or external network dependencies.
 
-> [!NOTE]
-> **Pre-Release Beta Version**: This version (v1.4.0-beta) is a pre-release candidate. It features a complete offline toolset, environment resolution, and a JavaScript-based collection runner, and is currently open for public beta testing and feedback.
+## ✨ Features & Capabilities
 
----
+ApiBanker brings enterprise-grade API tools to your local environment without the bloat.
 
-## 🚀 Key Features
+### 🌐 Core Request Engine
+- **Full Protocol Support**: Seamlessly build REST, GraphQL, and live WebSocket connections.
+- **Advanced Authentication**: First-class support for OAuth 2.0 (with automatic token extraction), Bearer tokens, API Keys, and Basic Auth.
+- **Auth Inheritance**: Define Authentication at the Collection or Folder level, and watch it recursively inherit down to all nested requests.
+- **Dynamic Body Formats**: Build Payloads in raw JSON, XML, HTML, `x-www-form-urlencoded`, `form-data` (with file upload support), or native GraphQL (with Schema Introspection).
 
-### 🔒 Offline-First & Privacy-Focused
-* **No Accounts Required**: Use the app instantly without any login, registration, or online verification.
-* **Nested Collections & Folders**: Organize requests in unlimited hierarchical subfolders, matching Postman's folder structure.
-* **Granular, Readable Filesystem Workspace**: Request collections and environments are saved as individual human-readable JSON files named after their sanitized names (e.g. `my_collection.json`, `local_env.json`) inside your data directory. This makes it trivial to place your workspace data under version control (e.g., Git) to collaborate with team members.
-* **Auto-Migration & Compatibility**: JAPI handles legacy workspaces and automatically migrates monolithic `collections.json` and `environments.json` files to the individual file-per-entity scheme upon startup, clean and seamless.
-* **Local Security**: None of your variables, credentials, request payloads, or responses leave your machine.
+### ⚡ Scripting & Automation
+- **JavaScript Engine**: Write Pre-Request and Test scripts using Rhino JS.
+- **Dynamic Variables**: Manage State via `apibanker.globals`, `apibanker.environment`, and `apibanker.collectionVariables`. 
+- **Chaining**: Extract data from responses and pass it into subsequent requests effortlessly.
+- **Snippets**: Automatically insert scripts using the built-in UI Code Snippets sidebar.
 
-### 🛠️ Core Client Capabilities
-* **Robust HTTP Engine**: Powered by an asynchronous Java `HttpClient` wrapper running inside Swing background worker threads to ensure the UI remains fully responsive at all times.
-* **Dynamic Parameter Grid**: Grid lists for query parameters, request headers, and request bodies that auto-expand as you type.
-* **Authorization Support**: Native support for common auth methods, including **Bearer Token**, **Basic Auth**, and custom **API Key** headers.
-* **Per-Request SSL Verification**: Granular control via settings to enable or disable SSL certificate verification for individual requests to support testing environments with self-signed certificates.
-* **Flexible SSL Management**: Enabled to trust local self-signed SSL certificates automatically, allowing seamless testing of local development setups (`http://localhost`, etc.).
-* **Hierarchical Auto-Redirect (302) Control**: Configurable redirect governance that bubbles up from the Request layer to the Collection layer, up to the Global App Settings (which supports `Forced` overrides) mimicking the SSL governance strategy.
+### 📊 Performance & Load Testing
+- **Collection Runner**: Execute batch API requests with configurable iterations, virtual users (VUsers), and delay strategies.
+- **Real-Time Scatter Plots**: Monitor live metrics (Pass/Fail, Response Times, APDEX) drawn on a live UI chart.
+- **Reporting**: Export massive execution runs instantly to HTML Dashboards, CSV, or PDF formats.
 
-### ⚙️ Environments & Variables
-* **Dynamic Variable Interpolation**: Inject environment and collection variables in double braces (e.g. `{{host}}`) directly into URLs, request headers, query parameters, auth values, and body payloads.
-* **Inline Syntax Highlighting**: Dynamic, live variable coloring and highlighting across inputs. 
-* **Variable Tooltips**: Hover over variables to instantly view their current resolved values, types, and source (e.g. Current Environment name or Collection name).
-* **Header-Aligned Environment Selector**: Instantly switch environments and access the environment manager via the dropdown and gear (`⚙`) button located at the top-right corner of the tab bar.
-* **Auto-Applying Renames**: Modifying environment names in the Environment Manager updates the list and file names instantly upon saving without needing manual Rename actions.
+### 🔄 Data & Interoperability
+- **Postman v2.1 Support**: Native, lossless Import and Export to standard Postman Collections and Environments. 
+- **JMeter Support**: Export your ApiBanker Collections directly to Apache JMeter `.jmx` files for distributed load testing.
+- **Data Generator Tools**: Generate thousands of rows of realistic Mock JSON Data for testing endpoints or validate existing responses against JSON Schema Drafts and XML XSDs.
 
-### 🧪 Automation, Scripting & Mocking
-* **Pre & Post Request Scripts**: Support for scripting to dynamically execute JavaScript code before a request is sent, or parse and assert responses (e.g. capturing tokens from auth responses to set environment variables dynamically).
-* **Collection Runner**: Sequence executor to run all requests in a collection sequentially, featuring a progress dashboard and success/failure statistics reporting. Automatically filters out non-HTTP nodes (like mock servers) to ensure clean test runs.
-* **History Logging**: Chronological history of executed requests with filter searching.
-* **Isolated Performance & Server Logging**: Separates logs for mock server runs and collection execution runs. Log outputs are stored in a configurable folder, populated with parent collection metadata (names, IDs, ports, timestamps) for robust post-execution audits.
-* **Comprehensive Dump Logs**: Collection runs generate highly detailed `dump.log` files that capture request headers, full request bodies, authorization configurations, and complete chronological histories of intermediate redirect paths.
-
-### 🎨 Developer Experience (DX)
-* **Pinning & Tab Management**: Standard tab controls including Pin/Unpin, Rename, Close others, Close to the left, Close to the right, and Close all.
-* **State-Aware tab dirty tracking**: Prompts you to Save, Discard, or Cancel if you try to close tabs containing unsaved modifications.
-* **Zoom Support**: Scale the UI, labels, editor font size, and text layouts globally using `Ctrl + +` / `Ctrl + =` (Zoom In) and `Ctrl + -` (Zoom Out).
-* **Save Hotkey**: Save your current request, collection state, or mock server configuration instantly using `Ctrl + S`.
-* **Postman Interoperability**: Built-in support to import and export collections and environments in standard Postman formats. The importer supports selecting multiple files simultaneously and automatically detects whether they are Collections or Environments to import them seamlessly in a single action.
-* **Multi-File Bulk Exporter**: Select multiple Collections and Environments from an intuitive checklist tree and export them all at once to a selected target directory as individual files.
-* **Configurable Storage Directories**: Customize both your local workspace **Config Directory** and **Logs Directory** on-the-fly using the integrated Settings tab and built-in folder browser. Changing your Config Directory automatically migrates all existing collections, environments, and history to the new location without any data loss.
-* **Smart UI State Preservation**: Complex components, like the hierarchical Collection Tree, maintain their exact expansion states and focus rings even when items are added, deleted, or structurally modified.
+### 🔒 100% Offline & Local Storage
+- **File-System First**: All your workspaces, environments, and history logs are serialized into clean `.json` files inside `~/.apibanker`. 
+- **No Cloud Required**: No accounts, no data syncing to external servers, and absolutely no telemetry.
 
 ---
 
-## 🛠️ Technology Stack
-
-* **Core Language**: Java 21 (JDK 21+)
-* **Build System**: Maven (3.x+)
-* **GUI Toolkit**: Java Swing
-* **Look and Feel**: FlatLaf (Modern Look and Feel library for Swing)
-* **Code/Text Editors**: RSyntaxTextArea (rich editor panels)
-* **Serialization/Data Binding**: Google Gson (JSON persistence)
-
----
-
-## 📦 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- **Java 21** (or higher) is required.
+- Apache Maven (for building from source).
 
-* **Java Development Kit (JDK)**: JDK 21 or higher installed on your system.
-* **Apache Maven**: Installed and configured in your path.
+### Building from Source
 
-### Build and Package
-
-To compile, build, and package the application into a single executable shaded JAR, run:
+To compile and package ApiBanker into a standalone, distributable offline bundle:
 
 ```bash
-mvn clean package -DskipTests
+mvn clean package
 ```
 
-This outputs a shaded executable JAR under `target/japi-1.4.0-beta.jar`.
+This outputs a shaded executable JAR under `target/apibanker-1.0.0-beta.jar`.
 
-### Run the Application
+### Running Locally during Development
 
-#### During Development
-You can run the application directly from the source directory using Maven:
+To instantly launch the application directly from your IDE or terminal without packaging:
+
 ```bash
-mvn compile exec:java -Dexec.mainClass="in.slpro.japi.App"
+mvn compile exec:java -Dexec.mainClass="in.slpro.apibanker.App"
 ```
 
-#### Executing the JAR directly
-Once built, you can launch the compiled shaded JAR file:
+Alternatively, just run the compiled JAR directly:
 ```bash
-java -jar target/japi-1.4.0-beta.jar
+java -jar target/apibanker-1.0.0-beta.jar
 ```
 
-#### Using Launch Scripts (Distribution Bundle)
-After building the project, Maven packages a distribution zip at `target/japi.zip`. Unzipping this bundle yields a standalone directory containing the executable jar along with native launch scripts:
+### 📦 Distribution Artifacts
+After building the project, Maven packages a distribution zip at `target/apibanker.zip`. Unzipping this bundle yields a standalone directory containing the executable jar along with native launch scripts:
 
-* **On Windows**: Double-click `japi.bat` or run:
+* **On Windows**: Double-click `apibanker.bat` or run:
   ```cmd
-  japi.bat
+  apibanker.bat
   ```
-* **On macOS / Linux**: Grant execution permissions and run `japi.sh`:
+* **On macOS / Linux**: Grant execution permissions and run `apibanker.sh`:
   ```bash
-  chmod +x japi.sh
-  ./japi.sh
+  chmod +x apibanker.sh
+  ./apibanker.sh
   ```
 
----
+## 📂 Project Structure
 
-## 📁 Project Structure
-
+```text
+apibanker/
+├── src/main/java/in/slpro/apibanker/
+│   ├── App.java                   # Main entry point and initialization
+│   ├── http/                      # Request dispatching, auth, Rhino script engine, JMX parsing
+│   ├── model/                     # Data structures (RequestModel, CollectionModel, Settings)
+│   ├── storage/                   # JSON persistence, auto-migrations, and environment state
+│   └── ui/                        # Swing components, custom syntax highlighters, Collection Runner
+├── src/main/resources/            # Application Icons, Fonts, properties
+├── src/assembly/                  # Distribution script bundle configurations
+└── pom.xml                        # Project dependencies (Gson, FlatLaf, RSyntaxTextArea)
 ```
-japi/
-├── src/main/java/in/slpro/japi/
-│   ├── App.java                   # Main application entry point
-│   ├── model/                     # Data models (Collection, Request, Environment)
-│   ├── storage/                   # StorageManager and AppSettings (JSON persistence)
-│   └── ui/                        # Swing Panels, Frames, Editors, and dialogs
-├── PROJECT_STATUS.md              # Feature status and roadmap documentation
-├── pom.xml                        # Maven configuration dependencies
-└── README.md                      # Developer guides and instructions (this file)
-```
 
----
+## 📜 Version History
 
-## 📄 License & Privacy
+* **v1.0.0-beta (Current)** - First official release under the ApiBanker rebranding.
+* *(Legacy: v1.1.0-beta to v1.4.0-beta under JAPI)*.
 
-JAPI is completely local, open source, and offline.
-* **No Data Collection**: JAPI does not track, collect, or store telemetry, usage logs, or request metrics.
-* **Offline Operation**: Rest assured that your API testing data remains private and secure inside your workspace.
+## 🤝 Contributing
+Contributions are highly welcome! Because this is a Swing application, we heavily emphasize keeping external UI libraries to a minimum. 
+If you find a bug, visual glitch, or feature request, feel free to open an Issue or PR!

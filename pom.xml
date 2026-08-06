@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>in.slpro</groupId>
-    <artifactId>japi</artifactId>
-    <name>Japi</name>
-    <version>1.4.0-beta</version>
+    <artifactId>apibanker</artifactId>
+    <name>ApiBanker</name>
+    <version>1.0.0-beta</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -105,7 +105,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.1</version>
                 <configuration>
-                    <mainClass>in.slpro.japi.App</mainClass>
+                    <mainClass>in.slpro.apibanker.App</mainClass>
                 </configuration>
             </plugin>
             <!-- Shade plugin to create executable fat jar -->
@@ -123,7 +123,7 @@
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>in.slpro.japi.App</mainClass>
+                                    <mainClass>in.slpro.apibanker.App</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>
@@ -150,7 +150,7 @@
                         <descriptor>src/assembly/bin.xml</descriptor>
                     </descriptors>
                     <appendAssemblyId>false</appendAssemblyId>
-                    <finalName>japi</finalName>
+                    <finalName>apibanker</finalName>
                 </configuration>
                 <executions>
                     <execution>
@@ -165,3 +165,4 @@
         </plugins>
     </build>
 </project>
+

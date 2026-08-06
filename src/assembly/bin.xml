@@ -7,21 +7,21 @@
         <format>tar.gz</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>japi</baseDirectory>
+    <baseDirectory>apibanker</baseDirectory>
     <files>
         <file>
-            <source>target/japi-${project.version}.jar</source>
+            <source>target/apibanker-${project.version}.jar</source>
             <outputDirectory>/</outputDirectory>
-            <destName>japi-${project.version}.jar</destName>
+            <destName>apibanker-${project.version}.jar</destName>
         </file>
         <file>
-            <source>japi.bat</source>
+            <source>apibanker.bat</source>
             <outputDirectory>/</outputDirectory>
             <lineEnding>windows</lineEnding>
             <filtered>true</filtered>
         </file>
         <file>
-            <source>japi.sh</source>
+            <source>apibanker.sh</source>
             <outputDirectory>/</outputDirectory>
             <lineEnding>unix</lineEnding>
             <fileMode>0755</fileMode>
@@ -29,3 +29,4 @@
         </file>
     </files>
 </assembly>
+

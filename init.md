@@ -1,6 +1,6 @@
-# Japi: Project Status
+# ApiBanker: Project Status
 
-This document tracks the goals,  components, and  roadmap items for the **Japi-API Testing** desktop application.
+This document tracks the goals,  components, and  roadmap items for the **ApiBanker-API Testing** desktop application.
 Tech Java based desktop app. should have same look and feel of Postman .
 ---
 
@@ -19,7 +19,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
 
 ### Core Infrastructure
 * [] **Maven Build Configuration**: Configured `pom.xml` with dependencies for FlatLaf (UI L&F), RSyntaxTextArea (syntax editor), and Gson (JSON binding).
-* [] **JSON Storage Layer**: `StorageManager` reads and writes `collections.json`, `environments.json`, and `history.json` under `~/.japi/data` or a user-selected path.
+* [] **JSON Storage Layer**: `StorageManager` reads and writes `collections.json`, `environments.json`, and `history.json` under `~/.apibanker/data` or a user-selected path.
 * [] **Asynchronous Client Engine**: `HttpClientWrapper` wraps Java 21's `HttpClient` inside a SwingWorker background thread to avoid freezing the GUI during network execution.
 * [] **Variable Resolution**: Supports injecting environment values into URLs, headers, and request bodies via `{{variable_name}}` syntax.
 * [] **Self-Signed Certificates**: Configured default trust managers allowing connections to unsafe/local SSL endpoints.
@@ -33,7 +33,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
   - Interactive collections tree with right-click options to add/delete/rename requests. Grouping ofn  Add options in Add (Like Add request, Add Runner, Add JWT, Add Cmparator, Add JSON formattor)
   - Double-click loading of items.
   - History viewer sorted chronologically.
-* [] **Importer & Exporter Utility**: Parses and loads Postman Collections and Environments, and exports JAPI collections/environments to Postman-compatible JSON formats.
+* [] **Importer & Exporter Utility**: Parses and loads Postman Collections and Environments, and exports ApiBanker collections/environments to Postman-compatible JSON formats.
 * [] **Request Editor**: Authorization inputs (Bearer Token, Basic Auth credentials) and request body syntax editor.
 * [] **Response Panel**: Shows colored status tags (2xx green, 3xx blue, 4xx orange, 5xx red), latency durations, response size formatting, pretty-printed JSON/XML highlight viewers, and response header grids.
 * [] **Environment Dialog**: Full manager interface to add, delete, and modify variables.
@@ -81,6 +81,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
 *  **Log Search**: Add a search bar to search logs based on request method, status code, response time, and response size.
 *  **Log Viewer**: Add a viewer to view logs in a readable format.
 *  **Log for RUnner** : Save runner log in differenet file format as per selected format and metedata needed. and also provide runner history.. Name as yyyy-mm-dd--<collectionname>-<runnumber>-<incre>.log and also provide runner history.. Name as yyyy-mm-dd--<collectionname>-<runnumber>-<incre>.log
+
 
 
 

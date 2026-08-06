@@ -1,6 +1,6 @@
-# Japi: Project Status
+# ApiBanker: Project Status
 
-This document tracks the goals, implemented components, and pending roadmap items for the **Japi-API Testing** desktop application.
+This document tracks the goals, implemented components, and pending roadmap items for the **ApiBanker-API Testing** desktop application.
 
 ---
 
@@ -19,7 +19,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
 
 ### Core Infrastructure
 * [x] **Maven Build Configuration**: Configured `pom.xml` with dependencies for FlatLaf (UI L&F), RSyntaxTextArea (syntax editor), and Gson (JSON binding).
-* [x] **JSON Storage Layer**: `StorageManager` reads and writes `collections.json`, `environments.json`, and `history.json` under `~/.japi/data` or a user-selected path.
+* [x] **JSON Storage Layer**: `StorageManager` reads and writes `collections.json`, `environments.json`, and `history.json` under `~/.apibanker/data` or a user-selected path.
 * [x] **Asynchronous Client Engine**: `HttpClientWrapper` wraps Java 21's `HttpClient` inside a SwingWorker background thread to avoid freezing the GUI during network execution.
 * [x] **Variable Resolution**: Supports injecting environment values into URLs, headers, and request bodies via `{{variable_name}}` syntax.
 * [x] **Self-Signed Certificates**: Configured default trust managers allowing connections to unsafe/local SSL endpoints.
@@ -33,7 +33,7 @@ Build a high-fidelity, premium, and **completely offline** desktop API client (s
   - Interactive collections tree with right-click options to add/delete/rename requests.
   - Double-click loading of items.
   - History viewer sorted chronologically.
-* [x] **Importer & Exporter Utility**: Parses and loads Postman Collections and Environments, and exports JAPI collections/environments to Postman-compatible JSON formats.
+* [x] **Importer & Exporter Utility**: Parses and loads Postman Collections and Environments, and exports ApiBanker collections/environments to Postman-compatible JSON formats.
 * [x] **Request Editor**: Authorization inputs (Bearer Token, Basic Auth credentials) and request body syntax editor.
 * [x] **Response Panel**: Shows colored status tags (2xx green, 3xx blue, 4xx orange, 5xx red), latency durations, response size formatting, pretty-printed JSON/XML highlight viewers, and response header grids.
 * [x] **Environment Dialog**: Full manager interface to add, delete, and modify variables.
@@ -69,3 +69,4 @@ Here is a list of features queued for future development iterations:
 
 * **Current Status**: Pre-release Beta Testing.
 * **Next Steps**: Code freeze, complete end-to-end user acceptance testing, resolve critical GitHub issues, and prepare for stable v1.0.0 public launch.
+
