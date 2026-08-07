@@ -33,8 +33,16 @@ public class App {
      * @param args Command line arguments (currently unused)
      */
     public static void main(String[] args) {
+        if (System.getProperty("java.home") == null) {
+            try {
+                java.nio.file.Path tempJre = java.nio.file.Files.createTempDirectory("jre");
+                System.setProperty("java.home", tempJre.toAbsolutePath().toString());
+            } catch (Exception e) {
+                System.setProperty("java.home", ".");
+            }
+        }
+        
         try {
-
             int fontSize = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getFontSize();
             if (fontSize < 10)
                 fontSize = 16;

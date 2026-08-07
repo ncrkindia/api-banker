@@ -1,0 +1,592 @@
+[
+{
+  "name":"[Ljava.awt.event.MouseListener;"
+},
+{
+  "name":"[Ljava.awt.event.MouseMotionListener;"
+},
+{
+  "name":"[Ljava.lang.String;"
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatAscendingSortIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatCapsLockIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatCheckBoxIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatDescendingSortIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatHelpButtonIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatMenuArrowIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatMenuItemArrowIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatRevealIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatTabbedPaneCloseIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatTreeClosedIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatTreeCollapsedIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatTreeExpandedIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatTreeLeafIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatTreeOpenIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatWindowCloseIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatWindowIconifyIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatWindowMaximizeIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.icons.FlatWindowRestoreIcon",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatArrowButton",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatButtonBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatButtonUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatCheckBoxUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatComboBoxUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatComboBoxUI$FlatComboBoxButton",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatComboBoxUI$FlatComboPopup",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatLabelUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatListCellBorder$Default",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatListUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatMarginBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatMenuBarBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatMenuBarUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatMenuItemBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatMenuItemUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatMenuUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatPanelUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatPasswordFieldUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatPopupMenuBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatPopupMenuSeparatorUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatPopupMenuUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatRootPaneUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatRoundBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatScrollBarUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatScrollBarUI$FlatScrollBarButton",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatScrollPaneBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatScrollPaneUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatSeparatorUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatSplitPaneUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatSplitPaneUI$1",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatSplitPaneUI$FlatSplitPaneDivider",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTabbedPaneUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTabbedPaneUI$ContainerUIResource",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTabbedPaneUI$FlatMoreTabsButton",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTabbedPaneUI$FlatScrollableTabButton",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTabbedPaneUI$FlatTabAreaButton",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTableCellBorder$Default",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTableHeaderBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTableHeaderUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTableHeaderUI$FlatTableHeaderCellRendererPane",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTableUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTableUI$FlatBooleanRenderer",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTextAreaUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTextBorder",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTextFieldUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTextPaneUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTitlePane",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTitlePane$1",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTitlePane$2",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTitlePane$4",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTitlePane$6",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatToggleButtonUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatTreeUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"com.formdev.flatlaf.ui.FlatViewportUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"in.slpro.apibanker.model.AppSettings",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.model.AppSettings$OpenTabState",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.model.CollectionModel",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.model.EnvironmentModel",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.model.KeyValueItem",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.model.RequestModel",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.DataToolsPanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.HighlightRSyntaxTextArea",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.HighlightTextField",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.JsonToolPanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MainFrame",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MainFrame$TabHeaderPanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel$2",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel$3",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel$6",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel$MockResponse",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel$MockRule",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.MockServerPanel$MockServerConfig",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.RequestPanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.RequestPanel$5",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.RequestPanel$6",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.RequestPanel$8",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.RequestPanel$9",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.ResponsePanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.ResponsePanel$5",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.SidebarPanel",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.SidebarPanel$CollectionTreeRenderer",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"in.slpro.apibanker.ui.SidebarPanel$HistoryTreeRenderer",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"java.awt.SequencedEvent"
+},
+{
+  "name":"java.awt.event.KeyEvent",
+  "fields":[{"name":"VK_A"}, {"name":"VK_ADD"}, {"name":"VK_BACK_SLASH"}, {"name":"VK_BACK_SPACE"}, {"name":"VK_C"}, {"name":"VK_CONTEXT_MENU"}, {"name":"VK_COPY"}, {"name":"VK_CUT"}, {"name":"VK_DELETE"}, {"name":"VK_DOWN"}, {"name":"VK_END"}, {"name":"VK_ENTER"}, {"name":"VK_ESCAPE"}, {"name":"VK_F10"}, {"name":"VK_F2"}, {"name":"VK_F6"}, {"name":"VK_F8"}, {"name":"VK_H"}, {"name":"VK_HOME"}, {"name":"VK_INSERT"}, {"name":"VK_KP_DOWN"}, {"name":"VK_KP_LEFT"}, {"name":"VK_KP_RIGHT"}, {"name":"VK_KP_UP"}, {"name":"VK_LEFT"}, {"name":"VK_O"}, {"name":"VK_PAGE_DOWN"}, {"name":"VK_PAGE_UP"}, {"name":"VK_PASTE"}, {"name":"VK_RIGHT"}, {"name":"VK_SLASH"}, {"name":"VK_SPACE"}, {"name":"VK_SUBTRACT"}, {"name":"VK_T"}, {"name":"VK_TAB"}, {"name":"VK_UP"}, {"name":"VK_V"}, {"name":"VK_X"}]
+},
+{
+  "name":"java.lang.Class",
+  "methods":[{"name":"getRecordComponents","parameterTypes":[] }, {"name":"isRecord","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.RecordComponent",
+  "methods":[{"name":"getName","parameterTypes":[] }, {"name":"getType","parameterTypes":[] }]
+},
+{
+  "name":"java.security.SecureRandomParameters"
+},
+{
+  "name":"java.sql.Date"
+},
+{
+  "name":"java.util.ArrayList",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicBoolean",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"javax.swing.JComponent",
+  "methods":[{"name":"getUI","parameterTypes":[] }]
+},
+{
+  "name":"javax.swing.plaf.basic.BasicGraphicsUtils",
+  "methods":[{"name":"drawStringUnderlineCharAt","parameterTypes":["javax.swing.JComponent","java.awt.Graphics2D","java.lang.String","int","float","float"] }]
+},
+{
+  "name":"javax.swing.plaf.basic.BasicMenuBarUI",
+  "methods":[{"name":"loadActionMap","parameterTypes":["javax.swing.plaf.basic.LazyActionMap"] }]
+},
+{
+  "name":"javax.swing.plaf.basic.BasicTabbedPaneUI",
+  "methods":[{"name":"loadActionMap","parameterTypes":["javax.swing.plaf.basic.LazyActionMap"] }]
+},
+{
+  "name":"javax.swing.plaf.basic.BasicTableUI",
+  "methods":[{"name":"loadActionMap","parameterTypes":["javax.swing.plaf.basic.LazyActionMap"] }]
+},
+{
+  "name":"javax.swing.text.html.HTMLEditorKit",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"net.miginfocom.swing.MigLayout"
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.DefaultTokenMakerFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.FoldingAwareIconRowHeader",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.RSyntaxTextArea",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.modes.JavaScriptTokenMaker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.modes.JsonTokenMaker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.modes.PlainTextTokenMaker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.fife.ui.rsyntaxtextarea.modes.XMLTokenMaker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.AbstractGutterComponent",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.FoldIndicator",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.Gutter",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.IconRowHeader",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.LineNumberList",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.RTextArea",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.RTextAreaBase",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"org.fife.ui.rtextarea.RTextScrollPane",
+  "methods":[{"name":"coalesceEvents","parameterTypes":["java.awt.AWTEvent","java.awt.AWTEvent"] }]
+},
+{
+  "name":"sun.awt.Symbol",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.awt.windows.WingDings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetDrawLineANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetDrawPathANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetDrawPolygonsANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetDrawRectANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetFillPathANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetFillRectANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.loops.SetFillSpansANY",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.marlin.DMarlinRenderingEngine",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DRBG",
+  "methods":[{"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
+},
+{
+  "name":"sun.security.provider.SHA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA2$SHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+}
+]

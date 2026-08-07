@@ -81,11 +81,6 @@ A complete standalone setup wizard for Windows. This format uses `jpackage` and 
 * **Generation Command**: `mvn clean verify -DbuildNative`
 * **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-installer.msi)
 
-### Option 3: Standalone Native Executable (.exe)
-A true native executable generated via GraalVM's Ahead-Of-Time (AOT) compilation. This format compiles the Java bytecode directly to native machine code for lightning-fast startup times with zero external dependencies.
-* **Target executable**: `ApiBanker.exe`
-* **Generation Command**: `mvn clean package -Pgraalvm-native-image` (Requires GraalVM JDK & VS C++ Build Tools)
-* **Download**: [ApiBanker.exe](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker.exe)
 
 ---
 

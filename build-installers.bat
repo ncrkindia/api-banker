@@ -23,16 +23,16 @@ echo [3/3] Running jpackage...
 echo Note: Building .exe and .msi installers requires the WiX Toolset (v3.0+) installed and in your PATH.
 echo If WiX is not installed, the installer steps will fail.
 echo Building portable App Image first...
-jpackage --type app-image --input target\jpackage-input --dest target\installers --name ApiBanker --main-jar apibanker-app.jar --main-class in.slpro.apibanker.App 
+jpackage --type app-image --input target\jpackage-input --dest target\artifacts --name ApiBanker --main-jar apibanker-app.jar --main-class in.slpro.apibanker.App 
 if %errorlevel% neq 0 echo Warning: app-image creation failed.
 
 echo.
 echo Building .msi Installer...
-jpackage --type msi --input target\jpackage-input --dest target\installers --name ApiBanker --main-jar apibanker-app.jar --main-class in.slpro.apibanker.App --win-shortcut --win-menu --win-dir-chooser
+jpackage --type msi --input target\jpackage-input --dest target\artifacts --name ApiBanker --main-jar apibanker-app.jar --main-class in.slpro.apibanker.App --win-shortcut --win-menu --win-dir-chooser
 if %errorlevel% neq 0 echo Warning: .msi creation failed. Ensure WiX is installed.
 
 echo.
 echo ====================================================
-echo Done! Check the 'target\installers' directory.
+echo Done! Check the 'target\artifacts' directory.
 echo ====================================================
 pause

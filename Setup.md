@@ -1,22 +1,63 @@
-# ApiBanker - The Offline-First API Toolkit (v1.0.0-beta)
+# ApiBanker - The Offline-First API Toolkit (v1.1.0-beta)
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- **Java 21** (or higher) is required.
-- Apache Maven (for building from source).
+### 📋 Prerequisites
+To build and run ApiBanker from source, you will need the following tools installed on your system:
 
-### Building from Source
+1. **Java Development Kit (JDK) 21** (or higher).
+   * Note: If you intend to build the *Standalone Native Executable*, you **MUST** install **GraalVM JDK 21+**.
+2. **Apache Maven** (for building from source).
+3. **WiX Toolset v3** (Required ONLY for Windows users building the `.msi` native installer via `jpackage`).
+4. **C++ Build Tools** (Required ONLY for building the `.exe` via GraalVM Native Image).
+   * *Windows*: Visual Studio C++ Build Tools.
+   * *Linux*: `gcc` and `glibc-devel`.
+   * *macOS*: Xcode Command Line Tools.
 
-To compile and package ApiBanker into a standalone, distributable offline bundle:
+---
 
+## 🛠️ Building & Packaging Options
+
+ApiBanker supports three different distribution formats. Choose the one that fits your needs:
+
+### 1. Standard Portable JAR / ZIP (Default)
+This is the standard, cross-platform Java package. It compiles the source code into a standalone `.jar` file.
+
+**Command:**
 ```bash
 mvn clean package
 ```
+**Output:**
+* `target/apibanker-1.1.0-beta.jar` (Executable Fat JAR)
+* `target/artifacts/apibanker.zip` & `target/artifacts/apibanker.tar.gz` (Portable distributions with launch scripts)
 
-This outputs a shaded executable JAR under `target/apibanker-1.0.0-beta.jar`.
+### 2. Professional Native Installers (MSI / PKG / DEB)
+This builds a complete standalone setup wizard tailored to your operating system. It uses `jpackage` to bundle a custom, stripped-down JRE along with the application.
 
-### Running Locally during Development
+**Command:**
+```bash
+mvn clean verify -DbuildNative
+```
+*(This automatically activates the correct OS profile: `native-installer-windows`, `native-installer-mac`, or `native-installer-linux`)*
+
+**Output:**
+* `target/artifacts/ApiBanker-installer.msi` (Windows)
+* `target/artifacts/apibanker.deb` (Linux)
+* `target/artifacts/ApiBanker.pkg` (macOS)
+
+### 3. Standalone Native Executable (GraalVM AOT)
+This compiles the Java bytecode directly to native machine code for lightning-fast startup times with zero external dependencies.
+
+**Command:**
+```bash
+mvn clean package -Pgraalvm-native-image
+```
+**Output:**
+* `target/artifacts/ApiBanker.exe` (or `ApiBanker` on Unix)
+
+---
+
+## 💻 Running Locally during Development
 
 To instantly launch the application directly from your IDE or terminal without packaging:
 
@@ -26,21 +67,10 @@ mvn compile exec:java -Dexec.mainClass="in.slpro.apibanker.App"
 
 Alternatively, just run the compiled JAR directly:
 ```bash
-java -jar target/apibanker-1.0.0-beta.jar
+java -jar target/apibanker-1.1.0-beta.jar
 ```
 
-### 📦 Distribution Artifacts
-After building the project, Maven packages a distribution zip at `target/apibanker.zip`. Unzipping this bundle yields a standalone directory containing the executable jar along with native launch scripts:
-
-* **On Windows**: Double-click `apibanker.bat` or run:
-  ```cmd
-  apibanker.bat
-  ```
-* **On macOS / Linux**: Grant execution permissions and run `apibanker.sh`:
-  ```bash
-  chmod +x apibanker.sh
-  ./apibanker.sh
-  ```
+---
 
 ## 📂 Project Structure
 
@@ -52,14 +82,14 @@ apibanker/
 │   ├── model/                     # Data structures (RequestModel, CollectionModel, Settings)
 │   ├── storage/                   # JSON persistence, auto-migrations, and environment state
 │   └── ui/                        # Swing components, custom syntax highlighters, Collection Runner
-├── src/main/resources/            # Application Icons, Fonts, properties
+├── src/main/resources/            # Application Icons, Fonts, properties, and Native Image configs
 ├── src/assembly/                  # Distribution script bundle configurations
 └── pom.xml                        # Project dependencies (Gson, FlatLaf, RSyntaxTextArea)
 ```
 
 ## 📜 Version History
 
-* **v1.0.0-beta (Current)** - First official release under the ApiBanker rebranding. Includes massive UI/UX improvements to Request Headers (auto-calculated `Host`, `Content-Length`, `Content-Type`), advanced clipboard protection for read-only rows, reversed Log Consoles for immediate latest-entry visibility, OpenAPI/Swagger Import with auto-generated Collection README documentation, and 100% complete JavaDoc coverage across the codebase.
+* **v1.1.0-beta (Current)** - First official release under the ApiBanker rebranding. Includes massive UI/UX improvements, advanced clipboard protection, OpenAPI/Swagger Import with auto-generated Collection README documentation, complete JavaDoc coverage, and Native Executable support.
 * *(Legacy: v1.1.0-beta to v1.4.0-beta under JAPI)*.
 
 ## 🤝 Contributing

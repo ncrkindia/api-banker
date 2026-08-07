@@ -50,11 +50,6 @@ ApiBanker is distributed in three distinct formats depending on your needs. Down
    - **Best For**: End-users who want a standard setup experience (installing to `Program Files`, creating shortcuts) and do NOT have Java installed.
    - **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-installer.msi)
 
-3. **Standalone Native Executable (`.exe`)**
-   - **Description**: A true native Windows executable generated via GraalVM's Ahead-Of-Time (AOT) compiler. Converts Java bytecode directly to native machine code.
-   - **Best For**: Power users wanting instant startup times, low memory footprints, and a single drag-and-drop `.exe` file without any installation process or JRE requirement.
-   - **Download**: [ApiBanker.exe](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker.exe)
-
 ---
 
 ## 🤝 Contributing

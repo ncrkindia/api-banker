@@ -159,6 +159,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.7.1</version>
                 <configuration>
+                    <outputDirectory>${project.build.directory}/artifacts</outputDirectory>
                     <descriptors>
                         <descriptor>src/assembly/bin.xml</descriptor>
                     </descriptors>
@@ -220,7 +221,7 @@
                                     <arguments>
                                         <argument>--type</argument><argument>msi</argument>
                                         <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
-                                        <argument>--dest</argument><argument>${project.build.directory}/installers</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/artifacts</argument>
                                         <argument>--name</argument><argument>ApiBanker-installer</argument>
                                         <argument>--main-jar</argument><argument>apibanker.jar</argument>
                                         <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
@@ -277,7 +278,7 @@
                                     <arguments>
                                         <argument>--type</argument><argument>deb</argument>
                                         <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
-                                        <argument>--dest</argument><argument>${project.build.directory}/installers</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/artifacts</argument>
                                         <argument>--name</argument><argument>apibanker</argument>
                                         <argument>--main-jar</argument><argument>apibanker.jar</argument>
                                         <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
@@ -332,7 +333,7 @@
                                     <arguments>
                                         <argument>--type</argument><argument>pkg</argument>
                                         <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
-                                        <argument>--dest</argument><argument>${project.build.directory}/installers</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/artifacts</argument>
                                         <argument>--name</argument><argument>ApiBanker</argument>
                                         <argument>--main-jar</argument><argument>apibanker.jar</argument>
                                         <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
@@ -365,6 +366,7 @@
                         </executions>
                         <configuration>
                             <imageName>ApiBanker</imageName>
+                            <outputDirectory>${project.build.directory}/artifacts</outputDirectory>
                             <mainClass>in.slpro.apibanker.App</mainClass>
                             <buildArgs>
                                 <buildArg>--no-fallback</buildArg>

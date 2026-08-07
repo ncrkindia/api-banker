@@ -1,0 +1,50 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\Qfontconfig.properties.src\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/com.formdev.flatlaf.FlatDefaultsAddon\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.awt.im.spi.InputMethodDescriptor\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+  }, {
+    "pattern":"\\Qcom/formdev/flatlaf/FlatLaf.properties\\E"
+  }, {
+    "pattern":"\\Qcom/formdev/flatlaf/FlatLightLaf.properties\\E"
+  }, {
+    "pattern":"\\Qcom/formdev/flatlaf/natives/flatlaf-windows-x86_64.dll\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/ubidi.icu\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/uprops.icu\\E"
+  }, {
+    "pattern":"java.base:\\Qsun/text/resources/LineBreakIteratorData\\E"
+  }, {
+    "pattern":"java.desktop:\\Qcom/formdev/flatlaf/resources/Bundle.properties\\E"
+  }, {
+    "pattern":"java.desktop:\\Qjavax/swing/text/html/default.css\\E"
+  }, {
+    "pattern":"java.desktop:\\Qjavax/swing/text/html/parser/html32.bdtd\\E"
+  }]},
+  "bundles":[{
+    "name":"com.formdev.flatlaf.resources.Bundle",
+    "locales":[""]
+  }, {
+    "name":"com.sun.swing.internal.plaf.basic.resources.basic",
+    "classNames":["com.sun.swing.internal.plaf.basic.resources.basic"]
+  }, {
+    "name":"org.fife.ui.rsyntaxtextarea.RSyntaxTextArea",
+    "locales":[""]
+  }, {
+    "name":"org.fife.ui.rtextarea.RTextArea",
+    "locales":[""]
+  }, {
+    "name":"sun.awt.resources.awt",
+    "classNames":["sun.awt.resources.awt"]
+  }]
+}
