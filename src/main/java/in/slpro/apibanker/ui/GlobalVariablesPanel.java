@@ -24,11 +24,10 @@ import java.util.List;
  * @since 1.0.0
  */
 public class GlobalVariablesPanel extends JPanel {
-    private final MainFrame mainFrame;
     private final DefaultTableModel globalsTableModel;
+    private boolean isLoading = false;
 
     public GlobalVariablesPanel(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setBackground(UIManager.getColor("Panel.background"));
@@ -55,41 +54,57 @@ public class GlobalVariablesPanel extends JPanel {
 
         setupTableCopyPaste(varTable, globalsTableModel);
 
-        JPanel varBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        varBtns.setOpaque(false);
-        JButton addVarBtn = new JButton("+ Add Variable");
-        JButton delVarBtn = new JButton("Delete Row");
-        addVarBtn.addActionListener(e -> globalsTableModel.addRow(new Object[] { true, "", "" }));
-        delVarBtn.addActionListener(e -> {
-            Action delAction = varTable.getActionMap().get("deleteRow");
-            if (delAction != null) {
-                delAction.actionPerformed(new ActionEvent(varTable, ActionEvent.ACTION_PERFORMED, null));
-            }
+        globalsTableModel.addTableModelListener(e -> {
+            if (isLoading) return;
+            SwingUtilities.invokeLater(() -> {
+                boolean changed = false;
+                int rowCount = globalsTableModel.getRowCount();
+                if (rowCount == 0) {
+                    globalsTableModel.addRow(new Object[] { true, "", "" });
+                    changed = true;
+                } else {
+                    String key = (String) globalsTableModel.getValueAt(rowCount - 1, 1);
+                    String val = (String) globalsTableModel.getValueAt(rowCount - 1, 2);
+                    if ((key != null && !key.isBlank()) || (val != null && !val.isBlank())) {
+                        globalsTableModel.addRow(new Object[] { true, "", "" });
+                        changed = true;
+                    }
+                }
+                
+                int editingRow = varTable.getEditingRow();
+                for (int i = globalsTableModel.getRowCount() - 2; i >= 0; i--) {
+                    String k = (String) globalsTableModel.getValueAt(i, 1);
+                    String v = (String) globalsTableModel.getValueAt(i, 2);
+                    if ((k == null || k.isBlank()) && (v == null || v.isBlank())) {
+                        if (i != editingRow) {
+                            globalsTableModel.removeRow(i);
+                            changed = true;
+                        }
+                    }
+                }
+                if (!changed) {
+                    autoSave();
+                }
+            });
         });
-        varBtns.add(addVarBtn);
-        varBtns.add(delVarBtn);
 
         JPanel centerContainer = new JPanel(new BorderLayout());
         centerContainer.setOpaque(false);
         JScrollPane scrollPane = new JScrollPane(varTable);
         centerContainer.add(scrollPane, BorderLayout.CENTER);
-        centerContainer.add(varBtns, BorderLayout.SOUTH);
         add(centerContainer, BorderLayout.CENTER);
 
-        JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        bottomBar.setOpaque(false);
-        bottomBar.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.addActionListener(e -> mainFrame.closeTab(this));
-        JButton saveBtn = new JButton("Save All");
-        saveBtn.addActionListener(e -> {
-            if (varTable.getCellEditor() != null)
-                varTable.getCellEditor().stopCellEditing();
-            saveGlobals();
+        addAncestorListener(new javax.swing.event.AncestorListener() {
+            @Override
+            public void ancestorAdded(javax.swing.event.AncestorEvent event) {}
+            @Override
+            public void ancestorRemoved(javax.swing.event.AncestorEvent event) {
+                if (varTable.getCellEditor() != null) varTable.getCellEditor().stopCellEditing();
+                autoSave();
+            }
+            @Override
+            public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
         });
-        bottomBar.add(cancelBtn);
-        bottomBar.add(saveBtn);
-        add(bottomBar, BorderLayout.SOUTH);
 
         // Load existing
         loadModel();
@@ -98,6 +113,7 @@ public class GlobalVariablesPanel extends JPanel {
     public void loadModel() {
         if (globalsTableModel == null)
             return;
+        isLoading = true;
         globalsTableModel.setRowCount(0);
         List<KeyValueItem> globals = StorageManager.getInstance().getSettings().getGlobalVariables();
         if (globals != null) {
@@ -105,21 +121,22 @@ public class GlobalVariablesPanel extends JPanel {
                 globalsTableModel.addRow(new Object[] { kv.isEnabled(), kv.getKey(), kv.getValue() });
             }
         }
+        globalsTableModel.addRow(new Object[] { true, "", "" });
+        isLoading = false;
     }
 
-    private void saveGlobals() {
+    private void autoSave() {
         List<KeyValueItem> newGlobals = new ArrayList<>();
         for (int i = 0; i < globalsTableModel.getRowCount(); i++) {
             boolean enabled = (Boolean) globalsTableModel.getValueAt(i, 0);
             String key = (String) globalsTableModel.getValueAt(i, 1);
             String value = (String) globalsTableModel.getValueAt(i, 2);
-            if (key != null && !key.isBlank()) {
-                newGlobals.add(new KeyValueItem(key, value, enabled));
+            if ((key != null && !key.isBlank()) || (value != null && !value.isBlank())) {
+                newGlobals.add(new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled));
             }
         }
         StorageManager.getInstance().getSettings().setGlobalVariables(newGlobals);
         StorageManager.getInstance().saveSettings();
-        mainFrame.closeTab(this);
     }
 
     public void updateFontSize(int size) {

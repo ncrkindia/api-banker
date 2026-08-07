@@ -1076,21 +1076,57 @@ public class RequestPanel extends JPanel {
     private JPanel buildKVPanel(JTable table, DefaultTableModel model) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(UIManager.getColor("Panel.background"));
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        btns.setBackground(UIManager.getColor("Panel.background"));
-        JButton addBtn = new JButton("+ Add Row");
-        JButton delBtn = new JButton("Delete");
-        addBtn.addActionListener(e -> model.addRow(new Object[] { true, "", "", "" }));
-        delBtn.addActionListener(e -> {
-            int r = table.getSelectedRow();
-            if (r >= 0)
-                model.removeRow(r);
-        });
-        btns.add(addBtn);
-        btns.add(delBtn);
-        panel.add(btns, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        model.addTableModelListener(e -> {
+            if (isSyncing) return;
+            SwingUtilities.invokeLater(() -> {
+                boolean changed = false;
+                int rowCount = model.getRowCount();
+                if (rowCount == 0) {
+                    addEmptyRow(model);
+                    changed = true;
+                } else {
+                    String key = (String) model.getValueAt(rowCount - 1, 1);
+                    String val = "";
+                    if (model.getColumnCount() == 5) {
+                        val = (String) model.getValueAt(rowCount - 1, 3);
+                    } else {
+                        val = (String) model.getValueAt(rowCount - 1, 2);
+                    }
+                    if ((key != null && !key.isBlank()) || (val != null && !val.isBlank())) {
+                        addEmptyRow(model);
+                        changed = true;
+                    }
+                }
+                
+                int editingRow = table.getEditingRow();
+                for (int i = model.getRowCount() - 2; i >= 0; i--) {
+                    String k = (String) model.getValueAt(i, 1);
+                    String v = "";
+                    if (model.getColumnCount() == 5) {
+                        v = (String) model.getValueAt(i, 3);
+                    } else {
+                        v = (String) model.getValueAt(i, 2);
+                    }
+                    if ((k == null || k.isBlank()) && (v == null || v.isBlank())) {
+                        if (i != editingRow) {
+                            model.removeRow(i);
+                            changed = true;
+                        }
+                    }
+                }
+            });
+        });
         return panel;
+    }
+
+    private void addEmptyRow(DefaultTableModel model) {
+        if (model.getColumnCount() == 5) {
+            model.addRow(new Object[] { true, "", "text", "", "" });
+        } else {
+            model.addRow(new Object[] { true, "", "", "" });
+        }
     }
 
     private void updateBodyCard() {
@@ -1266,6 +1302,11 @@ public class RequestPanel extends JPanel {
             } else {
                 redirectVerifyCombo.setSelectedIndex(2);
             }
+
+            addEmptyRow(paramsModel);
+            addEmptyRow(headersModel);
+            addEmptyRow(formDataModel);
+            addEmptyRow(urlencodedModel);
         } finally {
             isSyncing = false;
         }

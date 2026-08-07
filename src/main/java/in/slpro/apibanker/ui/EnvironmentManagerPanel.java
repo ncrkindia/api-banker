@@ -34,8 +34,10 @@ public class EnvironmentManagerPanel extends JPanel {
     private final DefaultListModel<String> envListModel;
     private final JList<String> envList;
     private final DefaultTableModel varTableModel;
-    private final JTextField envNameField;
     private int selectedEnvIndex = -1;
+    private java.util.Stack<List<EnvironmentModel>> undoStack = new java.util.Stack<>();
+    private static List<EnvironmentModel> clipboardEnvironments = new ArrayList<>();
+    private boolean isLoadingEnv = false;
 
     public EnvironmentManagerPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -73,7 +75,7 @@ public class EnvironmentManagerPanel extends JPanel {
 
         envListModel = new DefaultListModel<>();
         envList = new JList<>(envListModel);
-        envList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        envList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         envList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting())
                 loadSelectedEnv();
@@ -84,18 +86,6 @@ public class EnvironmentManagerPanel extends JPanel {
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         rightPanel.setBackground(UIManager.getColor("Panel.background"));
-
-        JPanel namePanel = new JPanel(new BorderLayout(8, 0));
-        namePanel.setOpaque(false);
-        JLabel nameLabel = new JLabel("Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        namePanel.add(nameLabel, BorderLayout.WEST);
-        envNameField = new JTextField();
-        namePanel.add(envNameField, BorderLayout.CENTER);
-        JButton renameBtn = new JButton("Rename");
-        renameBtn.addActionListener(e -> renameEnvironment());
-        namePanel.add(renameBtn, BorderLayout.EAST);
-        rightPanel.add(namePanel, BorderLayout.NORTH);
 
         varTableModel = new DefaultTableModel(new String[] { "", "Variable", "Value" }, 0) {
             @Override
@@ -114,66 +104,239 @@ public class EnvironmentManagerPanel extends JPanel {
 
         GlobalVariablesPanel.setupTableCopyPaste(varTable, varTableModel);
 
-        JPanel varBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        varBtns.setOpaque(false);
-        JButton addVarBtn = new JButton("+ Add Variable");
-        JButton delVarBtn = new JButton("Delete Row");
-        addVarBtn.addActionListener(e -> varTableModel.addRow(new Object[] { true, "", "" }));
-        delVarBtn.addActionListener(e -> {
-            Action delAction = varTable.getActionMap().get("deleteRow");
-            if (delAction != null) {
-                delAction.actionPerformed(new ActionEvent(varTable, ActionEvent.ACTION_PERFORMED, null));
-            }
+        varTableModel.addTableModelListener(e -> {
+            if (isLoadingEnv) return;
+            SwingUtilities.invokeLater(() -> {
+                boolean changed = false;
+                int rowCount = varTableModel.getRowCount();
+                if (rowCount == 0) {
+                    varTableModel.addRow(new Object[] { true, "", "" });
+                    changed = true;
+                } else {
+                    String key = (String) varTableModel.getValueAt(rowCount - 1, 1);
+                    String val = (String) varTableModel.getValueAt(rowCount - 1, 2);
+                    if ((key != null && !key.isBlank()) || (val != null && !val.isBlank())) {
+                        varTableModel.addRow(new Object[] { true, "", "" });
+                        changed = true;
+                    }
+                }
+                
+                int editingRow = varTable.getEditingRow();
+                for (int i = varTableModel.getRowCount() - 2; i >= 0; i--) {
+                    String k = (String) varTableModel.getValueAt(i, 1);
+                    String v = (String) varTableModel.getValueAt(i, 2);
+                    if ((k == null || k.isBlank()) && (v == null || v.isBlank())) {
+                        if (i != editingRow) {
+                            varTableModel.removeRow(i);
+                            changed = true;
+                        }
+                    }
+                }
+                if (!changed) {
+                    autoSave();
+                }
+            });
         });
-        varBtns.add(addVarBtn);
-        varBtns.add(delVarBtn);
 
         JPanel rightContainer = new JPanel(new BorderLayout());
         rightContainer.setOpaque(false);
         JScrollPane varTableScroll = new JScrollPane(varTable);
         varTableScroll.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
         rightContainer.add(varTableScroll, BorderLayout.CENTER);
-        rightContainer.add(varBtns, BorderLayout.SOUTH);
         rightPanel.add(rightContainer, BorderLayout.CENTER);
-
-        // Bottom buttons
-        JPanel bottomBar = new JPanel(new BorderLayout());
-        bottomBar.setBackground(UIManager.getColor("Panel.background"));
-        bottomBar.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
-
-        JPanel leftActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        leftActions.setOpaque(false);
-        JButton importApiBankerBtn = new JButton("Import ApiBanker");
-        importApiBankerBtn.addActionListener(e -> importApiBanker(varTable));
-        JButton importBtn = new JButton("Import Postman");
-        importBtn.addActionListener(e -> importPostman(varTable));
-        JButton exportApiBankerBtn = new JButton("Export ApiBanker");
-        exportApiBankerBtn.addActionListener(e -> exportCurrentEnvApiBanker(varTable));
-        JButton exportBtn = new JButton("Export Postman");
-        exportBtn.addActionListener(e -> exportCurrentEnv(varTable));
-        leftActions.add(importApiBankerBtn);
-        leftActions.add(importBtn);
-        leftActions.add(exportApiBankerBtn);
-        leftActions.add(exportBtn);
-
-        JPanel rightActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        rightActions.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.addActionListener(e -> mainFrame.closeTab(this));
-        JButton saveBtn = new JButton("Save All");
-        saveBtn.addActionListener(e -> saveAll(varTable));
-        rightActions.add(cancelBtn);
-        rightActions.add(saveBtn);
-
-        bottomBar.add(leftActions, BorderLayout.WEST);
-        bottomBar.add(rightActions, BorderLayout.EAST);
 
         add(leftPanel, BorderLayout.WEST);
         add(rightPanel, BorderLayout.CENTER);
-        add(bottomBar, BorderLayout.SOUTH);
+
+        addAncestorListener(new javax.swing.event.AncestorListener() {
+            @Override
+            public void ancestorAdded(javax.swing.event.AncestorEvent event) {}
+            @Override
+            public void ancestorRemoved(javax.swing.event.AncestorEvent event) {
+                if (varTable.getCellEditor() != null) varTable.getCellEditor().stopCellEditing();
+                autoSave();
+            }
+            @Override
+            public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
+        });
+
+        envList.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                boolean ctrl = e.isControlDown();
+                int code = e.getKeyCode();
+                if (code == java.awt.event.KeyEvent.VK_F2) {
+                    renameSelected();
+                } else if (code == java.awt.event.KeyEvent.VK_DELETE) {
+                    deleteSelected();
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_C) {
+                    copySelected();
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_V) {
+                    pasteEnvironments();
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_Z) {
+                    undo();
+                }
+            }
+        });
+
+        envList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    int row = envList.locationToIndex(e.getPoint());
+                    if (row != -1 && !envList.isSelectedIndex(row)) {
+                        envList.setSelectedIndex(row);
+                    }
+                    showContextMenu(e.getX(), e.getY());
+                }
+            }
+        });
 
         // Load environments
         loadModel();
+    }
+
+    private void pushUndoState() {
+        List<EnvironmentModel> copy = new ArrayList<>();
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        for (EnvironmentModel e : environments) {
+            copy.add(gson.fromJson(gson.toJson(e), EnvironmentModel.class));
+        }
+        undoStack.push(copy);
+    }
+
+    private void undo() {
+        if (undoStack.isEmpty()) return;
+        List<EnvironmentModel> prev = undoStack.pop();
+        environments.clear();
+        environments.addAll(prev);
+        envListModel.clear();
+        for (EnvironmentModel env : environments) {
+            envListModel.addElement(env.getName());
+        }
+        selectedEnvIndex = -1;
+        varTableModel.setRowCount(0);
+        if (!envListModel.isEmpty()) {
+            envList.setSelectedIndex(0);
+        }
+    }
+
+    private void autoSave() {
+        if (selectedEnvIndex >= 0) {
+            saveCurrentToModel(selectedEnvIndex);
+        }
+        mainFrame.setEnvironments(environments);
+        StorageManager.getInstance().saveEnvironments(environments);
+    }
+
+    private void renameSelected() {
+        int idx = envList.getSelectedIndex();
+        if (idx < 0) return;
+        Rectangle bounds = envList.getCellBounds(idx, idx);
+        if (bounds == null) return;
+        
+        JTextField editor = new JTextField(environments.get(idx).getName());
+        editor.setBounds(bounds);
+        envList.add(editor);
+        editor.requestFocus();
+        editor.selectAll();
+        
+        Action finishEdit = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                String text = editor.getText();
+                if (!text.isBlank()) {
+                    pushUndoState();
+                    environments.get(idx).setName(text);
+                    envListModel.set(idx, text);
+                    autoSave();
+                }
+                envList.remove(editor);
+                envList.repaint();
+                envList.requestFocus();
+            }
+        };
+        editor.addActionListener(finishEdit);
+        editor.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent e) { finishEdit.actionPerformed(null); }
+        });
+        envList.repaint();
+    }
+
+    private void deleteSelected() {
+        int[] indices = envList.getSelectedIndices();
+        if (indices.length == 0) return;
+        pushUndoState();
+        for (int i = indices.length - 1; i >= 0; i--) {
+            int idx = indices[i];
+            environments.remove(idx);
+            envListModel.remove(idx);
+        }
+        selectedEnvIndex = -1;
+        isLoadingEnv = true;
+        varTableModel.setRowCount(0);
+        isLoadingEnv = false;
+        if (!envListModel.isEmpty()) {
+            envList.setSelectedIndex(Math.min(indices[0], envListModel.size() - 1));
+        }
+        autoSave();
+    }
+
+    private void copySelected() {
+        int[] indices = envList.getSelectedIndices();
+        if (indices.length == 0) return;
+        clipboardEnvironments.clear();
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        for (int idx : indices) {
+            EnvironmentModel copy = gson.fromJson(gson.toJson(environments.get(idx)), EnvironmentModel.class);
+            clipboardEnvironments.add(copy);
+        }
+        MainFrame.showToast(this, "Copied " + indices.length + " environment(s)");
+    }
+
+    private void pasteEnvironments() {
+        if (clipboardEnvironments.isEmpty()) return;
+        pushUndoState();
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        for (EnvironmentModel env : clipboardEnvironments) {
+            EnvironmentModel copy = gson.fromJson(gson.toJson(env), EnvironmentModel.class);
+            copy.setId(UUID.randomUUID().toString());
+            copy.setName(copy.getName() + " (Copy)");
+            environments.add(copy);
+            envListModel.addElement(copy.getName());
+        }
+        envList.setSelectedIndex(environments.size() - 1);
+    }
+
+    private void showContextMenu(int x, int y) {
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem rename = new JMenuItem("Rename");
+        rename.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
+        rename.addActionListener(e -> renameSelected());
+        
+        JMenuItem copy = new JMenuItem("Copy");
+        copy.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        copy.addActionListener(e -> copySelected());
+        
+        JMenuItem paste = new JMenuItem("Paste");
+        paste.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        paste.addActionListener(e -> pasteEnvironments());
+        
+        JMenuItem delete = new JMenuItem("Delete");
+        delete.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
+        delete.addActionListener(e -> deleteSelected());
+        
+        JMenuItem undo = new JMenuItem("Undo");
+        undo.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Z, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        undo.addActionListener(e -> undo());
+        
+        menu.add(rename);
+        menu.add(copy);
+        menu.add(paste);
+        menu.add(delete);
+        menu.addSeparator();
+        menu.add(undo);
+        
+        menu.show(envList, x, y);
     }
 
     public void loadModel() {
@@ -240,29 +403,23 @@ public class EnvironmentManagerPanel extends JPanel {
     }
 
     private void addEnvironment() {
-        String name = JOptionPane.showInputDialog(this, "Environment name:");
-        if (name == null || name.isBlank())
-            return;
+        pushUndoState();
+        String name = "New Environment";
         EnvironmentModel env = new EnvironmentModel();
         env.setId(UUID.randomUUID().toString());
         env.setName(name);
         env.setVariables(new ArrayList<>());
         environments.add(env);
         envListModel.addElement(name);
-        envList.setSelectedIndex(environments.size() - 1);
+        int idx = environments.size() - 1;
+        envList.setSelectedIndex(idx);
+        envList.ensureIndexIsVisible(idx);
+        autoSave();
+        SwingUtilities.invokeLater(this::renameSelected);
     }
 
     private void deleteEnvironment() {
-        int idx = envList.getSelectedIndex();
-        if (idx < 0)
-            return;
-        environments.remove(idx);
-        envListModel.remove(idx);
-        selectedEnvIndex = -1;
-        varTableModel.setRowCount(0);
-        envNameField.setText("");
-        if (!envListModel.isEmpty())
-            envList.setSelectedIndex(Math.min(idx, envListModel.size() - 1));
+        deleteSelected();
     }
 
     private void loadSelectedEnv() {
@@ -274,145 +431,32 @@ public class EnvironmentManagerPanel extends JPanel {
         if (idx < 0 || idx >= environments.size())
             return;
         EnvironmentModel env = environments.get(idx);
-        envNameField.setText(env.getName());
+        isLoadingEnv = true;
         varTableModel.setRowCount(0);
         if (env.getVariables() != null) {
             for (KeyValueItem kv : env.getVariables()) {
                 varTableModel.addRow(new Object[] { kv.isEnabled(), kv.getKey(), kv.getValue() });
             }
         }
+        varTableModel.addRow(new Object[] { true, "", "" });
+        isLoadingEnv = false;
+        autoSave();
     }
 
     private void saveCurrentToModel(int idx) {
         if (idx < 0 || idx >= environments.size())
             return;
         EnvironmentModel env = environments.get(idx);
-        String name = envNameField.getText().trim();
-        if (!name.isBlank()) {
-            env.setName(name);
-            envListModel.set(idx, name);
-        }
         List<KeyValueItem> vars = new ArrayList<>();
         for (int i = 0; i < varTableModel.getRowCount(); i++) {
             boolean enabled = (Boolean) varTableModel.getValueAt(i, 0);
             String key = (String) varTableModel.getValueAt(i, 1);
             String value = (String) varTableModel.getValueAt(i, 2);
-            if (key != null && !key.isBlank()) {
-                vars.add(new KeyValueItem(key, value, enabled));
+            if ((key != null && !key.isBlank()) || (value != null && !value.isBlank())) {
+                vars.add(new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled));
             }
         }
         env.setVariables(vars);
-    }
-
-    private void renameEnvironment() {
-        int idx = envList.getSelectedIndex();
-        if (idx < 0)
-            return;
-        String name = envNameField.getText().trim();
-        if (name.isBlank())
-            return;
-        environments.get(idx).setName(name);
-        envListModel.set(idx, name);
-    }
-
-    private void saveAll(JTable varTable) {
-        if (varTable.getCellEditor() != null) {
-            varTable.getCellEditor().stopCellEditing();
-        }
-        if (selectedEnvIndex >= 0)
-            saveCurrentToModel(selectedEnvIndex);
-        mainFrame.setEnvironments(environments);
-        StorageManager.getInstance().saveEnvironments(environments);
-        mainFrame.closeTab(this);
-    }
-
-    private void importPostman(JTable varTable) {
-        if (varTable.getCellEditor() != null) {
-            varTable.getCellEditor().stopCellEditing();
-        }
-        if (selectedEnvIndex >= 0)
-            saveCurrentToModel(selectedEnvIndex);
-        mainFrame.setEnvironments(environments);
-        mainFrame.importPostmanFiles();
-    }
-
-    private void exportCurrentEnv(JTable varTable) {
-        int idx = envList.getSelectedIndex();
-        if (idx < 0)
-            return;
-        if (varTable.getCellEditor() != null) {
-            varTable.getCellEditor().stopCellEditing();
-        }
-        saveCurrentToModel(idx);
-        EnvironmentModel env = environments.get(idx);
-        JFileChooser chooser = new JFileChooser(MainFrame.lastFileChooserDirectory);
-        chooser.setSelectedFile(
-                new java.io.File(env.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + "_postman_environment.json"));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
-            return;
-        MainFrame.lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
-        try {
-            com.google.gson.JsonObject root = new com.google.gson.JsonObject();
-            root.addProperty("id", env.getId());
-            root.addProperty("name", env.getName());
-            root.addProperty("_postman_exported_using", "ApiBanker/" + in.slpro.apibanker.App.getVersion());
-            com.google.gson.JsonArray values = new com.google.gson.JsonArray();
-            if (env.getVariables() != null) {
-                for (KeyValueItem kv : env.getVariables()) {
-                    com.google.gson.JsonObject v = new com.google.gson.JsonObject();
-                    v.addProperty("key", kv.getKey());
-                    v.addProperty("value", kv.getValue());
-                    v.addProperty("enabled", kv.isEnabled());
-                    v.addProperty("type", "default");
-                    values.add(v);
-                }
-            }
-            root.add("values", values);
-            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            MainFrame.showToast(this, "Exported successfully.");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void importApiBanker(JTable varTable) {
-        if (varTable.getCellEditor() != null) {
-            varTable.getCellEditor().stopCellEditing();
-        }
-        if (selectedEnvIndex >= 0)
-            saveCurrentToModel(selectedEnvIndex);
-        mainFrame.setEnvironments(environments);
-        mainFrame.importApiBankerFiles();
-    }
-
-    private void exportCurrentEnvApiBanker(JTable varTable) {
-        int idx = envList.getSelectedIndex();
-        if (idx < 0)
-            return;
-        if (varTable.getCellEditor() != null)
-            varTable.getCellEditor().stopCellEditing();
-        saveCurrentToModel(idx);
-        EnvironmentModel env = environments.get(idx);
-        JFileChooser chooser = new JFileChooser(MainFrame.lastFileChooserDirectory);
-        chooser.setSelectedFile(
-                new java.io.File(env.getName().replaceAll("[^a-zA-Z0-9.-]", "_") + "_apibanker_environment.json"));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
-            return;
-        MainFrame.lastFileChooserDirectory = chooser.getSelectedFile().getParentFile();
-        try {
-            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            com.google.gson.JsonObject root = gson.toJsonTree(env).getAsJsonObject();
-            com.google.gson.JsonObject metadata = new com.google.gson.JsonObject();
-            metadata.addProperty("exported_by", "ApiBanker v" + in.slpro.apibanker.App.getVersion());
-            metadata.addProperty("exported_at",
-                    new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
-            root.add("_metadata", metadata);
-            java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            MainFrame.showToast(this, "ApiBanker Environment Exported successfully.");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     public void refreshEnvironments(List<EnvironmentModel> newEnvs) {
@@ -423,8 +467,9 @@ public class EnvironmentManagerPanel extends JPanel {
             envListModel.addElement(env.getName());
         }
         selectedEnvIndex = -1;
-        envNameField.setText("");
+        isLoadingEnv = true;
         varTableModel.setRowCount(0);
+        isLoadingEnv = false;
         if (!environments.isEmpty()) {
             envList.setSelectedIndex(0);
         }

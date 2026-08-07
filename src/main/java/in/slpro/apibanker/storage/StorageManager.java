@@ -278,7 +278,23 @@ public class StorageManager {
         if (files != null) {
             for (File file : files) {
                 if (!activeFilenames.contains(file.getName().toLowerCase())) {
-                    file.delete();
+                    try {
+                        String id = "unknown";
+                        String name = "unknown";
+                        try (Reader reader = new FileReader(file, StandardCharsets.UTF_8)) {
+                            CollectionModel col = gson.fromJson(reader, CollectionModel.class);
+                            if (col != null) {
+                                if (col.getId() != null) id = col.getId();
+                                if (col.getName() != null) name = col.getName();
+                            }
+                        }
+                        File deletedDir = new File(settings.getDataDirectory(), "deleted");
+                        if (!deletedDir.exists()) deletedDir.mkdirs();
+                        File destFile = new File(deletedDir, sanitizeFilename(name) + "_" + sanitizeFilename(id) + ".json");
+                        java.nio.file.Files.move(file.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    } catch (Exception ex) {
+                        file.delete();
+                    }
                 }
             }
         }
@@ -355,7 +371,23 @@ public class StorageManager {
         if (files != null) {
             for (File file : files) {
                 if (!activeFilenames.contains(file.getName().toLowerCase())) {
-                    file.delete();
+                    try {
+                        String id = "unknown";
+                        String name = "unknown";
+                        try (Reader reader = new FileReader(file, StandardCharsets.UTF_8)) {
+                            EnvironmentModel env = gson.fromJson(reader, EnvironmentModel.class);
+                            if (env != null) {
+                                if (env.getId() != null) id = env.getId();
+                                if (env.getName() != null) name = env.getName();
+                            }
+                        }
+                        File deletedDir = new File(settings.getDataDirectory(), "deleted");
+                        if (!deletedDir.exists()) deletedDir.mkdirs();
+                        File destFile = new File(deletedDir, sanitizeFilename(name) + "_" + sanitizeFilename(id) + ".json");
+                        java.nio.file.Files.move(file.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    } catch (Exception ex) {
+                        file.delete();
+                    }
                 }
             }
         }
