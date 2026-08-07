@@ -51,6 +51,7 @@ public class MockServerPanel extends JPanel {
     private final JComboBox<String> methodCombo;
     private final JTextField pathField;
     private final JComboBox<String> responseModeCombo;
+    private final JTextField delayField;
 
     // Responses List Components
     private final JTable responsesTable;
@@ -63,6 +64,9 @@ public class MockServerPanel extends JPanel {
     private final JTextField matchKeyField;
     private final JTextField matchValueField;
     private final JTextArea mockBodyArea;
+    private final DefaultTableModel headersModel;
+    private final JTable headersTable;
+    private boolean isUpdatingHeaders = false;
 
     private final JTextArea serverLogArea;
 
@@ -73,12 +77,14 @@ public class MockServerPanel extends JPanel {
         public String matchType = "none"; // none, query, header, body
         public String matchKey = "";
         public String matchValue = "";
+        public List<String[]> headers = new ArrayList<>(); // e.g. ["true", "X-Custom", "value"]
     }
 
     public static class MockRule {
         public String method = "GET";
         public String path = "/";
         public String responseMode = "fixed"; // fixed, sequence, random
+        public int delayMs = 0; // Delay in milliseconds
         public List<MockResponse> responses = new ArrayList<>();
         public transient int sequenceIndex = 0;
 
@@ -171,6 +177,17 @@ public class MockServerPanel extends JPanel {
         rulesTable = new JTable(rulesModel);
         rulesTable.setRowHeight(24);
         rulesTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        rulesTable.getColumnModel().getColumn(0).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (value instanceof String method && !isSelected) {
+                    c.setForeground(getMethodColor(method));
+                    c.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                }
+                return c;
+            }
+        });
         JScrollPane tableScroll = new JScrollPane(rulesTable);
         tableScroll.setBorder(BorderFactory.createTitledBorder("Configured Mock Rules"));
         leftPanel.add(tableScroll, BorderLayout.CENTER);
@@ -191,6 +208,17 @@ public class MockServerPanel extends JPanel {
         generalSettings.add(new JLabel("Method:"), gbc);
         gbc.gridx = 1;
         methodCombo = new JComboBox<>(new String[] { "GET", "POST", "PUT", "DELETE", "PATCH" });
+        methodCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof String method && !isSelected) {
+                    c.setForeground(getMethodColor(method));
+                    c.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                }
+                return c;
+            }
+        });
         generalSettings.add(methodCombo, gbc);
 
         gbc.gridx = 2;
@@ -206,6 +234,14 @@ public class MockServerPanel extends JPanel {
         gbc.gridx = 5;
         responseModeCombo = new JComboBox<>(new String[] { "fixed", "sequence", "random" });
         generalSettings.add(responseModeCombo, gbc);
+        
+        gbc.gridx = 6;
+        gbc.weightx = 0.0;
+        generalSettings.add(new JLabel("Delay (ms):"), gbc);
+        gbc.gridx = 7;
+        gbc.weightx = 0.5;
+        delayField = new JTextField("0", 6);
+        generalSettings.add(delayField, gbc);
 
         editorPanel.add(generalSettings, BorderLayout.NORTH);
 
@@ -289,17 +325,110 @@ public class MockServerPanel extends JPanel {
         gbcDet.gridx = 0;
         gbcDet.gridy = 3;
         gbcDet.gridwidth = 4;
-        gbcDet.weightx = 0.0;
-        responseDetailsPanel.add(new JLabel("Response Body:"), gbcDet);
-
-        gbcDet.gridx = 0;
-        gbcDet.gridy = 4;
-        gbcDet.gridwidth = 4;
         gbcDet.weighty = 1.0;
         gbcDet.fill = GridBagConstraints.BOTH;
+        
+        JTabbedPane respTabs = new JTabbedPane();
+        
         mockBodyArea = new JTextArea(5, 20);
         mockBodyArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
-        responseDetailsPanel.add(new JScrollPane(mockBodyArea), gbcDet);
+        respTabs.addTab("Body", new JScrollPane(mockBodyArea));
+        
+        headersModel = new DefaultTableModel(new Object[] { "Active", "Key", "Value" }, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 0 ? Boolean.class : String.class;
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                String key = (String) getValueAt(row, 1);
+                if (key != null) {
+                    if (key.equalsIgnoreCase("Content-Type") || key.equalsIgnoreCase("Date") || key.equalsIgnoreCase("Connection")) {
+                        return column == 0;
+                    }
+                    if (key.equalsIgnoreCase("Server")) {
+                        return column != 1;
+                    }
+                }
+                return true;
+            }
+        };
+        headersModel.addTableModelListener(e -> {
+            if (isUpdatingHeaders) return;
+            boolean hasEmpty = false;
+            for (int i = 0; i < headersModel.getRowCount(); i++) {
+                String k = (String) headersModel.getValueAt(i, 1);
+                String v = (String) headersModel.getValueAt(i, 2);
+                if ((k == null || k.trim().isEmpty()) && (v == null || v.trim().isEmpty())) {
+                    hasEmpty = true;
+                    break;
+                }
+            }
+            if (!hasEmpty) {
+                SwingUtilities.invokeLater(() -> {
+                    if (isUpdatingHeaders) return;
+                    boolean stillHasEmpty = false;
+                    for (int i = 0; i < headersModel.getRowCount(); i++) {
+                        String k = (String) headersModel.getValueAt(i, 1);
+                        String v = (String) headersModel.getValueAt(i, 2);
+                        if ((k == null || k.trim().isEmpty()) && (v == null || v.trim().isEmpty())) {
+                            stillHasEmpty = true;
+                            break;
+                        }
+                    }
+                    if (!stillHasEmpty) {
+                        isUpdatingHeaders = true;
+                        headersModel.addRow(new Object[] { true, "", "" });
+                        isUpdatingHeaders = false;
+                    }
+                });
+            }
+        });
+        
+        isUpdatingHeaders = true;
+        headersModel.addRow(new Object[] { true, "", "" });
+        isUpdatingHeaders = false;
+        
+        headersTable = new JTable(headersModel);
+        headersTable.setRowHeight(24);
+        
+        headersTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                String key = (String) table.getModel().getValueAt(table.convertRowIndexToModel(row), 1);
+                if (key != null && (key.equalsIgnoreCase("Content-Type") || key.equalsIgnoreCase("Date") || key.equalsIgnoreCase("Connection") || key.equalsIgnoreCase("Server"))) {
+                    if (!isSelected) {
+                        c.setBackground(new Color(245, 245, 250));
+                        c.setForeground(Color.GRAY);
+                    }
+                } else {
+                    if (!isSelected) {
+                        c.setBackground(table.getBackground());
+                        c.setForeground(table.getForeground());
+                    }
+                }
+                return c;
+            }
+        });
+        headersTable.setDefaultRenderer(Boolean.class, headersTable.getDefaultRenderer(Boolean.class));
+        headersTable.putClientProperty("terminateEditOnFocusLost", true);
+        GlobalVariablesPanel.setupTableCopyPaste(headersTable, headersModel);
+        
+        contentTypeCombo.addActionListener(e -> {
+            String newType = (String) contentTypeCombo.getSelectedItem();
+            for (int i = 0; i < headersModel.getRowCount(); i++) {
+                String k = (String) headersModel.getValueAt(i, 1);
+                if ("Content-Type".equalsIgnoreCase(k)) {
+                    headersModel.setValueAt(newType, i, 2);
+                    break;
+                }
+            }
+        });
+        
+        respTabs.addTab("Headers", new JScrollPane(headersTable));
+        
+        responseDetailsPanel.add(respTabs, gbcDet);
 
         responseSplit.setRightComponent(responseDetailsPanel);
 
@@ -335,7 +464,16 @@ public class MockServerPanel extends JPanel {
 
         JButton clearLogBtn = new JButton("Clear Traffic Log");
         clearLogBtn.addActionListener(e -> serverLogArea.setText(""));
-        rightPanel.add(clearLogBtn, BorderLayout.SOUTH);
+        
+        JButton downloadLogBtn = new JButton("Download Logs");
+        downloadLogBtn.addActionListener(e -> downloadLogs());
+        
+        JPanel bottomBtnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        bottomBtnPanel.setBackground(UIManager.getColor("Panel.background"));
+        bottomBtnPanel.add(clearLogBtn);
+        bottomBtnPanel.add(downloadLogBtn);
+        
+        rightPanel.add(bottomBtnPanel, BorderLayout.SOUTH);
 
         mainSplit.setRightComponent(rightPanel);
 
@@ -352,6 +490,7 @@ public class MockServerPanel extends JPanel {
                     methodCombo.setSelectedItem(activeRule.method);
                     pathField.setText(activeRule.path);
                     responseModeCombo.setSelectedItem(activeRule.responseMode);
+                    delayField.setText(String.valueOf(activeRule.delayMs));
 
                     refreshResponsesTable();
 
@@ -385,6 +524,168 @@ public class MockServerPanel extends JPanel {
                     "{\n  \"status\": \"created\",\n  \"id\": 3\n}"));
             refreshRulesTable();
         }
+
+        setupTableActions(rulesTable, "rule");
+        setupTableActions(responsesTable, "response");
+    }
+
+    private Color getMethodColor(String method) {
+        if (method == null) return UIManager.getColor("Label.foreground");
+        return switch (method.toUpperCase()) {
+            case "GET" -> new Color(52, 152, 219);
+            case "POST" -> new Color(46, 204, 113);
+            case "PUT" -> new Color(241, 196, 15);
+            case "DELETE" -> new Color(231, 76, 60);
+            case "PATCH" -> new Color(155, 89, 182);
+            default -> UIManager.getColor("Label.foreground");
+        };
+    }
+
+    private void setupTableActions(JTable table, String type) {
+        Action copyAction = new AbstractAction("Copy") {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                int[] selected = table.getSelectedRows();
+                if (selected.length == 0) return;
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                String data = "";
+                if ("rule".equals(type)) {
+                    List<MockRule> copyRules = new ArrayList<>();
+                    for (int row : selected) {
+                        copyRules.add(rulesList.get(row));
+                    }
+                    data = gson.toJson(copyRules);
+                } else {
+                    if (activeRule == null) return;
+                    List<MockResponse> copyResp = new ArrayList<>();
+                    for (int row : selected) {
+                        copyResp.add(activeRule.responses.get(row));
+                    }
+                    data = gson.toJson(copyResp);
+                }
+                java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(data);
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+            }
+        };
+
+        Action pasteAction = new AbstractAction("Paste") {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                try {
+                    String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+                    if (data == null || data.isBlank()) return;
+                    com.google.gson.Gson gson = new com.google.gson.Gson();
+                    if ("rule".equals(type)) {
+                        MockRule[] pastedRules = gson.fromJson(data, MockRule[].class);
+                        if (pastedRules != null && pastedRules.length > 0) {
+                            rulesList.addAll(Arrays.asList(pastedRules));
+                            refreshRulesTable();
+                            updateModel();
+                        }
+                    } else {
+                        if (activeRule == null) return;
+                        MockResponse[] pastedResp = gson.fromJson(data, MockResponse[].class);
+                        if (pastedResp != null && pastedResp.length > 0) {
+                            activeRule.responses.addAll(Arrays.asList(pastedResp));
+                            refreshResponsesTable();
+                        }
+                    }
+                } catch (Exception ex) {
+                    // ignore invalid clipboard
+                }
+            }
+        };
+
+        Action deleteAction = new AbstractAction("Delete") {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if ("rule".equals(type)) deleteRule();
+                else deleteResponse();
+            }
+        };
+
+        table.getActionMap().put("copy", copyAction);
+        table.getActionMap().put("paste", pasteAction);
+        
+        table.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "delete");
+        table.getActionMap().put("delete", deleteAction);
+
+        JPopupMenu popup = new JPopupMenu();
+        popup.add(new JMenuItem(copyAction));
+        popup.add(new JMenuItem(pasteAction));
+        popup.add(new JMenuItem(deleteAction));
+        
+        if ("rule".equals(type)) {
+            popup.addSeparator();
+            JMenu codeMenu = new JMenu("Code");
+            
+            JMenuItem curlItem = new JMenuItem("Curl");
+            curlItem.addActionListener(e -> copyCodeForRules(table, "Curl"));
+            codeMenu.add(curlItem);
+            
+            JMenuItem pythonItem = new JMenuItem("Python");
+            pythonItem.addActionListener(e -> copyCodeForRules(table, "Python"));
+            codeMenu.add(pythonItem);
+            
+            JMenuItem jsItem = new JMenuItem("JavaScript");
+            jsItem.addActionListener(e -> copyCodeForRules(table, "JavaScript"));
+            codeMenu.add(jsItem);
+            
+            JMenuItem javaItem = new JMenuItem("Java");
+            javaItem.addActionListener(e -> copyCodeForRules(table, "Java"));
+            codeMenu.add(javaItem);
+            
+            popup.add(codeMenu);
+        }
+        
+        table.setComponentPopupMenu(popup);
+    }
+
+    private void copyCodeForRules(JTable table, String language) {
+        int[] selected = table.getSelectedRows();
+        if (selected.length == 0) return;
+        
+        String port = portField.getText().trim();
+        if (port.isEmpty()) port = "8085";
+        String baseUrl = "http://localhost:" + port;
+        
+        StringBuilder sb = new StringBuilder();
+        for (int row : selected) {
+            MockRule rule = rulesList.get(row);
+            String url = baseUrl + rule.path;
+            String method = rule.method.toUpperCase();
+            
+            if (sb.length() > 0) sb.append("\n\n");
+            
+            if ("Curl".equals(language)) {
+                sb.append(String.format("curl -X %s \"%s\"", method, url));
+            } else if ("Python".equals(language)) {
+                sb.append("import requests\n");
+                sb.append(String.format("response = requests.request(\"%s\", \"%s\")\n", method, url));
+                sb.append("print(response.text)");
+            } else if ("JavaScript".equals(language)) {
+                sb.append(String.format("fetch(\"%s\", {\n  method: \"%s\"\n})\n", url, method));
+                sb.append(".then(response => response.text())\n");
+                sb.append(".then(result => console.log(result))\n");
+                sb.append(".catch(error => console.log('error', error));");
+            } else if ("Java".equals(language)) {
+                sb.append("java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();\n");
+                sb.append("java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()\n");
+                sb.append(String.format("  .uri(java.net.URI.create(\"%s\"))\n", url));
+                if (method.equals("GET") || method.equals("DELETE")) {
+                    sb.append(String.format("  .%s()\n", method));
+                } else {
+                    sb.append(String.format("  .method(\"%s\", java.net.http.HttpRequest.BodyPublishers.noBody())\n", method));
+                }
+                sb.append("  .build();\n");
+                sb.append("java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());\n");
+                sb.append("System.out.println(response.body());");
+            }
+        }
+        
+        java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(sb.toString());
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+        MainFrame.showToast(this, language + " code copied to clipboard!");
     }
 
     private void toggleServer() {
@@ -532,12 +833,31 @@ public class MockServerPanel extends JPanel {
         }
     }
 
+    private void downloadLogs() {
+        if (serverLogArea.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No logs to download.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("mockserver-" + sanitizeFilename(model.getName()) + ".log"));
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(
+                    new java.io.FileWriter(chooser.getSelectedFile(), StandardCharsets.UTF_8))) {
+                pw.write(serverLogArea.getText());
+                MainFrame.showToast(this, "Logs downloaded successfully.");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Failed to download logs: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void clearRuleFormForNew() {
         activeRule = null;
         activeResponse = null;
         methodCombo.setSelectedIndex(0);
         pathField.setText("/new-endpoint");
         responseModeCombo.setSelectedIndex(0);
+        delayField.setText("0");
         responsesModel.setRowCount(0);
         loadActiveResponseToUI();
         pathField.requestFocus();
@@ -554,6 +874,29 @@ public class MockServerPanel extends JPanel {
             activeResponse.matchType = (String) matchTypeCombo.getSelectedItem();
             activeResponse.matchKey = matchKeyField.getText().trim();
             activeResponse.matchValue = matchValueField.getText().trim();
+            
+            if (headersTable.getCellEditor() != null) {
+                headersTable.getCellEditor().stopCellEditing();
+            }
+            if (activeResponse.headers == null) {
+                activeResponse.headers = new ArrayList<>();
+            }
+            activeResponse.headers.clear();
+            for (int i = 0; i < headersModel.getRowCount(); i++) {
+                Boolean active = (Boolean) headersModel.getValueAt(i, 0);
+                String key = (String) headersModel.getValueAt(i, 1);
+                String val = (String) headersModel.getValueAt(i, 2);
+                if (key != null && !key.trim().isEmpty()) {
+                    key = key.trim();
+                    boolean isActive = (active != null && active);
+                    if (key.equalsIgnoreCase("Content-Type") && isActive && val != null && val.equals(activeResponse.contentType)) continue;
+                    if (key.equalsIgnoreCase("Date") && isActive && val != null && val.equals("<auto-generated>")) continue;
+                    if (key.equalsIgnoreCase("Connection") && isActive && val != null && val.equals("keep-alive")) continue;
+                    if (key.equalsIgnoreCase("Server") && isActive && val != null && val.equals("ApiBanker Mock Server")) continue;
+                    
+                    activeResponse.headers.add(new String[] { String.valueOf(isActive), key, val == null ? "" : val });
+                }
+            }
         }
     }
 
@@ -565,6 +908,45 @@ public class MockServerPanel extends JPanel {
             matchKeyField.setText(activeResponse.matchKey);
             matchValueField.setText(activeResponse.matchValue);
             mockBodyArea.setText(activeResponse.body);
+            
+            boolean cTypeFound = false, dateFound = false, serverFound = false, connFound = false;
+            
+            isUpdatingHeaders = true;
+            headersModel.setRowCount(0);
+            
+            // 1. Insert Defaults at the Top
+            headersModel.addRow(new Object[] { true, "Content-Type", activeResponse.contentType });
+            headersModel.addRow(new Object[] { true, "Date", "<auto-generated>" });
+            headersModel.addRow(new Object[] { true, "Server", "ApiBanker Mock Server" });
+            headersModel.addRow(new Object[] { true, "Connection", "keep-alive" });
+            
+            // 2. Override with custom or saved headers
+            if (activeResponse.headers != null) {
+                for (String[] h : activeResponse.headers) {
+                    boolean active = h.length > 0 && "true".equalsIgnoreCase(h[0]);
+                    String key = h.length > 1 ? h[1] : "";
+                    String val = h.length > 2 ? h[2] : "";
+                    
+                    if (key.equalsIgnoreCase("Content-Type")) {
+                        headersModel.setValueAt(active, 0, 0);
+                        headersModel.setValueAt(val, 0, 2);
+                    } else if (key.equalsIgnoreCase("Date")) {
+                        headersModel.setValueAt(active, 1, 0);
+                        headersModel.setValueAt(val, 1, 2);
+                    } else if (key.equalsIgnoreCase("Server")) {
+                        headersModel.setValueAt(active, 2, 0);
+                        headersModel.setValueAt(val, 2, 2);
+                    } else if (key.equalsIgnoreCase("Connection")) {
+                        headersModel.setValueAt(active, 3, 0);
+                        headersModel.setValueAt(val, 3, 2);
+                    } else {
+                        headersModel.addRow(new Object[] { active, key, val });
+                    }
+                }
+            }
+            
+            headersModel.addRow(new Object[] { true, "", "" });
+            isUpdatingHeaders = false;
 
             statusField.setEnabled(true);
             contentTypeCombo.setEnabled(true);
@@ -572,6 +954,7 @@ public class MockServerPanel extends JPanel {
             matchKeyField.setEnabled(true);
             matchValueField.setEnabled(true);
             mockBodyArea.setEnabled(true);
+            headersTable.setEnabled(true);
         } else {
             statusField.setText("");
             contentTypeCombo.setSelectedIndex(0);
@@ -579,6 +962,11 @@ public class MockServerPanel extends JPanel {
             matchKeyField.setText("");
             matchValueField.setText("");
             mockBodyArea.setText("");
+            
+            isUpdatingHeaders = true;
+            headersModel.setRowCount(0);
+            headersModel.addRow(new Object[] { true, "", "" });
+            isUpdatingHeaders = false;
 
             statusField.setEnabled(false);
             contentTypeCombo.setEnabled(false);
@@ -586,6 +974,7 @@ public class MockServerPanel extends JPanel {
             matchKeyField.setEnabled(false);
             matchValueField.setEnabled(false);
             mockBodyArea.setEnabled(false);
+            headersTable.setEnabled(false);
         }
     }
 
@@ -603,11 +992,13 @@ public class MockServerPanel extends JPanel {
     }
 
     private void deleteResponse() {
-        if (activeRule == null || activeResponse == null)
-            return;
-        int row = responsesTable.getSelectedRow();
-        if (row >= 0 && row < activeRule.responses.size()) {
-            activeRule.responses.remove(row);
+        if (activeRule == null) return;
+        int[] selected = responsesTable.getSelectedRows();
+        if (selected.length > 0) {
+            Arrays.sort(selected);
+            for (int i = selected.length - 1; i >= 0; i--) {
+                activeRule.responses.remove(selected[i]);
+            }
             activeResponse = null;
             refreshResponsesTable();
             if (!activeRule.responses.isEmpty()) {
@@ -633,6 +1024,9 @@ public class MockServerPanel extends JPanel {
             activeRule.method = method;
             activeRule.path = path.startsWith("/") ? path : "/" + path;
             activeRule.responseMode = (String) responseModeCombo.getSelectedItem();
+            try {
+                activeRule.delayMs = Integer.parseInt(delayField.getText().trim());
+            } catch (Exception ignored) { activeRule.delayMs = 0; }
             if (activeRule.responses.isEmpty()) {
                 MockResponse resp = new MockResponse();
                 activeRule.responses.add(resp);
@@ -642,6 +1036,9 @@ public class MockServerPanel extends JPanel {
             activeRule.method = method;
             activeRule.path = path.startsWith("/") ? path : "/" + path;
             activeRule.responseMode = (String) responseModeCombo.getSelectedItem();
+            try {
+                activeRule.delayMs = Integer.parseInt(delayField.getText().trim());
+            } catch (Exception ignored) { activeRule.delayMs = 0; }
         }
 
         refreshRulesTable();
@@ -650,16 +1047,19 @@ public class MockServerPanel extends JPanel {
     }
 
     private void deleteRule() {
-        int selected = rulesTable.getSelectedRow();
-        if (selected >= 0) {
-            rulesList.remove(selected);
+        int[] selected = rulesTable.getSelectedRows();
+        if (selected.length > 0) {
+            Arrays.sort(selected);
+            for (int i = selected.length - 1; i >= 0; i--) {
+                rulesList.remove(selected[i]);
+            }
             activeRule = null;
             activeResponse = null;
             refreshRulesTable();
             refreshResponsesTable();
             loadActiveResponseToUI();
             updateModel();
-            logTraffic("Deleted selected rule.");
+            logTraffic("Deleted " + selected.length + " rule(s).");
         }
     }
 
@@ -996,11 +1396,25 @@ public class MockServerPanel extends JPanel {
         public void handle(HttpExchange exchange) throws IOException {
             String requestMethod = exchange.getRequestMethod();
             String requestPath = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
+            
+            String requestBody = "";
+            try (java.io.InputStream is = exchange.getRequestBody()) {
+                requestBody = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (Exception ignored) {
+            }
 
-            logTraffic("Incoming request: " + requestMethod + " " + requestPath);
+            StringBuilder reqLog = new StringBuilder();
+            reqLog.append("=== INCOMING REQUEST ===\n");
+            reqLog.append(requestMethod).append(" ").append(requestPath).append(query != null ? "?" + query : "").append("\n");
+            reqLog.append("Headers:\n");
+            exchange.getRequestHeaders().forEach((k, v) -> reqLog.append("  ").append(k).append(": ").append(String.join(", ", v)).append("\n"));
+            if (!requestBody.isEmpty()) {
+                reqLog.append("Body:\n").append(requestBody).append("\n");
+            }
+            logTraffic(reqLog.toString());
 
             Map<String, String> queryParams = new HashMap<>();
-            String query = exchange.getRequestURI().getQuery();
             if (query != null) {
                 for (String param : query.split("&")) {
                     String[] pair = param.split("=", 2);
@@ -1017,12 +1431,6 @@ public class MockServerPanel extends JPanel {
                 if (!entry.getValue().isEmpty()) {
                     headers.put(entry.getKey().toLowerCase(), entry.getValue().get(0));
                 }
-            }
-
-            String requestBody = "";
-            try (java.io.InputStream is = exchange.getRequestBody()) {
-                requestBody = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (Exception ignored) {
             }
 
             MockRule matchedRule = null;
@@ -1082,15 +1490,41 @@ public class MockServerPanel extends JPanel {
                 }
 
                 if (matchedResponse != null) {
+                    if (matchedRule.delayMs > 0) {
+                        try { Thread.sleep(matchedRule.delayMs); } catch (InterruptedException ignored) {}
+                    }
+                    
                     byte[] responseBytes = matchedResponse.body.getBytes(StandardCharsets.UTF_8);
                     exchange.getResponseHeaders().set("Content-Type", matchedResponse.contentType + "; charset=utf-8");
+                    boolean hasServer = false;
+                    if (matchedResponse.headers != null) {
+                        for (String[] h : matchedResponse.headers) {
+                            if (h.length >= 3 && "true".equalsIgnoreCase(h[0])) {
+                                exchange.getResponseHeaders().add(h[1], h[2]);
+                                if (h[1].equalsIgnoreCase("Server")) hasServer = true;
+                            }
+                        }
+                    }
+                    if (!hasServer) {
+                        exchange.getResponseHeaders().add("Server", "ApiBanker Mock Server");
+                    }
                     exchange.sendResponseHeaders(matchedResponse.responseStatus, responseBytes.length);
                     try (OutputStream os = exchange.getResponseBody()) {
                         os.write(responseBytes);
                     }
-                    logTraffic(String.format("Matched Rule: %s %s -> Sending %d (%s)",
-                            matchedRule.method, matchedRule.path, matchedResponse.responseStatus,
-                            matchedResponse.contentType));
+                    
+                    StringBuilder resLog = new StringBuilder();
+                    resLog.append("=== OUTGOING RESPONSE ===\n");
+                    resLog.append("Matched Rule: ").append(matchedRule.method).append(" ").append(matchedRule.path).append("\n");
+                    resLog.append("Status: ").append(matchedResponse.responseStatus).append("\n");
+                    if (matchedRule.delayMs > 0) {
+                        resLog.append("Simulated Delay: ").append(matchedRule.delayMs).append("ms\n");
+                    }
+                    resLog.append("Headers:\n");
+                    exchange.getResponseHeaders().forEach((k, v) -> resLog.append("  ").append(k).append(": ").append(String.join(", ", v)).append("\n"));
+                    resLog.append("Body:\n").append(matchedResponse.body).append("\n");
+                    resLog.append("=========================\n");
+                    logTraffic(resLog.toString());
                 } else {
                     send404(exchange, requestPath);
                 }
@@ -1107,7 +1541,13 @@ public class MockServerPanel extends JPanel {
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(responseBytes);
             }
-            logTraffic("No matching rule found. Sent 404 Not Found");
+            
+            StringBuilder resLog = new StringBuilder();
+            resLog.append("=== OUTGOING RESPONSE (404 Not Found) ===\n");
+            resLog.append("No matching rule found.\n");
+            resLog.append("Body:\n").append(errorBody).append("\n");
+            resLog.append("=========================================\n");
+            logTraffic(resLog.toString());
         }
     }
 }

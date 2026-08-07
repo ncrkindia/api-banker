@@ -723,12 +723,11 @@ public class CollectionPanel extends JPanel {
                                     collectionModel, mainFrame);
                             String colorStr;
                             if (res.resolved) {
-                                Color colVal = res.isEnv ? VariableHelper.getEnvColor()
-                                        : VariableHelper.getCollectionColor();
+                                Color colVal = res.getColor();
                                 colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(),
                                         colVal.getBlue());
                             } else {
-                                Color colVal = VariableHelper.getUnresolvedColor();
+                                Color colVal = res.getColor();
                                 colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(),
                                         colVal.getBlue());
                             }
@@ -751,6 +750,7 @@ public class CollectionPanel extends JPanel {
         table.getColumnModel().getColumn(2).setCellRenderer(defaultRenderer);
         table.getColumnModel().getColumn(3).setCellRenderer(defaultRenderer);
         table.setRowHeight(24);
+        GlobalVariablesPanel.setupTableCopyPaste(table, model);
         return table;
     }
 

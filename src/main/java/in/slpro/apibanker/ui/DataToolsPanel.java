@@ -45,6 +45,7 @@ public class DataToolsPanel extends JPanel {
         JTabbedPane toolsTab = new JTabbedPane();
         toolsTab.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
+        toolsTab.addTab("JSON Tool", new JsonToolPanel(mainFrame, new in.slpro.apibanker.model.RequestModel()));
         toolsTab.addTab("Schema Validator", buildSchemaValidator());
         toolsTab.addTab("Data Masker & Anonymizer", buildDataMasker());
         toolsTab.addTab("Data Generator", buildDataGenerator());
@@ -347,7 +348,7 @@ public class DataToolsPanel extends JPanel {
         topBar.setBackground(UIManager.getColor("Panel.background"));
 
         JComboBox<String> schemaTemplate = new JComboBox<>(
-                new String[] { "Users List", "Products Catalog", "Transactions", "Custom Config" });
+                new String[] { "From JSON Schema", "From XML Schema" });
         JTextField countField = new JTextField("10", 4);
         JButton generateBtn = new JButton("Generate Data");
         Color accent = UIManager.getColor("AccentColor");
@@ -361,6 +362,20 @@ public class DataToolsPanel extends JPanel {
         topBar.add(generateBtn);
         panel.add(topBar, BorderLayout.NORTH);
 
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        split.setResizeWeight(0.5);
+
+        RSyntaxTextArea schemaArea = new RSyntaxTextArea();
+        schemaArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        schemaArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        schemaArea.setText("{\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\"type\": \"number\"},\n    \"name\": {\"type\": \"string\"}\n  }\n}");
+        schemaArea.setLineWrap(true);
+        schemaArea.setCodeFoldingEnabled(true);
+        schemaArea.setAntiAliasingEnabled(true);
+        schemaArea.setHighlightCurrentLine(false);
+        RTextScrollPane schemaScroll = new RTextScrollPane(schemaArea);
+        schemaScroll.setBorder(BorderFactory.createTitledBorder("Input JSON Schema"));
+
         RSyntaxTextArea outputArea = new RSyntaxTextArea();
         outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         outputArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
@@ -372,7 +387,30 @@ public class DataToolsPanel extends JPanel {
         outputArea.setHighlightCurrentLine(false);
         RTextScrollPane scroll = new RTextScrollPane(outputArea);
         scroll.setBorder(BorderFactory.createTitledBorder("Generated Mock Output (JSON)"));
-        panel.add(scroll, BorderLayout.CENTER);
+
+        split.setLeftComponent(schemaScroll);
+        split.setRightComponent(scroll);
+        panel.add(split, BorderLayout.CENTER);
+
+        schemaTemplate.addActionListener(e -> {
+            schemaArea.setEnabled(true);
+            schemaScroll.setVisible(true);
+            split.setDividerLocation(0.5);
+            if ("From JSON Schema".equals(schemaTemplate.getSelectedItem())) {
+                schemaScroll.setBorder(BorderFactory.createTitledBorder("Input JSON Schema"));
+                scroll.setBorder(BorderFactory.createTitledBorder("Generated Mock Output (JSON)"));
+                schemaArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                schemaArea.setText("{\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\"type\": \"number\"},\n    \"name\": {\"type\": \"string\"}\n  }\n}");
+            } else {
+                schemaScroll.setBorder(BorderFactory.createTitledBorder("Input XML Schema"));
+                scroll.setBorder(BorderFactory.createTitledBorder("Generated Mock Output (XML)"));
+                schemaArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                schemaArea.setText("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n  <xs:element name=\"user\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"id\" type=\"xs:integer\"/>\n        <xs:element name=\"name\" type=\"xs:string\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>");
+            }
+        });
+        schemaTemplate.setSelectedIndex(0);
 
         generateBtn.addActionListener(e -> {
             int count = 10;
@@ -385,42 +423,127 @@ public class DataToolsPanel extends JPanel {
             JsonArray arr = new JsonArray();
             Random r = new Random();
 
-            String[] names = { "Alice Smith", "Bob Jones", "Charlie Brown", "David Green", "Eva White", "Frank Miller",
-                    "Grace Davis", "Henry Wilson" };
-            String[] domains = { "gmail.com", "yahoo.com", "company.org", "outlook.com", "slpro.in" };
-            String[] products = { "Laptop Pro", "Wireless Mouse", "Mechanical Keyboard", "USB-C Hub", "HD Monitor",
-                    "Bluetooth Headset" };
-            String[] categories = { "Electronics", "Office Accessories", "Hardware", "Audio" };
-
-            for (int i = 0; i < count; i++) {
-                JsonObject item = new JsonObject();
-                if ("Users List".equals(selected)) {
-                    String name = names[r.nextInt(names.length)];
-                    item.addProperty("id", i + 1000);
-                    item.addProperty("name", name);
-                    item.addProperty("email",
-                            name.toLowerCase().replace(" ", ".") + "@" + domains[r.nextInt(domains.length)]);
-                    item.addProperty("isActive", r.nextBoolean());
-                    item.addProperty("role", r.nextBoolean() ? "ADMIN" : "USER");
-                } else if ("Products Catalog".equals(selected)) {
-                    item.addProperty("sku", "SKU-" + (r.nextInt(90000) + 10000));
-                    item.addProperty("name", products[r.nextInt(products.length)]);
-                    item.addProperty("price", Math.round((10.0 + r.nextDouble() * 490.0) * 100.0) / 100.0);
-                    item.addProperty("category", categories[r.nextInt(categories.length)]);
-                    item.addProperty("stock", r.nextInt(150));
-                } else {
-                    item.addProperty("transactionId",
-                            "TXN-" + UUID.randomUUID().toString().substring(0, 13).toUpperCase());
-                    item.addProperty("amount", Math.round((1.0 + r.nextDouble() * 2000.0) * 100.0) / 100.0);
-                    item.addProperty("currency", r.nextBoolean() ? "USD" : "INR");
-                    item.addProperty("status", r.nextBoolean() ? "SUCCESS" : "PENDING");
+            if ("From JSON Schema".equals(selected)) {
+                try {
+                    JsonObject schemaObj = JsonParser.parseString(schemaArea.getText()).getAsJsonObject();
+                    for (int i = 0; i < count; i++) {
+                        arr.add(generateFromJsonSchema(schemaObj, r));
+                    }
+                    outputArea.setText(new GsonBuilder().setPrettyPrinting().create().toJson(arr));
+                } catch (Exception ex) {
+                    outputArea.setText("Error parsing JSON schema: " + ex.getMessage());
                 }
-                arr.add(item);
+            } else if ("From XML Schema".equals(selected)) {
+                try {
+                    StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<data>\n");
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    factory.setNamespaceAware(true);
+                    DocumentBuilder builder = factory.newDocumentBuilder();
+                    org.w3c.dom.Document doc = builder.parse(new org.xml.sax.InputSource(new java.io.StringReader(schemaArea.getText())));
+                    org.w3c.dom.NodeList elements = doc.getElementsByTagNameNS("http://www.w3.org/2001/XMLSchema", "element");
+                    org.w3c.dom.Element rootElement = null;
+                    for (int i = 0; i < elements.getLength(); i++) {
+                        org.w3c.dom.Element el = (org.w3c.dom.Element) elements.item(i);
+                        if (el.getParentNode() != null && "schema".equals(el.getParentNode().getLocalName())) {
+                            rootElement = el;
+                            break;
+                        }
+                    }
+                    if (rootElement == null) {
+                        outputArea.setText("Error: Could not find root xs:element in schema.");
+                        return;
+                    }
+                    
+                    for (int i = 0; i < count; i++) {
+                        xml.append(generateFromXmlSchema(rootElement, r, 1)).append("\n");
+                    }
+                    xml.append("</data>");
+                    outputArea.setText(xml.toString());
+                } catch (Exception ex) {
+                    outputArea.setText("Error parsing XML schema: " + ex.getMessage());
+                }
             }
-            outputArea.setText(new GsonBuilder().setPrettyPrinting().create().toJson(arr));
         });
 
         return panel;
+    }
+
+    private JsonElement generateFromJsonSchema(JsonObject schema, Random r) {
+        if (!schema.has("type")) return new JsonPrimitive("unknown");
+        String type = schema.get("type").getAsString();
+        if ("object".equals(type)) {
+            JsonObject obj = new JsonObject();
+            if (schema.has("properties")) {
+                JsonObject props = schema.getAsJsonObject("properties");
+                for (String key : props.keySet()) {
+                    obj.add(key, generateFromJsonSchema(props.getAsJsonObject(key), r));
+                }
+            }
+            return obj;
+        } else if ("array".equals(type)) {
+            JsonArray arr = new JsonArray();
+            if (schema.has("items")) {
+                JsonObject itemsSchema = schema.getAsJsonObject("items");
+                int len = 1 + r.nextInt(3);
+                for (int i = 0; i < len; i++) {
+                    arr.add(generateFromJsonSchema(itemsSchema, r));
+                }
+            }
+            return arr;
+        } else if ("string".equals(type)) {
+            return new JsonPrimitive("str_" + UUID.randomUUID().toString().substring(0, 5));
+        } else if ("number".equals(type) || "integer".equals(type)) {
+            return new JsonPrimitive(r.nextInt(1000));
+        } else if ("boolean".equals(type)) {
+            return new JsonPrimitive(r.nextBoolean());
+        }
+        return JsonNull.INSTANCE;
+    }
+
+    private String generateFromXmlSchema(org.w3c.dom.Element element, Random r, int indent) {
+        String name = element.getAttribute("name");
+        String type = element.getAttribute("type");
+        StringBuilder sb = new StringBuilder();
+        String ind = "  ".repeat(indent);
+        
+        if (type == null || type.isEmpty()) {
+            org.w3c.dom.NodeList children = element.getChildNodes();
+            org.w3c.dom.Element complexType = null;
+            for (int i = 0; i < children.getLength(); i++) {
+                if (children.item(i) instanceof org.w3c.dom.Element && "complexType".equals(children.item(i).getLocalName())) {
+                    complexType = (org.w3c.dom.Element) children.item(i);
+                    break;
+                }
+            }
+            if (complexType != null) {
+                sb.append(ind).append("<").append(name).append(">\n");
+                org.w3c.dom.NodeList sequences = complexType.getElementsByTagNameNS("http://www.w3.org/2001/XMLSchema", "sequence");
+                if (sequences.getLength() > 0) {
+                    org.w3c.dom.Element sequence = (org.w3c.dom.Element) sequences.item(0);
+                    org.w3c.dom.NodeList elements = sequence.getChildNodes();
+                    for (int i = 0; i < elements.getLength(); i++) {
+                        if (elements.item(i) instanceof org.w3c.dom.Element && "element".equals(elements.item(i).getLocalName())) {
+                            sb.append(generateFromXmlSchema((org.w3c.dom.Element) elements.item(i), r, indent + 1)).append("\n");
+                        }
+                    }
+                }
+                sb.append(ind).append("</").append(name).append(">");
+                return sb.toString();
+            }
+        }
+        
+        sb.append(ind).append("<").append(name).append(">");
+        if (type.endsWith("string")) {
+            sb.append("str_").append(UUID.randomUUID().toString().substring(0, 5));
+        } else if (type.endsWith("integer") || type.endsWith("int") || type.endsWith("number")) {
+            sb.append(r.nextInt(1000));
+        } else if (type.endsWith("boolean")) {
+            sb.append(r.nextBoolean());
+        } else {
+            sb.append("value");
+        }
+        sb.append("</").append(name).append(">");
+        return sb.toString();
     }
 
     // ─── 4. Data Transformer ───────────────────────────────────────────────

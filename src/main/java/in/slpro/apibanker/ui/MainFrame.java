@@ -148,6 +148,41 @@ public class MainFrame extends JFrame {
         updateFontSize(currentFontSize);
     }
 
+    private final java.util.Stack<String> collectionUndoStack = new java.util.Stack<>();
+
+    public void pushCollectionStateForUndo() {
+        try {
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            String state = gson.toJson(collections);
+            collectionUndoStack.push(state);
+            if (collectionUndoStack.size() > 50) {
+                collectionUndoStack.remove(0);
+            }
+        } catch (Exception e) {}
+    }
+
+    public void undoCollectionTree() {
+        if (!collectionUndoStack.isEmpty()) {
+            String state = collectionUndoStack.pop();
+            try {
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<List<CollectionModel>>(){}.getType();
+                List<CollectionModel> restored = gson.fromJson(state, listType);
+                if (restored != null) {
+                    this.collections.clear();
+                    this.collections.addAll(restored);
+                    saveCollections();
+                    sidebarPanel.refreshCollections(this.collections);
+                    showToast(this, "Undo successful");
+                }
+            } catch (Exception e) {
+                showToast(this, "Undo failed");
+            }
+        } else {
+            showToast(this, "Nothing to undo");
+        }
+    }
+
     /**
      * Initializes the core UI hierarchy.
      * <p>
@@ -273,34 +308,37 @@ public class MainFrame extends JFrame {
         logConsoleItem.addActionListener(e -> openLogConsole());
         JMenuItem runnerLogsItem = new JMenuItem("Collection Runner Logs");
         runnerLogsItem.addActionListener(e -> openCollectionRunnerLogs());
+        JMenuItem mockLogsItem = new JMenuItem("Mock Server Logs");
+        mockLogsItem.addActionListener(e -> openMockServerLogs());
+        viewMenu.add(consoleItem);
+        viewMenu.add(logConsoleItem);
+        viewMenu.add(runnerLogsItem);
+        viewMenu.add(mockLogsItem);
+        viewMenu.addSeparator();
         JMenuItem envMgrItem = new JMenuItem("Environment Manager...");
         envMgrItem.addActionListener(e -> openEnvManager());
         JMenuItem globalVarsItem = new JMenuItem("Global Variables...");
         globalVarsItem.addActionListener(e -> openGlobalVariables());
-        viewMenu.add(consoleItem);
-        viewMenu.add(logConsoleItem);
-        viewMenu.add(runnerLogsItem);
         viewMenu.add(envMgrItem);
         viewMenu.add(globalVarsItem);
 
         JMenu toolsMenu = new JMenu("Tools");
-        JMenuItem jwtItem = new JMenuItem("JWT Decoder");
-        jwtItem.addActionListener(e -> openJwtDecoder());
-        JMenuItem jsonItem = new JMenuItem("JSON Tool");
-        jsonItem.addActionListener(e -> openJsonTool());
-        JMenuItem compareItem = new JMenuItem("Data Comparator");
-        compareItem.addActionListener(e -> openDataComparator());
         JMenuItem mockServerItem = new JMenuItem("Mock Server");
         mockServerItem.addActionListener(e -> openMockServer());
+        JMenuItem compareItem = new JMenuItem("Data Comparator");
+        compareItem.addActionListener(e -> openDataComparator());
+        
+        JMenuItem jwtItem = new JMenuItem("JWT Decoder");
+        jwtItem.addActionListener(e -> openJwtDecoder());
         JMenuItem dataToolsItem = new JMenuItem("Data Tools");
         dataToolsItem.addActionListener(e -> openDataTools());
         JMenuItem cookieJarItem = new JMenuItem("Cookie Jar Manager...");
         cookieJarItem.addActionListener(e -> openCookieJarManager());
-        toolsMenu.add(jwtItem);
-        toolsMenu.add(jsonItem);
+        
+        toolsMenu.add(mockServerItem);
         toolsMenu.add(compareItem);
         toolsMenu.addSeparator();
-        toolsMenu.add(mockServerItem);
+        toolsMenu.add(jwtItem);
         toolsMenu.add(dataToolsItem);
         toolsMenu.add(cookieJarItem);
 
@@ -440,6 +478,7 @@ public class MainFrame extends JFrame {
             return;
         if (sourceCol != null)
             sourceCol.getRequests().remove(req);
+        pushCollectionStateForUndo();
         targetWrapper.model.getRequests().add(req);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
@@ -450,6 +489,7 @@ public class MainFrame extends JFrame {
     }
 
     public void createCollection(String name) {
+        pushCollectionStateForUndo();
         CollectionModel col = new CollectionModel(UUID.randomUUID().toString(), name);
         col.setRequests(new ArrayList<>());
         collections.add(col);
@@ -463,6 +503,7 @@ public class MainFrame extends JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        pushCollectionStateForUndo();
         closeTabsForCollectionRecursive(col);
         deleteCollectionRecursive(collections, col);
         saveCollections();
@@ -493,6 +534,7 @@ public class MainFrame extends JFrame {
     }
 
     public void addRequestToCollection(CollectionModel col, String name) {
+        pushCollectionStateForUndo();
         RequestModel req = new RequestModel();
         req.setName(name);
         col.getRequests().add(req);
@@ -502,6 +544,7 @@ public class MainFrame extends JFrame {
     }
 
     public void addRunnerToCollection(CollectionModel col) {
+        pushCollectionStateForUndo();
         RequestModel runner = new RequestModel();
         runner.setName(col.getName() + " Runner");
         runner.setType("runner");
@@ -513,6 +556,7 @@ public class MainFrame extends JFrame {
     }
 
     public void deleteRequest(RequestModel req) {
+        pushCollectionStateForUndo();
         for (CollectionModel col : collections) {
             if (deleteRequestRecursive(col, req)) {
                 break;
@@ -531,6 +575,7 @@ public class MainFrame extends JFrame {
     }
 
     public void addComparatorToCollection(CollectionModel col) {
+        pushCollectionStateForUndo();
         RequestModel comp = new RequestModel();
         comp.setName(col.getName() + " Comparator");
         comp.setType("comparator");
@@ -542,6 +587,7 @@ public class MainFrame extends JFrame {
     }
 
     public void addMockServerToCollection(CollectionModel col) {
+        pushCollectionStateForUndo();
         RequestModel mock = new RequestModel();
         mock.setName(col.getName() + " Mock Server");
         mock.setType("mockserver");
@@ -829,7 +875,7 @@ public class MainFrame extends JFrame {
                 + "    <td width='50%' valign='top' style='background:" + cardBgHex
                 + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
                 + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#9889; Integrated Tool Suite</h3>"
-                + "      <p style='font-size:13px; line-height:1.5;'>Built-in JWT Decoder, Data Comparator, JSON Schema validation, Mock Data Generator, Postman v2.1 &amp; JMeter import-export, OpenAPI Swagger importer, Global Variables tab, and an offline local Mock Server.</p>"
+                + "      <p style='font-size:13px; line-height:1.5;'>Built-in JWT Decoder, Data Comparator, JSON Schema validation, Mock Data Generator, Postman v2.1 &amp; JMeter import-export, OpenAPI Swagger importer, Global Variables tab, and an offline local Mock Server. Distribute seamlessly using built-in Native Packaging (Windows .msi, GraalVM .exe, Linux .deb).</p>"
                 + "    </td>"
                 + "    <td width='50%' valign='top' style='background:" + cardBgHex
                 + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
@@ -862,6 +908,7 @@ public class MainFrame extends JFrame {
                 + "</body></html>";
 
         welcomePane.setText(html);
+        welcomePane.setCaretPosition(0);
         JScrollPane scroll = new JScrollPane(welcomePane);
         scroll.setBorder(null);
         welcome.add(scroll, BorderLayout.CENTER);
@@ -911,13 +958,7 @@ public class MainFrame extends JFrame {
     }
 
     public void openJsonTool() {
-        RequestModel req = new RequestModel();
-        req.setName("JSON Tool");
-        JsonToolPanel panel = new JsonToolPanel(this, req);
-        int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("JSON Tool", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("JSON Tool", idx, panel));
-        workspaceTabs.setSelectedIndex(idx);
+        openDataTools();
     }
 
     public void openDataComparator() {
@@ -970,6 +1011,14 @@ public class MainFrame extends JFrame {
         int idx = workspaceTabs.getTabCount();
         workspaceTabs.addTab("Collection Runner Logs", panel);
         workspaceTabs.setTabComponentAt(idx, buildTabHeader("Collection Runner Logs", idx, panel));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
+    public void openMockServerLogs() {
+        MockServerLogsPanel panel = new MockServerLogsPanel(this);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("Mock Server Logs", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Mock Server Logs", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -2133,11 +2182,16 @@ public class MainFrame extends JFrame {
 
         // Read README.md
         String md = "";
-        try {
-            java.nio.file.Path p = java.nio.file.Paths.get(System.getProperty("user.dir"), "README.md");
-            if (java.nio.file.Files.exists(p))
-                md = java.nio.file.Files.readString(p);
+        try (java.io.InputStream is = MainFrame.class.getResourceAsStream("/README.md") != null 
+                ? MainFrame.class.getResourceAsStream("/README.md") 
+                : MainFrame.class.getClassLoader().getResourceAsStream("README.md")) {
+            if (is != null) {
+                md = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            } else {
+                md = "# Features\n\nNo README.md found.";
+            }
         } catch (Exception ignored) {
+            md = "# Features\n\nNo README.md found.";
         }
         if (md.isBlank())
             md = "# Features\n\nNo README.md found.";
@@ -2741,6 +2795,8 @@ public class MainFrame extends JFrame {
         if (!maximized) {
             storage.getSettings().setWindowWidth(getWidth());
             storage.getSettings().setWindowHeight(getHeight());
+            storage.getSettings().setWindowX(getX());
+            storage.getSettings().setWindowY(getY());
         }
         storage.saveSettings();
 

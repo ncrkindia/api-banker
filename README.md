@@ -1,4 +1,4 @@
-# ApiBanker - The Offline-First API Toolkit (v1.0.0-beta)
+# ApiBanker - The Offline-First API Toolkit (v1.1.0-beta)
 
 **ApiBanker** (formerly JAPI) is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, ApiBanker lets developers design, run, test, and manage REST/GraphQL/WebSocket requests locally on their machines without any registration, telemetry, or external network dependencies.
 
@@ -14,7 +14,7 @@ ApiBanker brings enterprise-grade API tools to your local environment without th
 
 ### ⚡ Scripting & Automation
 - **JavaScript Engine**: Write Pre-Request and Test scripts using Rhino JS.
-- **Dynamic Variables**: Manage State via `apibanker.globals`, `apibanker.environment`, and `apibanker.collectionVariables`. 
+- **Dynamic Variables**: Manage State via `apibanker.globals`, `apibanker.environment`, and `apibanker.collectionVariables`. When using `{{variableName}}` syntax, the resolution precedence is: **Environment > Collection > Global**. 
 - **Chaining**: Extract data from responses and pass it into subsequent requests effortlessly.
 - **Snippets**: Automatically insert scripts using the built-in UI Code Snippets sidebar.
 
@@ -35,6 +35,27 @@ ApiBanker brings enterprise-grade API tools to your local environment without th
 
 ---
 
+
+## 📦 Installation & Distribution
+
+ApiBanker is distributed in three distinct formats depending on your needs. Download the latest version from our [Releases Page](https://github.com/ncrkindia/api-banker/releases).
+
+1. **Classic Portable Bundle (`.zip` / `.tar.gz`)**
+   - **Description**: A highly portable archive containing the main executable JAR and simple `.bat`/`.sh` launcher scripts.
+   - **Best For**: Users who already have Java 21+ installed and want to run the app directly from any folder or USB drive.
+   - **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/apibanker.zip)
+
+2. **Professional Native Installer (`.msi`)**
+   - **Description**: A full standalone Windows installation wizard that bundles a stripped-down JRE along with the application.
+   - **Best For**: End-users who want a standard setup experience (installing to `Program Files`, creating shortcuts) and do NOT have Java installed.
+   - **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-installer.msi)
+
+3. **Standalone Native Executable (`.exe`)**
+   - **Description**: A true native Windows executable generated via GraalVM's Ahead-Of-Time (AOT) compiler. Converts Java bytecode directly to native machine code.
+   - **Best For**: Power users wanting instant startup times, low memory footprints, and a single drag-and-drop `.exe` file without any installation process or JRE requirement.
+   - **Download**: [ApiBanker.exe](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker.exe)
+
+---
 
 ## 🤝 Contributing
 Contributions are highly welcome! Because this is a Swing application, we heavily emphasize keeping external UI libraries to a minimum. 

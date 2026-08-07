@@ -114,6 +114,16 @@ public class HttpClientWrapper {
                         .orElse(null);
             }
             if (value == null) {
+                java.util.List<KeyValueItem> globals = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
+                if (globals != null) {
+                    value = globals.stream()
+                        .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
+                        .map(KeyValueItem::getValue)
+                        .findFirst()
+                        .orElse(null);
+                }
+            }
+            if (value == null) {
                 value = matcher.group(0);
             }
             matcher.appendReplacement(sb, Matcher.quoteReplacement(value));

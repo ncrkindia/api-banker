@@ -19,7 +19,7 @@ import java.awt.*;
  * </p>
  * 
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.1.0-beta
  * @since 1.0.0
  */
 public class App {
@@ -49,12 +49,15 @@ public class App {
 
         SwingUtilities.invokeLater(() -> {
             MainFrame frame = new MainFrame();
+            
+            in.slpro.apibanker.model.AppSettings settings = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings();
+            if (settings.getWindowX() != -1 && settings.getWindowY() != -1) {
+                frame.setLocation(settings.getWindowX(), settings.getWindowY());
+            } else {
+                frame.setLocation(0, 0); // Top-left corner
+            }
+            
             frame.setVisible(true);
-            // Center on screen
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            int x = (screenSize.width - frame.getWidth()) / 2;
-            int y = (screenSize.height - frame.getHeight()) / 2;
-            frame.setLocation(x, y);
         });
     }
 
@@ -231,7 +234,7 @@ public class App {
             // fallback
         }
         if (version == null || version.isEmpty() || "${project.version}".equals(version)) {
-            version = "1.4.0-beta"; // fallback if running outside jar or un-filtered environment
+            version = "1.1.0-beta"; // fallback if running outside jar or un-filtered environment
         }
         return version;
     }

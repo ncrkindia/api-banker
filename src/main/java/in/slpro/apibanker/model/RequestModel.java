@@ -29,7 +29,7 @@ public class RequestModel {
     private String bodyRawType = "JSON"; // JSON, Text, HTML, XML, JavaScript
     private String bodyRawContent = "";
     private List<KeyValueItem> formData = new ArrayList<>();
-    private String authType = "none"; // none, bearer, basic, apiKey
+    private String authType = "inherit"; // inherit, none, bearer, basic, apiKey
     private String authToken = "";
     private String authUsername = "";
     private String authPassword = "";

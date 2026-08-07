@@ -214,12 +214,16 @@ public class GlobalVariablesPanel extends JPanel {
                     int modelRow = table.convertRowIndexToModel(r);
                     if (!model.isCellEditable(modelRow, 1)) continue;
                     
-                    Boolean enabled = (Boolean) model.getValueAt(modelRow, 0);
-                    String key = (String) model.getValueAt(modelRow, 1);
-                    String value = (String) model.getValueAt(modelRow, 2);
-                    sb.append(enabled != null ? enabled : true).append("\t")
-                            .append(key != null ? key : "").append("\t")
-                            .append(value != null ? value : "").append("\n");
+                    for (int c = 0; c < model.getColumnCount(); c++) {
+                        Object val = model.getValueAt(modelRow, c);
+                        if (c == 0 && val instanceof Boolean) {
+                            sb.append(val);
+                        } else {
+                            sb.append(val != null ? val.toString() : "");
+                        }
+                        if (c < model.getColumnCount() - 1) sb.append("\t");
+                    }
+                    sb.append("\n");
                 }
                 if (sb.length() == 0) return;
                 java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(
@@ -249,18 +253,23 @@ public class GlobalVariablesPanel extends JPanel {
                             continue;
                         String[] parts = line.split("\t", -1);
                         if (parts.length >= 2) {
-                            boolean enabled = true;
-                            String key = "";
-                            String value = "";
-                            if (parts.length == 3) {
-                                enabled = Boolean.parseBoolean(parts[0]);
-                                key = parts[1];
-                                value = parts[2];
-                            } else if (parts.length >= 2) {
-                                key = parts[0];
-                                value = parts[1];
+                            Object[] newRow = new Object[model.getColumnCount()];
+                            for (int c = 0; c < model.getColumnCount(); c++) {
+                                if (c < parts.length) {
+                                    if (c == 0 && model.getColumnClass(0) == Boolean.class) {
+                                        newRow[c] = Boolean.parseBoolean(parts[c]);
+                                    } else {
+                                        newRow[c] = parts[c];
+                                    }
+                                } else {
+                                    if (c == 0 && model.getColumnClass(0) == Boolean.class) {
+                                        newRow[c] = true;
+                                    } else {
+                                        newRow[c] = "";
+                                    }
+                                }
                             }
-                            model.addRow(new Object[] { enabled, key, value });
+                            model.addRow(newRow);
                             insertedCount++;
                         }
                     }

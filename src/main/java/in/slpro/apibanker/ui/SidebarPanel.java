@@ -106,6 +106,7 @@ public class SidebarPanel extends JPanel {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 String newName = (newValue != null) ? newValue.toString().trim() : "";
                 if (!newName.isEmpty()) {
+                    mainFrame.pushCollectionStateForUndo();
                     if (node.getUserObject() instanceof CollectionModel col) {
                         col.setName(newName);
                         nodeChanged(node);
@@ -172,6 +173,8 @@ public class SidebarPanel extends JPanel {
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_D) {
                     clipboardNode = uo;
                     handlePaste(node);
+                } else if (ctrl && code == java.awt.event.KeyEvent.VK_Z) {
+                    mainFrame.undoCollectionTree();
                 }
             }
         });
@@ -372,31 +375,27 @@ public class SidebarPanel extends JPanel {
             open.addActionListener(e -> mainFrame.openCollection(col));
 
             JMenu addMenu = new JMenu("Add");
-            JMenuItem addReqItem = new JMenuItem("Add Request");
+            JMenuItem addReqItem = new JMenuItem("Request");
             addReqItem.addActionListener(e -> createRequest());
-            JMenuItem addFolderItem = new JMenuItem("Add Folder");
+            JMenuItem addFolderItem = new JMenuItem("Folder");
             addFolderItem.addActionListener(e -> createFolder(node));
-            JMenuItem addRunnerItem = new JMenuItem("Add Runner");
-            addRunnerItem.addActionListener(e -> mainFrame.addRunnerToCollection(col));
-            JMenuItem addJwtItem = new JMenuItem("Add JWT");
-            addJwtItem.addActionListener(e -> mainFrame.openJwtDecoder());
-            JMenuItem addCompItem = new JMenuItem("Add Data Comparator");
-            addCompItem.addActionListener(e -> mainFrame.addComparatorToCollection(col));
-            JMenuItem addMockItem = new JMenuItem("Add Mock Server");
-            addMockItem.addActionListener(e -> mainFrame.addMockServerToCollection(col));
-            JMenuItem addJsonItem = new JMenuItem("Add JSON Formatter");
-            addJsonItem.addActionListener(e -> mainFrame.openJsonTool());
-            JMenuItem addWsItem = new JMenuItem("Add WebSocket Client");
+            JMenuItem addWsItem = new JMenuItem("WebSocket Client");
             addWsItem.addActionListener(e -> mainFrame.addWebSocketToCollection(col));
+
+            JMenuItem addRunnerItem = new JMenuItem("Runner");
+            addRunnerItem.addActionListener(e -> mainFrame.addRunnerToCollection(col));
+            JMenuItem addCompItem = new JMenuItem("Data Comparator");
+            addCompItem.addActionListener(e -> mainFrame.addComparatorToCollection(col));
+            JMenuItem addMockItem = new JMenuItem("Mock Server");
+            addMockItem.addActionListener(e -> mainFrame.addMockServerToCollection(col));
 
             addMenu.add(addReqItem);
             addMenu.add(addFolderItem);
+            addMenu.add(addWsItem);
+            addMenu.addSeparator();
             addMenu.add(addRunnerItem);
-            addMenu.add(addJwtItem);
             addMenu.add(addCompItem);
             addMenu.add(addMockItem);
-            addMenu.add(addJsonItem);
-            addMenu.add(addWsItem);
 
             JMenuItem delete = new JMenuItem("Delete Collection");
             delete.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
@@ -788,6 +787,8 @@ public class SidebarPanel extends JPanel {
         if (copied == null)
             return;
 
+        mainFrame.pushCollectionStateForUndo();
+
         Object targetUserObj = targetNode.getUserObject();
         CollectionModel parentCol = null;
         if (targetUserObj instanceof CollectionModel) {
@@ -857,5 +858,3 @@ public class SidebarPanel extends JPanel {
         return String.format("#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
     }
 }
-
-

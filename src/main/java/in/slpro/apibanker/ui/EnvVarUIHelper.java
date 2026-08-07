@@ -51,9 +51,19 @@ public class EnvVarUIHelper {
         JLabel label = new JLabel("{{" + varName + "}}");
         label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
-        boolean resolved = environment != null && environment.getVariables() != null &&
-                environment.getVariables().stream()
+        boolean resolved = false;
+        if (environment != null && environment.getVariables() != null) {
+            resolved = environment.getVariables().stream()
+                    .anyMatch(kv -> kv.isEnabled() && varName.equals(kv.getKey()));
+        }
+        if (!resolved) {
+            // Check global variables
+            java.util.List<KeyValueItem> globals = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
+            if (globals != null) {
+                resolved = globals.stream()
                         .anyMatch(kv -> kv.isEnabled() && varName.equals(kv.getKey()));
+            }
+        }
 
         label.setForeground(resolved ? new Color(39, 174, 96) : new Color(192, 57, 43));
         badge.add(label);

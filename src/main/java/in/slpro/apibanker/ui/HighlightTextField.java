@@ -60,7 +60,7 @@ public class HighlightTextField extends JTextField {
 
             Color textColor = VariableHelper.getUnresolvedColor();
             if (res.resolved) {
-                textColor = res.isEnv ? VariableHelper.getEnvColor() : VariableHelper.getCollectionColor();
+                textColor = res.getColor();
             }
 
             try {

@@ -872,12 +872,11 @@ public class RequestPanel extends JPanel {
                                     requestModel, mainFrame);
                             String colorStr;
                             if (res.resolved) {
-                                Color colVal = res.isEnv ? VariableHelper.getEnvColor()
-                                        : VariableHelper.getCollectionColor();
+                                Color colVal = res.getColor();
                                 colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(),
                                         colVal.getBlue());
                             } else {
-                                Color colVal = VariableHelper.getUnresolvedColor();
+                                Color colVal = res.getColor();
                                 colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(),
                                         colVal.getBlue());
                             }
@@ -1043,12 +1042,11 @@ public class RequestPanel extends JPanel {
                                     requestModel, mainFrame);
                             String colorStr;
                             if (res.resolved) {
-                                Color colVal = res.isEnv ? VariableHelper.getEnvColor()
-                                        : VariableHelper.getCollectionColor();
+                                Color colVal = res.getColor();
                                 colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(),
                                         colVal.getBlue());
                             } else {
-                                Color colVal = VariableHelper.getUnresolvedColor();
+                                Color colVal = res.getColor();
                                 colorStr = String.format("#%02x%02x%02x", colVal.getRed(), colVal.getGreen(),
                                         colVal.getBlue());
                             }

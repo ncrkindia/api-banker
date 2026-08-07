@@ -22,6 +22,8 @@ public class AppSettings {
     private String globalRedirectSetting = "YES"; // YES, NO, YES_FORCED, NO_FORCED
     private int windowWidth = 1300;
     private int windowHeight = 800;
+    private int windowX = -1;
+    private int windowY = -1;
     private boolean windowMaximized = true;
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
@@ -128,6 +130,22 @@ public class AppSettings {
 
     public void setWindowHeight(int windowHeight) {
         this.windowHeight = windowHeight;
+    }
+
+    public int getWindowX() {
+        return windowX;
+    }
+
+    public void setWindowX(int windowX) {
+        this.windowX = windowX;
+    }
+
+    public int getWindowY() {
+        return windowY;
+    }
+
+    public void setWindowY(int windowY) {
+        this.windowY = windowY;
     }
 
     public boolean isWindowMaximized() {

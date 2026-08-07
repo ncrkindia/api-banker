@@ -49,19 +49,32 @@ public class VariableHelper {
                 : new Color(192, 57, 43); // Darker red for light theme
     }
 
+    public static Color getGlobalColor() {
+        return com.formdev.flatlaf.FlatLaf.isLafDark()
+                ? new Color(155, 89, 182) // Purple for dark theme
+                : new Color(142, 68, 173); // Dark purple for light theme
+    }
+
     public static class VariableResolution {
         public final String name;
         public final String source; // Environment name, Collection name, etc.
         public final String value;
         public final boolean resolved;
-        public final boolean isEnv;
+        public final String type; // "env", "collection", "global"
 
-        public VariableResolution(String name, String source, String value, boolean resolved, boolean isEnv) {
+        public VariableResolution(String name, String source, String value, boolean resolved, String type) {
             this.name = name;
             this.source = source;
             this.value = value;
             this.resolved = resolved;
-            this.isEnv = isEnv;
+            this.type = type;
+        }
+
+        public Color getColor() {
+            if (!resolved) return getUnresolvedColor();
+            if ("env".equals(type)) return getEnvColor();
+            if ("global".equals(type)) return getGlobalColor();
+            return getCollectionColor();
         }
     }
 
@@ -70,7 +83,7 @@ public class VariableHelper {
             mainFrame = MainFrame.getInstance();
         }
         if (mainFrame == null) {
-            return new VariableResolution(varName, "Unresolved", null, false, false);
+            return new VariableResolution(varName, "Unresolved", null, false, "unresolved");
         }
 
         // 1. Check Active Environment
@@ -79,7 +92,7 @@ public class VariableHelper {
             for (KeyValueItem kv : activeEnv.getVariables()) {
                 if (kv.isEnabled() && varName.equals(kv.getKey())) {
                     return new VariableResolution(varName, "Environment (" + activeEnv.getName() + ")", kv.getValue(),
-                            true, true);
+                            true, "env");
                 }
             }
         }
@@ -89,12 +102,22 @@ public class VariableHelper {
             for (KeyValueItem kv : collection.getVariables()) {
                 if (kv.isEnabled() && varName.equals(kv.getKey())) {
                     return new VariableResolution(varName, "Collection (" + collection.getName() + ")", kv.getValue(),
-                            true, false);
+                            true, "collection");
                 }
             }
         }
 
-        return new VariableResolution(varName, "Unresolved", null, false, false);
+        // 3. Check Global Variables
+        java.util.List<KeyValueItem> globals = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
+        if (globals != null) {
+            for (KeyValueItem kv : globals) {
+                if (kv.isEnabled() && varName.equals(kv.getKey())) {
+                    return new VariableResolution(varName, "Global", kv.getValue(), true, "global");
+                }
+            }
+        }
+
+        return new VariableResolution(varName, "Unresolved", null, false, "unresolved");
     }
 
     public static VariableResolution resolveVariable(String varName, RequestModel requestModel, MainFrame mainFrame) {

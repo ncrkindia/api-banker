@@ -80,6 +80,27 @@ public class ResponsePanel extends JPanel {
         sslLabel.setOpaque(true);
         sslLabel.setVisible(false);
         sslLabel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        sslLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        sslLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            private JPopupMenu popup;
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (currentResponse != null && currentResponse.getSslDetails() != null && !currentResponse.getSslDetails().isBlank()) {
+                    if (popup == null) {
+                        popup = new JPopupMenu();
+                        JEditorPane ep = new JEditorPane("text/html", "<html><body style='font-family:\"JetBrains Mono\", monospace; font-size:11px; margin:5px;'>" + currentResponse.getSslDetails().replace("\n", "<br>") + "</body></html>");
+                        ep.setEditable(false);
+                        ep.setBackground(UIManager.getColor("PopupMenu.background"));
+                        popup.add(ep);
+                    }
+                    popup.show(sslLabel, 0, sslLabel.getHeight());
+                }
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                // Do not hide immediately to allow user to move mouse to popup and copy
+            }
+        });
 
         statusBar.add(new JLabel("Status:"));
         statusBar.add(statusLabel);
@@ -323,7 +344,6 @@ public class ResponsePanel extends JPanel {
         // SSL Label
         if (response.getSslDetails() != null && !response.getSslDetails().isBlank()) {
             sslLabel.setVisible(true);
-            sslLabel.setToolTipText(response.getSslDetails());
             if (response.isSslValid()) {
                 sslLabel.setForeground(new Color(39, 174, 96));
                 sslLabel.setBackground(new Color(39, 174, 96, 30));

@@ -7,7 +7,7 @@
     <groupId>in.slpro</groupId>
     <artifactId>apibanker</artifactId>
     <name>ApiBanker</name>
-    <version>1.0.0-beta</version>
+    <version>1.1.0-beta</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -94,6 +94,12 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <resource>
+                <directory>.</directory>
+                <includes>
+                    <include>README.md</include>
+                </includes>
+            </resource>
         </resources>
         <plugins>
             <!-- Compiler plugin -->
@@ -171,5 +177,206 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native-installer-windows</id>
+            <activation>
+                <os><family>windows</family></os>
+                <property><name>buildNative</name></property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-jpackage-input</id>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/jpackage-input"/>
+                                        <mkdir dir="${project.build.directory}/jpackage-input"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/apibanker.jar"/>
+                                    </target>
+                                </configuration>
+                                <goals><goal>run</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.1</version>
+                        <executions>
+                            <execution>
+                                <id>create-msi</id>
+                                <phase>verify</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument><argument>msi</argument>
+                                        <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/installers</argument>
+                                        <argument>--name</argument><argument>ApiBanker-installer</argument>
+                                        <argument>--main-jar</argument><argument>apibanker.jar</argument>
+                                        <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
+                                        <argument>--win-shortcut</argument>
+                                        <argument>--win-menu</argument>
+                                        <argument>--win-dir-chooser</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>native-installer-linux</id>
+            <activation>
+                <os><family>unix</family><name>Linux</name></os>
+                <property><name>buildNative</name></property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-jpackage-input</id>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/jpackage-input"/>
+                                        <mkdir dir="${project.build.directory}/jpackage-input"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/apibanker.jar"/>
+                                    </target>
+                                </configuration>
+                                <goals><goal>run</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.1</version>
+                        <executions>
+                            <execution>
+                                <id>create-deb</id>
+                                <phase>verify</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument><argument>deb</argument>
+                                        <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/installers</argument>
+                                        <argument>--name</argument><argument>apibanker</argument>
+                                        <argument>--main-jar</argument><argument>apibanker.jar</argument>
+                                        <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
+                                        <argument>--linux-shortcut</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>native-installer-mac</id>
+            <activation>
+                <os><family>mac</family></os>
+                <property><name>buildNative</name></property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-jpackage-input</id>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/jpackage-input"/>
+                                        <mkdir dir="${project.build.directory}/jpackage-input"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/apibanker.jar"/>
+                                    </target>
+                                </configuration>
+                                <goals><goal>run</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.1</version>
+                        <executions>
+                            <execution>
+                                <id>create-pkg</id>
+                                <phase>verify</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument><argument>pkg</argument>
+                                        <argument>--input</argument><argument>${project.build.directory}/jpackage-input</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}/installers</argument>
+                                        <argument>--name</argument><argument>ApiBanker</argument>
+                                        <argument>--main-jar</argument><argument>apibanker.jar</argument>
+                                        <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>graalvm-native-image</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>0.10.2</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <imageName>ApiBanker</imageName>
+                            <mainClass>in.slpro.apibanker.App</mainClass>
+                            <buildArgs>
+                                <buildArg>--no-fallback</buildArg>
+                                <buildArg>--enable-http</buildArg>
+                                <buildArg>--enable-https</buildArg>
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
 
