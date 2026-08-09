@@ -1033,17 +1033,20 @@ public class CollectionRunnerPanel extends JPanel {
                                 failedCount.incrementAndGet();
                             totalDuration.addAndGet(dur);
 
-                            runSamples.add(new RunSample(System.currentTimeMillis(), req.getName(), req.getMethod(),
+                            String suffix = (req.getId() != null && req.getId().length() >= 4) ? " -" + req.getId().substring(0, 4) : "";
+                            String displayName = req.getName() + suffix;
+
+                            runSamples.add(new RunSample(System.currentTimeMillis(), displayName, req.getMethod(),
                                     response.getStatusCode(), dur, ok));
 
                             String statusStr = response.getStatusCode() + " " + response.getStatusText();
-                            publish(new Object[] { count, currentIter, req.getName(), req.getMethod(), statusStr, dur,
+                            publish(new Object[] { count, currentIter, displayName, req.getMethod(), statusStr, dur,
                                     response.getActualUrl() != null ? response.getActualUrl() : req.getUrl() });
 
                             // Calculate aggregate stats
-                            String key = req.getName() + " [" + req.getMethod() + "]";
+                            String key = displayName + " [" + req.getMethod() + "]";
                             RequestStats stats = aggregateStatsMap.computeIfAbsent(key,
-                                    k -> new RequestStats(req.getName(), req.getMethod()));
+                                    k -> new RequestStats(displayName, req.getMethod()));
                             synchronized (stats) {
                                 stats.latencies.add(dur);
                                 stats.sizes.add(response.getSizeBytes());
@@ -1074,7 +1077,7 @@ public class CollectionRunnerPanel extends JPanel {
                                     String logTime = java.time.LocalDateTime.now().format(
                                             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                     finalWriter.printf("%s | %s %s | Status: %d | Latency: %dms%n",
-                                            logTime, req.getMethod(), req.getName(), response.getStatusCode(), dur);
+                                            logTime, req.getMethod(), displayName, response.getStatusCode(), dur);
                                 }
                             }
                             if (finalDumpWriter != null) {
@@ -1083,7 +1086,7 @@ public class CollectionRunnerPanel extends JPanel {
                                             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                     finalDumpWriter.println("-------------------------------------------------");
                                     finalDumpWriter.println("Time: " + logTime);
-                                    finalDumpWriter.println("Request Name: " + req.getName());
+                                    finalDumpWriter.println("Request Name: " + displayName);
                                     finalDumpWriter.println("URL: " + req.getMethod() + " "
                                             + (response.getActualUrl() != null ? response.getActualUrl()
                                                     : req.getUrl()));

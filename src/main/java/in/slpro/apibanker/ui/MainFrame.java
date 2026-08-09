@@ -43,6 +43,8 @@ public class MainFrame extends JFrame {
     private CardLayout workspaceCardLayout;
     private JComboBox<String> envCombo;
     private JButton envManageBtn;
+    private JButton globalVarBtn;
+    private JButton settingsBtn;
     private JPanel envSelectorPanel;
 
     private int currentFontSize = 16;
@@ -207,7 +209,6 @@ public class MainFrame extends JFrame {
         // Workspace
         workspaceTabs = new JTabbedPane();
         workspaceTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        workspaceTabs.putClientProperty("JTabbedPane.trailingComponent", buildEnvSelector());
 
         workspaceCardLayout = new CardLayout();
         workspacePanel = new JPanel(workspaceCardLayout);
@@ -358,17 +359,24 @@ public class MainFrame extends JFrame {
         bar.add(viewMenu);
         bar.add(toolsMenu);
         bar.add(helpMenu);
+        
+        bar.add(Box.createHorizontalGlue());
+        bar.add(buildEnvSelector());
+        
         return bar;
     }
 
     private JPanel buildEnvSelector() {
-        envSelectorPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        envSelectorPanel = new JPanel();
+        envSelectorPanel.setLayout(new BoxLayout(envSelectorPanel, BoxLayout.X_AXIS));
         envSelectorPanel.setOpaque(false);
-        envSelectorPanel.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 10));
+        envSelectorPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        envSelectorPanel.setAlignmentY(Component.CENTER_ALIGNMENT);
 
         envCombo = new JComboBox<>();
         envCombo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         refreshEnvCombo();
+        envCombo.setAlignmentY(Component.CENTER_ALIGNMENT);
 
         envCombo.addActionListener(e -> {
             int idx = envCombo.getSelectedIndex();
@@ -383,19 +391,62 @@ public class MainFrame extends JFrame {
         });
 
         envSelectorPanel.add(envCombo);
+        envSelectorPanel.add(Box.createHorizontalStrut(6));
 
-        envManageBtn = new JButton("⚙");
-        envManageBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        envManageBtn.setToolTipText("Manage Environments");
+        Dimension fixedSize = new Dimension(34, 34);
+
+        envManageBtn = new JButton("☁");
+        envManageBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        envManageBtn.setForeground(new Color(52, 152, 219));
+        envManageBtn.putClientProperty("fixedMargin", true);
+        envManageBtn.putClientProperty("fixedFont", true);
+        envManageBtn.setToolTipText("Environment Manager");
         envManageBtn.setFocusPainted(false);
+        envManageBtn.setMargin(new Insets(0, 0, 0, 0));
+        envManageBtn.setAlignmentY(Component.CENTER_ALIGNMENT);
+        envManageBtn.setPreferredSize(fixedSize);
+        envManageBtn.setMinimumSize(fixedSize);
+        envManageBtn.setMaximumSize(fixedSize);
         envManageBtn.addActionListener(e -> openEnvManager());
         envSelectorPanel.add(envManageBtn);
+        envSelectorPanel.add(Box.createHorizontalStrut(6));
+
+        globalVarBtn = new JButton("🌐");
+        globalVarBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        globalVarBtn.setForeground(new Color(46, 204, 113));
+        globalVarBtn.putClientProperty("fixedMargin", true);
+        globalVarBtn.putClientProperty("fixedFont", true);
+        globalVarBtn.setToolTipText("Global Variable Manager");
+        globalVarBtn.setFocusPainted(false);
+        globalVarBtn.setMargin(new Insets(0, 0, 0, 0));
+        globalVarBtn.setAlignmentY(Component.CENTER_ALIGNMENT);
+        globalVarBtn.setPreferredSize(fixedSize);
+        globalVarBtn.setMinimumSize(fixedSize);
+        globalVarBtn.setMaximumSize(fixedSize);
+        globalVarBtn.addActionListener(e -> openGlobalVariables());
+        envSelectorPanel.add(globalVarBtn);
+        envSelectorPanel.add(Box.createHorizontalStrut(6));
+
+        settingsBtn = new JButton("⚙");
+        settingsBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        settingsBtn.setForeground(new Color(230, 126, 34));
+        settingsBtn.putClientProperty("fixedMargin", true);
+        settingsBtn.putClientProperty("fixedFont", true);
+        settingsBtn.setToolTipText("Settings");
+        settingsBtn.setFocusPainted(false);
+        settingsBtn.setMargin(new Insets(0, 0, 0, 0));
+        settingsBtn.setAlignmentY(Component.CENTER_ALIGNMENT);
+        settingsBtn.setPreferredSize(fixedSize);
+        settingsBtn.setMinimumSize(fixedSize);
+        settingsBtn.setMaximumSize(fixedSize);
+        settingsBtn.addActionListener(e -> openSettings());
+        envSelectorPanel.add(settingsBtn);
 
         // Adjust initial dimensions based on currentFontSize
         int height = Math.max(26, currentFontSize + 10);
         int width = Math.max(140, currentFontSize * 9);
         envCombo.setPreferredSize(new Dimension(width, height));
-        envManageBtn.setPreferredSize(new Dimension(height, height));
+        envCombo.setMaximumSize(new Dimension(width, height));
 
         return envSelectorPanel;
     }
@@ -488,13 +539,14 @@ public class MainFrame extends JFrame {
         sidebarPanel.refreshCollections(collections);
     }
 
-    public void createCollection(String name) {
+    public CollectionModel createCollection(String name) {
         pushCollectionStateForUndo();
         CollectionModel col = new CollectionModel(UUID.randomUUID().toString(), name);
         col.setRequests(new ArrayList<>());
         collections.add(col);
         saveCollections();
         sidebarPanel.refreshCollections(collections);
+        return col;
     }
 
     public void deleteCollection(CollectionModel col) {
@@ -533,7 +585,7 @@ public class MainFrame extends JFrame {
         }
     }
 
-    public void addRequestToCollection(CollectionModel col, String name) {
+    public RequestModel addRequestToCollection(CollectionModel col, String name) {
         pushCollectionStateForUndo();
         RequestModel req = new RequestModel();
         req.setName(name);
@@ -541,9 +593,10 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRequest(req);
+        return req;
     }
 
-    public void addRunnerToCollection(CollectionModel col) {
+    public RequestModel addRunnerToCollection(CollectionModel col) {
         pushCollectionStateForUndo();
         RequestModel runner = new RequestModel();
         runner.setName(col.getName() + " Runner");
@@ -553,6 +606,7 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRunner(col, runner);
+        return runner;
     }
 
     public void deleteRequest(RequestModel req) {
@@ -574,7 +628,32 @@ public class MainFrame extends JFrame {
         }
     }
 
-    public void addComparatorToCollection(CollectionModel col) {
+    public void deleteMultiple(List<Object> items) {
+        if (items == null || items.isEmpty()) return;
+        pushCollectionStateForUndo();
+        boolean changed = false;
+        for (Object item : items) {
+            if (item instanceof CollectionModel col) {
+                if (OTHERS_COLLECTION_ID.equals(col.getId())) continue;
+                closeTabsForCollectionRecursive(col);
+                if (deleteCollectionRecursive(collections, col)) changed = true;
+            } else if (item instanceof RequestModel req) {
+                closeTabForRequest(req);
+                for (CollectionModel c : collections) {
+                    if (deleteRequestRecursive(c, req)) {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (changed) {
+            saveCollections();
+            sidebarPanel.refreshCollections(collections);
+        }
+    }
+
+    public RequestModel addComparatorToCollection(CollectionModel col) {
         pushCollectionStateForUndo();
         RequestModel comp = new RequestModel();
         comp.setName(col.getName() + " Comparator");
@@ -584,9 +663,10 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRequest(comp);
+        return comp;
     }
 
-    public void addMockServerToCollection(CollectionModel col) {
+    public RequestModel addMockServerToCollection(CollectionModel col) {
         pushCollectionStateForUndo();
         RequestModel mock = new RequestModel();
         mock.setName(col.getName() + " Mock Server");
@@ -596,9 +676,10 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openMockServer(mock);
+        return mock;
     }
 
-    public void addWebSocketToCollection(CollectionModel col) {
+    public RequestModel addWebSocketToCollection(CollectionModel col) {
         RequestModel ws = new RequestModel();
         ws.setName(col.getName() + " WS Client");
         ws.setType("websocket");
@@ -607,6 +688,7 @@ public class MainFrame extends JFrame {
         saveCollections();
         sidebarPanel.refreshCollections(collections);
         openRequest(ws);
+        return ws;
     }
 
     public RequestModel duplicateRequestModel(RequestModel req) {
@@ -1057,15 +1139,40 @@ public class MainFrame extends JFrame {
                     }
                 }
                 saveCollections();
+            } else if (tabContent instanceof SettingsPanel sp) {
+                if (sp.hasUnsavedChanges()) {
+                    int option = JOptionPane.showConfirmDialog(
+                            this,
+                            "Settings have unsaved changes. Save them?",
+                            "Save Changes?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+                    if (option == JOptionPane.YES_OPTION) {
+                        sp.saveSettings();
+                    } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
+                        return false;
+                    }
+                }
             } else if (tabContent instanceof CollectionRunnerPanel crp) {
                 crp.saveConfig();
                 saveCollections();
             } else if (tabContent instanceof LogConsolePanel lcp) {
                 lcp.removeListener();
             } else if (tabContent instanceof MockServerPanel msp) {
+                if (msp.hasUnsavedChanges()) {
+                    int option = JOptionPane.showConfirmDialog(
+                            this,
+                            "Mock Server has unsaved changes. Save them?",
+                            "Save Changes?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+                    if (option == JOptionPane.YES_OPTION) {
+                        msp.save();
+                    } else if (option == JOptionPane.CANCEL_OPTION || option == JOptionPane.CLOSED_OPTION) {
+                        return false;
+                    }
+                }
                 msp.stopServerIfRunning();
-                msp.updateModel();
-                saveCollections();
             }
             workspaceTabs.removeTabAt(idx);
             return true;
@@ -1183,7 +1290,22 @@ public class MainFrame extends JFrame {
         }
         JLabel titleLabel = new JLabel(displayTitle);
         titleLabel.setToolTipText(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, currentFontSize));
+        
+        if ("☁".equals(title) || "🌐".equals(title) || "⚙".equals(title)) {
+            titleLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, currentFontSize + 2));
+            if ("☁".equals(title)) {
+                titleLabel.setForeground(new Color(52, 152, 219));
+                titleLabel.setToolTipText("Environment Manager");
+            } else if ("🌐".equals(title)) {
+                titleLabel.setForeground(new Color(46, 204, 113));
+                titleLabel.setToolTipText("Global Variables Manager");
+            } else if ("⚙".equals(title)) {
+                titleLabel.setForeground(new Color(230, 126, 34));
+                titleLabel.setToolTipText("Settings");
+            }
+        } else {
+            titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, currentFontSize));
+        }
 
         boolean renameable = (tabContent instanceof RequestPanel) ||
                 (tabContent instanceof CollectionRunnerPanel) ||
@@ -1378,9 +1500,10 @@ public class MainFrame extends JFrame {
             }
         }
         EnvironmentManagerPanel panel = new EnvironmentManagerPanel(this);
+        panel.updateFontSize(currentFontSize);
         int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("Environment Manager", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Environment Manager", idx, panel));
+        workspaceTabs.addTab("☁", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("☁", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -1409,9 +1532,10 @@ public class MainFrame extends JFrame {
             }
         }
         GlobalVariablesPanel panel = new GlobalVariablesPanel(this);
+        panel.updateFontSize(currentFontSize);
         int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("Global Variables", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Global Variables", idx, panel));
+        workspaceTabs.addTab("🌐", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("🌐", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -2130,9 +2254,10 @@ public class MainFrame extends JFrame {
         }
 
         SettingsPanel panel = new SettingsPanel(this);
+        panel.updateFontSize(currentFontSize);
         int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("Settings", panel);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("Settings", idx, panel));
+        workspaceTabs.addTab("⚙", panel);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("⚙", idx, panel));
         workspaceTabs.setSelectedIndex(idx);
     }
 
@@ -2671,7 +2796,8 @@ public class MainFrame extends JFrame {
             int height = Math.max(26, size + 10);
             int width = Math.max(140, size * 9);
             envCombo.setPreferredSize(new Dimension(width, height));
-            envManageBtn.setPreferredSize(new Dimension(height, height));
+            envCombo.setMaximumSize(new Dimension(width, height));
+            
             if (envSelectorPanel != null) {
                 envSelectorPanel.revalidate();
                 envSelectorPanel.repaint();

@@ -213,37 +213,7 @@ public class SettingsPanel extends JPanel {
         saveBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         saveBtn.setForeground(Color.WHITE);
         saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        saveBtn.addActionListener(e -> {
-            String newDir = dirField.getText().trim();
-            boolean dirChanged = !newDir.equals(storage.getSettings().getDataDirectory());
-
-            storage.updateDataDirectory(newDir);
-
-            if (dirChanged) {
-                storage.saveCollections(mainFrame.getCollections());
-                storage.saveEnvironments(mainFrame.getEnvironments());
-                storage.saveHistory(mainFrame.getHistoryList());
-            }
-
-            storage.updateLogsDirectory(logsDirField.getText().trim());
-            storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
-            storage.getSettings().setEnableLogging(loggingCheck.isSelected());
-            in.slpro.apibanker.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
-
-            int sslIndex = sslPolicyCombo.getSelectedIndex();
-            String sslVal = "VERIFY";
-            if (sslIndex == 1) {
-                sslVal = "NO_VERIFY";
-            } else if (sslIndex == 2) {
-                sslVal = "VERIFY_FORCED";
-            } else if (sslIndex == 3) {
-                sslVal = "NO_VERIFY_FORCED";
-            }
-            storage.getSettings().setGlobalSslSetting(sslVal);
-
-            storage.saveSettings();
-            MainFrame.showToast(this, "Settings saved. Restart ApiBanker to apply theme changes.");
-        });
+        saveBtn.addActionListener(e -> saveSettings());
 
         JButton cancelBtn = new JButton("Close Tab");
         cancelBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -254,6 +224,59 @@ public class SettingsPanel extends JPanel {
         btnsPanel.add(cancelBtn);
         btnsPanel.add(saveBtn);
         add(btnsPanel, BorderLayout.SOUTH);
+    }
+    
+    public void saveSettings() {
+        String newDir = dirField.getText().trim();
+        boolean dirChanged = !newDir.equals(storage.getSettings().getDataDirectory());
+
+        storage.updateDataDirectory(newDir);
+
+        if (dirChanged) {
+            storage.saveCollections(mainFrame.getCollections());
+            storage.saveEnvironments(mainFrame.getEnvironments());
+            storage.saveHistory(mainFrame.getHistoryList());
+        }
+
+        storage.updateLogsDirectory(logsDirField.getText().trim());
+        storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
+        storage.getSettings().setEnableLogging(loggingCheck.isSelected());
+        in.slpro.apibanker.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
+
+        int sslIndex = sslPolicyCombo.getSelectedIndex();
+        String sslVal = "VERIFY";
+        if (sslIndex == 1) {
+            sslVal = "NO_VERIFY";
+        } else if (sslIndex == 2) {
+            sslVal = "VERIFY_FORCED";
+        } else if (sslIndex == 3) {
+            sslVal = "NO_VERIFY_FORCED";
+        }
+        storage.getSettings().setGlobalSslSetting(sslVal);
+
+        storage.saveSettings();
+        MainFrame.showToast(this, "Settings saved. Restart ApiBanker to apply theme changes.");
+    }
+    
+    public boolean hasUnsavedChanges() {
+        var s = storage.getSettings();
+        if (!dirField.getText().trim().equals(s.getDataDirectory())) return true;
+        if (!logsDirField.getText().trim().equals(s.getLogsDirectory())) return true;
+        if (!themeCombo.getSelectedItem().toString().equals(s.getTheme())) return true;
+        if (loggingCheck.isSelected() != s.isEnableLogging()) return true;
+        
+        int sslIndex = sslPolicyCombo.getSelectedIndex();
+        String sslVal = "VERIFY";
+        if (sslIndex == 1) {
+            sslVal = "NO_VERIFY";
+        } else if (sslIndex == 2) {
+            sslVal = "VERIFY_FORCED";
+        } else if (sslIndex == 3) {
+            sslVal = "NO_VERIFY_FORCED";
+        }
+        if (!sslVal.equals(s.getGlobalSslSetting())) return true;
+        
+        return false;
     }
 
     public void updateFontSize(int size) {

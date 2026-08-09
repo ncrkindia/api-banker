@@ -102,8 +102,11 @@ public class App {
                 UIManager.put("Button.focusedBorderColor", primaryAccentDark);
 
                 UIManager.put("TabbedPane.showTabSeparators", true);
+                UIManager.put("TabbedPane.tabType", "underlined");
                 UIManager.put("TabbedPane.underlineColor", primaryAccentDark);
-                UIManager.put("TabbedPane.focusColor", primaryAccentDark);
+                UIManager.put("TabbedPane.inactiveUnderlineColor", primaryAccentDark);
+                UIManager.put("TabbedPane.focusColor", new Color(0, 0, 0, 0));
+                UIManager.put("TabbedPane.showFocusIndicator", false);
                 UIManager.put("TabbedPane.tabHeight", 34);
                 UIManager.put("TabbedPane.selectedBackground", new Color(45, 48, 52));
                 UIManager.put("TabbedPane.hoverColor", new Color(60, 63, 67));
@@ -147,6 +150,7 @@ public class App {
 
                 // Tabs
                 UIManager.put("TabbedPane.showTabSeparators", true);
+                UIManager.put("TabbedPane.tabType", "underlined");
                 UIManager.put("TabbedPane.tabHeight", 34);
                 UIManager.put("TabbedPane.selectedBackground", lightBg);
                 UIManager.put("TabbedPane.background", panelBg);
@@ -154,8 +158,9 @@ public class App {
                 UIManager.put("TabbedPane.selectedForeground", Color.BLACK);
                 UIManager.put("TabbedPane.hoverColor", selectBg);
                 UIManager.put("TabbedPane.underlineColor", primaryAccent);
-                UIManager.put("TabbedPane.inactiveUnderlineColor", lightBg);
-                UIManager.put("TabbedPane.focusColor", primaryAccent);
+                UIManager.put("TabbedPane.inactiveUnderlineColor", primaryAccent);
+                UIManager.put("TabbedPane.focusColor", new Color(0, 0, 0, 0));
+                UIManager.put("TabbedPane.showFocusIndicator", false);
 
                 // Focus rings and borders
                 UIManager.put("Component.focusColor", primaryAccent);

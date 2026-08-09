@@ -21,10 +21,12 @@ public class FontScaleHelper {
             return;
 
         Font current = comp.getFont();
-        if (current != null) {
-            int style = current.getStyle();
+        if (comp instanceof JComponent jcomp && Boolean.TRUE.equals(jcomp.getClientProperty("fixedFont"))) {
+            // Keep existing font
+        } else if (current != null) {
             String family = current.getFamily();
-            if (comp instanceof org.fife.ui.rsyntaxtextarea.RSyntaxTextArea ||
+            int style = current.getStyle();
+            if ("Consolas".equalsIgnoreCase(family) || 
                     (current.getName() != null && current.getName().toLowerCase().contains("mono"))) {
                 family = "JetBrains Mono";
             }
@@ -42,7 +44,9 @@ public class FontScaleHelper {
         }
 
         if (comp instanceof AbstractButton btn) {
-            if (!"×".equals(btn.getText())) {
+            if (Boolean.TRUE.equals(btn.getClientProperty("fixedMargin"))) {
+                // Keep existing margin
+            } else if (!"×".equals(btn.getText())) {
                 int padY = Math.max(2, size / 5);
                 int padX = Math.max(6, size / 2);
                 btn.setMargin(new Insets(padY, padX, padY, padX));

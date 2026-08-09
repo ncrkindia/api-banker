@@ -757,21 +757,54 @@ public class CollectionPanel extends JPanel {
     private JPanel buildKVPanel(JTable table, DefaultTableModel model) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(UIManager.getColor("Panel.background"));
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        btns.setBackground(UIManager.getColor("Panel.background"));
-        JButton addBtn = new JButton("+ Add Row");
-        JButton delBtn = new JButton("Delete");
-        addBtn.addActionListener(e -> model.addRow(new Object[] { true, "", "", "" }));
-        delBtn.addActionListener(e -> {
-            int r = table.getSelectedRow();
-            if (r >= 0)
-                model.removeRow(r);
-        });
-        btns.add(addBtn);
-        btns.add(delBtn);
-        panel.add(btns, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        model.addTableModelListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                int rowCount = model.getRowCount();
+                if (rowCount == 0) {
+                    addEmptyRow(model);
+                } else {
+                    String key = (String) model.getValueAt(rowCount - 1, 1);
+                    String val = "";
+                    if (model.getColumnCount() >= 3) {
+                        val = (String) model.getValueAt(rowCount - 1, 2);
+                    }
+                    if ((key != null && !key.isBlank()) || (val != null && !val.isBlank())) {
+                        addEmptyRow(model);
+                    }
+                }
+            });
+        });
+
+        table.addPropertyChangeListener("tableCellEditor", e -> {
+            if (table.isEditing()) return;
+            SwingUtilities.invokeLater(() -> {
+                int editingRow = table.getEditingRow();
+                for (int i = model.getRowCount() - 2; i >= 0; i--) {
+                    String k = (String) model.getValueAt(i, 1);
+                    String v = "";
+                    if (model.getColumnCount() >= 3) {
+                        v = (String) model.getValueAt(i, 2);
+                    }
+                    if ((k == null || k.isBlank()) && (v == null || v.isBlank())) {
+                        if (i != editingRow) {
+                            model.removeRow(i);
+                        }
+                    }
+                }
+            });
+        });
+
         return panel;
+    }
+
+    private void addEmptyRow(DefaultTableModel model) {
+        if (model.getColumnCount() == 4) {
+            model.addRow(new Object[] { true, "", "", "" });
+        } else {
+            model.addRow(new Object[] { true, "", "" });
+        }
     }
 
     private JPanel buildScriptTab(RSyntaxTextArea scriptArea, boolean isTestScript) {
@@ -970,6 +1003,9 @@ public class CollectionPanel extends JPanel {
             boolean enabled = variablesModel.getValueAt(i, 0) instanceof Boolean b && b;
             String key = (String) variablesModel.getValueAt(i, 1);
             String value = (String) variablesModel.getValueAt(i, 2);
+            if ((key == null || key.isBlank()) && (value == null || value.isBlank())) {
+                continue;
+            }
             String desc = variablesModel.getColumnCount() > 3 ? (String) variablesModel.getValueAt(i, 3) : "";
             KeyValueItem kv = new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled);
             kv.setDescription(desc);
@@ -1036,6 +1072,9 @@ public class CollectionPanel extends JPanel {
             boolean enabled = variablesModel.getValueAt(i, 0) instanceof Boolean b && b;
             String key = (String) variablesModel.getValueAt(i, 1);
             String value = (String) variablesModel.getValueAt(i, 2);
+            if ((key == null || key.isBlank()) && (value == null || value.isBlank())) {
+                continue;
+            }
             String desc = variablesModel.getColumnCount() > 3 ? (String) variablesModel.getValueAt(i, 3) : "";
             KeyValueItem kv = new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled);
             kv.setDescription(desc);

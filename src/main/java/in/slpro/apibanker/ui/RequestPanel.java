@@ -45,7 +45,7 @@ public class RequestPanel extends JPanel {
     private HighlightTextField urlField;
     private JButton sendBtn;
     private JButton saveBtn;
-    private JButton codeBtn;
+    private CodeSnippetPanel codeSnippetPanel;
 
     // Request tabs
     private JTabbedPane requestTabs;
@@ -136,8 +136,27 @@ public class RequestPanel extends JPanel {
         urlBar.setBackground(UIManager.getColor("Panel.background"));
 
         methodCombo = new JComboBox<>(METHODS);
+        methodCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
+                    boolean cellHasFocus) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof String method) {
+                    if (!isSelected || index == -1) {
+                        c.setForeground(getMethodColor(method));
+                    }
+                    c.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                }
+                return c;
+            }
+        });
         methodCombo.setPreferredSize(new Dimension(90, 32));
         methodCombo.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        methodCombo.addActionListener(e -> {
+            String method = (String) methodCombo.getSelectedItem();
+            methodCombo.setForeground(getMethodColor(method));
+        });
+        methodCombo.setForeground(getMethodColor((String) methodCombo.getSelectedItem()));
         urlField = new HighlightTextField();
         urlField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         urlField.setPreferredSize(new Dimension(0, 32));
@@ -179,17 +198,9 @@ public class RequestPanel extends JPanel {
         sendBtn.setPreferredSize(new Dimension(80, 32));
         sendBtn.addActionListener(e -> sendRequest());
 
-        codeBtn = new JButton("Code");
-        codeBtn.setPreferredSize(new Dimension(70, 32));
-        codeBtn.addActionListener(e -> {
-            collectModel();
-            new CodeSnippetDialog(mainFrame, requestModel, mainFrame.getActiveEnvironment()).setVisible(true);
-        });
-
         saveBtn = new JButton("Save");
         saveBtn.setPreferredSize(new Dimension(70, 32));
         saveBtn.addActionListener(e -> save());
-        rightBtns.add(codeBtn);
         rightBtns.add(saveBtn);
         rightBtns.add(sendBtn);
 
@@ -599,6 +610,16 @@ public class RequestPanel extends JPanel {
 
         requestTabs.addTab("Settings", settingsOuter);
 
+        // Code Generation
+        codeSnippetPanel = new CodeSnippetPanel(mainFrame, requestModel);
+        requestTabs.addTab("</>", codeSnippetPanel);
+        requestTabs.addChangeListener(e -> {
+            if (requestTabs.getSelectedComponent() == codeSnippetPanel) {
+                collectModel();
+                codeSnippetPanel.refreshSnippet();
+            }
+        });
+
         // Response
         responsePanel = new ResponsePanel();
 
@@ -846,9 +867,10 @@ public class RequestPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected, boolean hasFocus,
                     int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
-                
+
                 if (t.getModel().getColumnCount() > 3) {
-                    Object desc = t.getModel().getValueAt(t.convertRowIndexToModel(row), t.getModel().getColumnCount() - 1);
+                    Object desc = t.getModel().getValueAt(t.convertRowIndexToModel(row),
+                            t.getModel().getColumnCount() - 1);
                     if (desc instanceof String && ((String) desc).contains("<calculated>")) {
                         if (!isSelected) {
                             c.setBackground(UIManager.getColor("Panel.background").darker());
@@ -861,7 +883,7 @@ public class RequestPanel extends JPanel {
                         }
                     }
                 }
-                
+
                 if (c instanceof JLabel label && value instanceof String s) {
                     if (s.contains("{{") && s.contains("}}")) {
                         java.util.regex.Matcher matcher = VariableHelper.VAR_PATTERN.matcher(s);
@@ -1016,7 +1038,7 @@ public class RequestPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected, boolean hasFocus,
                     int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
-                
+
                 if (t.getModel().getColumnCount() > 3) {
                     Object desc = t.getModel().getValueAt(t.convertRowIndexToModel(row), 3);
                     if (desc instanceof String && ((String) desc).contains("<calculated>")) {
@@ -1031,7 +1053,7 @@ public class RequestPanel extends JPanel {
                         }
                     }
                 }
-                
+
                 if (c instanceof JLabel label && value instanceof String s) {
                     if (s.contains("{{") && s.contains("}}")) {
                         java.util.regex.Matcher matcher = VariableHelper.VAR_PATTERN.matcher(s);
@@ -1079,7 +1101,8 @@ public class RequestPanel extends JPanel {
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
         model.addTableModelListener(e -> {
-            if (isSyncing) return;
+            if (isSyncing)
+                return;
             SwingUtilities.invokeLater(() -> {
                 boolean changed = false;
                 int rowCount = model.getRowCount();
@@ -1099,7 +1122,7 @@ public class RequestPanel extends JPanel {
                         changed = true;
                     }
                 }
-                
+
                 int editingRow = table.getEditingRow();
                 for (int i = model.getRowCount() - 2; i >= 0; i--) {
                     String k = (String) model.getValueAt(i, 1);
@@ -1148,19 +1171,23 @@ public class RequestPanel extends JPanel {
             }
 
             headersModel.setRowCount(0);
-            
+
             // 1. Add Default Computed Headers at the top
             headersModel.addRow(new Object[] { true, "Host", "<calculated at runtime>", "<calculated>" });
-            
+
             String bt = requestModel.getBodyType() != null ? requestModel.getBodyType() : "none";
             if (!"none".equalsIgnoreCase(bt)) {
                 String ct = "";
                 if ("raw".equalsIgnoreCase(bt)) {
                     String rt = requestModel.getBodyRawType();
-                    if ("JSON".equalsIgnoreCase(rt)) ct = "application/json";
-                    else if ("XML".equalsIgnoreCase(rt)) ct = "application/xml";
-                    else if ("HTML".equalsIgnoreCase(rt)) ct = "text/html";
-                    else ct = "text/plain";
+                    if ("JSON".equalsIgnoreCase(rt))
+                        ct = "application/json";
+                    else if ("XML".equalsIgnoreCase(rt))
+                        ct = "application/xml";
+                    else if ("HTML".equalsIgnoreCase(rt))
+                        ct = "text/html";
+                    else
+                        ct = "text/plain";
                 } else if ("form-data".equalsIgnoreCase(bt)) {
                     ct = "multipart/form-data; boundary=<calculated>";
                 } else if ("x-www-form-urlencoded".equalsIgnoreCase(bt) || "form".equalsIgnoreCase(bt)) {
@@ -1168,11 +1195,12 @@ public class RequestPanel extends JPanel {
                 } else if ("graphql".equalsIgnoreCase(bt)) {
                     ct = "application/json";
                 }
-                
+
                 // Only show computed Content-Type if user hasn't overridden it
                 boolean userHasCt = false;
                 if (requestModel.getHeaders() != null) {
-                    userHasCt = requestModel.getHeaders().stream().anyMatch(h -> "Content-Type".equalsIgnoreCase(h.getKey()));
+                    userHasCt = requestModel.getHeaders().stream()
+                            .anyMatch(h -> "Content-Type".equalsIgnoreCase(h.getKey()));
                 }
                 if (!ct.isEmpty() && !userHasCt) {
                     headersModel.addRow(new Object[] { true, "Content-Type", ct, "<calculated>" });
@@ -1181,7 +1209,7 @@ public class RequestPanel extends JPanel {
             } else {
                 headersModel.addRow(new Object[] { true, "Content-Length", "<calculated at runtime>", "<calculated>" });
             }
-            
+
             // 2. Add user headers
             if (requestModel.getHeaders() != null) {
                 for (KeyValueItem kv : requestModel.getHeaders()) {
@@ -1379,6 +1407,9 @@ public class RequestPanel extends JPanel {
             String key = (String) model.getValueAt(i, 1);
             String type = (String) model.getValueAt(i, 2);
             String value = (String) model.getValueAt(i, 3);
+            if ((key == null || key.isBlank()) && (value == null || value.isBlank())) {
+                continue;
+            }
             String desc = model.getColumnCount() > 4 ? (String) model.getValueAt(i, 4) : "";
             KeyValueItem kv = new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled);
             kv.setType(type != null ? type : "text");
@@ -1396,6 +1427,10 @@ public class RequestPanel extends JPanel {
                 continue;
             }
             String key = (String) model.getValueAt(i, 1);
+            String value = (String) model.getValueAt(i, 2);
+            if ((key == null || key.isBlank()) && (value == null || value.isBlank())) {
+                continue;
+            }
             if (isHeader && key != null) {
                 String k = key.trim();
                 if (k.equalsIgnoreCase("Host") || k.equalsIgnoreCase("Content-Length")) {
@@ -1403,7 +1438,6 @@ public class RequestPanel extends JPanel {
                 }
             }
             boolean enabled = model.getValueAt(i, 0) instanceof Boolean b && b;
-            String value = (String) model.getValueAt(i, 2);
             KeyValueItem kv = new KeyValueItem(key != null ? key : "", value != null ? value : "", enabled);
             kv.setDescription(desc);
             list.add(kv);
@@ -1622,10 +1656,6 @@ public class RequestPanel extends JPanel {
         if (saveBtn != null) {
             saveBtn.setPreferredSize(null);
             saveBtn.setPreferredSize(new Dimension(saveBtn.getPreferredSize().width + 12, height));
-        }
-        if (codeBtn != null) {
-            codeBtn.setPreferredSize(null);
-            codeBtn.setPreferredSize(new Dimension(codeBtn.getPreferredSize().width + 12, height));
         }
         if (graphqlQueryArea != null) {
             graphqlQueryArea.setFont(new Font("JetBrains Mono", Font.PLAIN, size - 2));
@@ -1875,9 +1905,20 @@ public class RequestPanel extends JPanel {
         urlField.setText(newUrl);
     }
 
+    private Color getMethodColor(String method) {
+        if (method == null)
+            return UIManager.getColor("Label.foreground");
+        return switch (method.toUpperCase()) {
+            case "GET" -> new Color(39, 174, 96);
+            case "POST" -> new Color(52, 152, 219);
+            case "PUT" -> new Color(230, 126, 34);
+            case "PATCH" -> new Color(155, 89, 182);
+            case "DELETE" -> new Color(192, 57, 43);
+            default -> UIManager.getColor("Label.foreground");
+        };
+    }
+
     public void triggerVariableRepaint() {
         repaint();
     }
 }
-
-

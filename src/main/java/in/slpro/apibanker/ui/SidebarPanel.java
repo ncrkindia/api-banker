@@ -156,22 +156,41 @@ public class SidebarPanel extends JPanel {
                 if (code == java.awt.event.KeyEvent.VK_F2) {
                     collectionsTree.startEditingAtPath(path);
                 } else if (code == java.awt.event.KeyEvent.VK_DELETE) {
-                    if (uo instanceof CollectionModel c)
-                        mainFrame.deleteCollection(c);
-                    else if (uo instanceof RequestModel r)
-                        mainFrame.deleteRequest(r);
+                    TreePath[] paths = collectionsTree.getSelectionPaths();
+                    if (paths != null && paths.length > 0) {
+                        List<Object> toDelete = new ArrayList<>();
+                        for (TreePath p : paths) {
+                            DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                            toDelete.add(n.getUserObject());
+                        }
+                        mainFrame.deleteMultiple(toDelete);
+                    }
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_O) {
                     if (uo instanceof RequestModel r)
                         mainFrame.openRequest(r);
                     else if (uo instanceof CollectionModel c)
                         mainFrame.openCollection(c);
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_C) {
-                    clipboardNode = uo;
+                    clipboardNodes.clear();
+                    TreePath[] paths = collectionsTree.getSelectionPaths();
+                    if (paths != null) {
+                        for (TreePath p : paths) {
+                            DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                            clipboardNodes.add(n.getUserObject());
+                        }
+                    }
                     MainFrame.showToast(SidebarPanel.this, "Copied");
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_V) {
                     handlePaste(node);
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_D) {
-                    clipboardNode = uo;
+                    clipboardNodes.clear();
+                    TreePath[] paths = collectionsTree.getSelectionPaths();
+                    if (paths != null) {
+                        for (TreePath p : paths) {
+                            DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                            clipboardNodes.add(n.getUserObject());
+                        }
+                    }
                     handlePaste(node);
                 } else if (ctrl && code == java.awt.event.KeyEvent.VK_Z) {
                     mainFrame.undoCollectionTree();
@@ -194,7 +213,19 @@ public class SidebarPanel extends JPanel {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 
                 if (SwingUtilities.isRightMouseButton(e)) {
-                    collectionsTree.setSelectionPath(path);
+                    TreePath[] paths = collectionsTree.getSelectionPaths();
+                    boolean isSelected = false;
+                    if (paths != null) {
+                        for (TreePath p : paths) {
+                            if (p.equals(path)) {
+                                isSelected = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isSelected) {
+                        collectionsTree.setSelectionPath(path);
+                    }
                     showCollectionContextMenu(e.getX(), e.getY(), node);
                 } else if (e.getClickCount() == 2) {
                     if (node.getUserObject() instanceof RequestModel req) {
@@ -303,25 +334,56 @@ public class SidebarPanel extends JPanel {
     }
 
     private void createCollection() {
-        String name = JOptionPane.showInputDialog(this, "Collection name:", "New Collection",
-                JOptionPane.PLAIN_MESSAGE);
-        if (name == null || name.isBlank())
-            return;
-        mainFrame.createCollection(name);
+        String baseName = "Collection";
+        String name = baseName;
+        int count = 1;
+        while (collectionNameExists(name)) {
+            name = baseName + " " + count;
+            count++;
+        }
+        CollectionModel col = mainFrame.createCollection(name);
+        if (col != null) {
+            startEditingNode(col);
+        }
+    }
+
+    private boolean collectionNameExists(String name) {
+        if (mainFrame.getCollections() == null) return false;
+        for (CollectionModel c : mainFrame.getCollections()) {
+            if (name.equalsIgnoreCase(c.getName())) return true;
+        }
+        return false;
     }
 
     private void createFolder(DefaultMutableTreeNode node) {
         if (node.getUserObject() instanceof CollectionModel parentCol) {
-            String name = JOptionPane.showInputDialog(this, "Folder name:", "New Folder", JOptionPane.PLAIN_MESSAGE);
-            if (name == null || name.isBlank())
-                return;
+            String baseName = "Folder";
+            String name = baseName;
+            int count = 1;
+            while (folderNameExists(parentCol, name)) {
+                name = baseName + " " + count;
+                count++;
+            }
             CollectionModel newFolder = new CollectionModel();
             newFolder.setId(java.util.UUID.randomUUID().toString());
             newFolder.setName(name);
+            if (parentCol.getFolders() == null) {
+                parentCol.setFolders(new ArrayList<>());
+            }
             parentCol.getFolders().add(newFolder);
             mainFrame.saveCollections();
             refreshCollections(mainFrame.getCollections());
+            startEditingNode(newFolder);
         }
+    }
+
+    private boolean folderNameExists(CollectionModel col, String name) {
+        if (col.getFolders() != null) {
+            for (CollectionModel f : col.getFolders()) {
+                if (name.equalsIgnoreCase(f.getName())) return true;
+            }
+        }
+        return false;
     }
 
     private void createRequest() {
@@ -354,10 +416,52 @@ public class SidebarPanel extends JPanel {
         }
         if (targetCollection == null)
             return;
-        String name = JOptionPane.showInputDialog(this, "Request name:", "New Request", JOptionPane.PLAIN_MESSAGE);
-        if (name == null || name.isBlank())
-            return;
-        mainFrame.addRequestToCollection(targetCollection, name);
+            
+        String baseName = "Request";
+        String name = baseName;
+        int count = 1;
+        while (requestNameExists(targetCollection, name)) {
+            name = baseName + " " + count;
+            count++;
+        }
+        RequestModel req = mainFrame.addRequestToCollection(targetCollection, name);
+        if (req != null) {
+            startEditingNode(req);
+        }
+    }
+
+    private boolean requestNameExists(CollectionModel col, String name) {
+        if (col.getRequests() != null) {
+            for (RequestModel r : col.getRequests()) {
+                if (name.equalsIgnoreCase(r.getName())) return true;
+            }
+        }
+        return false;
+    }
+
+    public void startEditingNode(Object userObject) {
+        SwingUtilities.invokeLater(() -> {
+            TreePath path = findPathForUserObject(collectionsRoot, userObject);
+            if (path != null) {
+                collectionsTree.expandPath(path.getParentPath());
+                collectionsTree.scrollPathToVisible(path);
+                collectionsTree.setSelectionPath(path);
+                collectionsTree.startEditingAtPath(path);
+            }
+        });
+    }
+
+    private TreePath findPathForUserObject(DefaultMutableTreeNode node, Object target) {
+        if (node.getUserObject() == target || node.getUserObject().equals(target)) {
+            return new TreePath(node.getPath());
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            TreePath found = findPathForUserObject((DefaultMutableTreeNode) node.getChildAt(i), target);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 
     private void showCollectionContextMenu(int x, int y, DefaultMutableTreeNode node) {
@@ -380,14 +484,26 @@ public class SidebarPanel extends JPanel {
             JMenuItem addFolderItem = new JMenuItem("Folder");
             addFolderItem.addActionListener(e -> createFolder(node));
             JMenuItem addWsItem = new JMenuItem("WebSocket Client");
-            addWsItem.addActionListener(e -> mainFrame.addWebSocketToCollection(col));
+            addWsItem.addActionListener(e -> {
+                RequestModel ws = mainFrame.addWebSocketToCollection(col);
+                if (ws != null) startEditingNode(ws);
+            });
 
             JMenuItem addRunnerItem = new JMenuItem("Runner");
-            addRunnerItem.addActionListener(e -> mainFrame.addRunnerToCollection(col));
+            addRunnerItem.addActionListener(e -> {
+                RequestModel run = mainFrame.addRunnerToCollection(col);
+                if (run != null) startEditingNode(run);
+            });
             JMenuItem addCompItem = new JMenuItem("Data Comparator");
-            addCompItem.addActionListener(e -> mainFrame.addComparatorToCollection(col));
+            addCompItem.addActionListener(e -> {
+                RequestModel comp = mainFrame.addComparatorToCollection(col);
+                if (comp != null) startEditingNode(comp);
+            });
             JMenuItem addMockItem = new JMenuItem("Mock Server");
-            addMockItem.addActionListener(e -> mainFrame.addMockServerToCollection(col));
+            addMockItem.addActionListener(e -> {
+                RequestModel mock = mainFrame.addMockServerToCollection(col);
+                if (mock != null) startEditingNode(mock);
+            });
 
             addMenu.add(addReqItem);
             addMenu.add(addFolderItem);
@@ -402,15 +518,33 @@ public class SidebarPanel extends JPanel {
             delete.addActionListener(e -> {
                 int confirm = JOptionPane.showConfirmDialog(this, "Delete collection \"" + col.getName() + "\"?",
                         "Confirm", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION)
-                    mainFrame.deleteCollection(col);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    TreePath[] paths = collectionsTree.getSelectionPaths();
+                    if (paths != null && paths.length > 0) {
+                        List<Object> toDelete = new ArrayList<>();
+                        for (TreePath p : paths) {
+                            DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                            toDelete.add(n.getUserObject());
+                        }
+                        mainFrame.deleteMultiple(toDelete);
+                    } else {
+                        mainFrame.deleteCollection(col);
+                    }
+                }
             });
 
             JMenuItem copy = new JMenuItem("Copy");
             copy.setAccelerator(
                     KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK));
             copy.addActionListener(e -> {
-                clipboardNode = node.getUserObject();
+                clipboardNodes.clear();
+                TreePath[] paths = collectionsTree.getSelectionPaths();
+                if (paths != null) {
+                    for (TreePath p : paths) {
+                        DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                        clipboardNodes.add(n.getUserObject());
+                    }
+                }
                 MainFrame.showToast(SidebarPanel.this, "Copied");
             });
             JMenuItem paste = new JMenuItem("Paste");
@@ -421,7 +555,14 @@ public class SidebarPanel extends JPanel {
             duplicateCol.setAccelerator(
                     KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_DOWN_MASK));
             duplicateCol.addActionListener(e -> {
-                clipboardNode = node.getUserObject();
+                clipboardNodes.clear();
+                TreePath[] paths = collectionsTree.getSelectionPaths();
+                if (paths != null) {
+                    for (TreePath p : paths) {
+                        DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                        clipboardNodes.add(n.getUserObject());
+                    }
+                }
                 handlePaste(node);
             });
             JMenu importMenu = new JMenu("Import");
@@ -472,14 +613,28 @@ public class SidebarPanel extends JPanel {
             duplicate.setAccelerator(
                     KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_DOWN_MASK));
             duplicate.addActionListener(e -> {
-                clipboardNode = node.getUserObject();
+                clipboardNodes.clear();
+                TreePath[] paths = collectionsTree.getSelectionPaths();
+                if (paths != null) {
+                    for (TreePath p : paths) {
+                        DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                        clipboardNodes.add(n.getUserObject());
+                    }
+                }
                 handlePaste(node);
             });
             JMenuItem copy = new JMenuItem("Copy");
             copy.setAccelerator(
                     KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_DOWN_MASK));
             copy.addActionListener(e -> {
-                clipboardNode = node.getUserObject();
+                clipboardNodes.clear();
+                TreePath[] paths = collectionsTree.getSelectionPaths();
+                if (paths != null) {
+                    for (TreePath p : paths) {
+                        DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                        clipboardNodes.add(n.getUserObject());
+                    }
+                }
                 MainFrame.showToast(SidebarPanel.this, "Copied");
             });
             JMenuItem paste = new JMenuItem("Paste");
@@ -493,7 +648,19 @@ public class SidebarPanel extends JPanel {
             moveTo.addActionListener(e -> mainFrame.moveRequestToCollection(req));
             JMenuItem delete = new JMenuItem("Delete");
             delete.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
-            delete.addActionListener(e -> mainFrame.deleteRequest(req));
+            delete.addActionListener(e -> {
+                TreePath[] paths = collectionsTree.getSelectionPaths();
+                if (paths != null && paths.length > 0) {
+                    List<Object> toDelete = new ArrayList<>();
+                    for (TreePath p : paths) {
+                        DefaultMutableTreeNode n = (DefaultMutableTreeNode) p.getLastPathComponent();
+                        toDelete.add(n.getUserObject());
+                    }
+                    mainFrame.deleteMultiple(toDelete);
+                } else {
+                    mainFrame.deleteRequest(req);
+                }
+            });
             menu.add(open);
             menu.add(rename);
             menu.add(copy);
@@ -778,16 +945,14 @@ public class SidebarPanel extends JPanel {
         };
     }
 
-    private static Object clipboardNode = null;
+    private static List<Object> clipboardNodes = new ArrayList<>();
 
     private void handlePaste(DefaultMutableTreeNode targetNode) {
-        if (clipboardNode == null)
+        if (clipboardNodes.isEmpty())
             return;
-        Object copied = deepCopyModel(clipboardNode);
-        if (copied == null)
-            return;
-
+        
         mainFrame.pushCollectionStateForUndo();
+        boolean changed = false;
 
         Object targetUserObj = targetNode.getUserObject();
         CollectionModel parentCol = null;
@@ -798,18 +963,27 @@ public class SidebarPanel extends JPanel {
         }
 
         if (parentCol != null) {
-            if (copied instanceof RequestModel req) {
-                if (parentCol.getRequests() == null)
-                    parentCol.setRequests(new ArrayList<>());
-                parentCol.getRequests().add(req);
-            } else if (copied instanceof CollectionModel folder) {
-                if (parentCol.getFolders() == null)
-                    parentCol.setFolders(new ArrayList<>());
-                parentCol.getFolders().add(folder);
+            for (Object clipboardNode : clipboardNodes) {
+                Object copied = deepCopyModel(clipboardNode);
+                if (copied == null) continue;
+
+                if (copied instanceof RequestModel req) {
+                    if (parentCol.getRequests() == null)
+                        parentCol.setRequests(new ArrayList<>());
+                    parentCol.getRequests().add(req);
+                    changed = true;
+                } else if (copied instanceof CollectionModel folder) {
+                    if (parentCol.getFolders() == null)
+                        parentCol.setFolders(new ArrayList<>());
+                    parentCol.getFolders().add(folder);
+                    changed = true;
+                }
             }
-            mainFrame.saveCollections();
-            refreshCollections(mainFrame.getCollections());
-            MainFrame.showToast(this, "Pasted successfully.");
+            if (changed) {
+                mainFrame.saveCollections();
+                refreshCollections(mainFrame.getCollections());
+                MainFrame.showToast(this, "Pasted successfully.");
+            }
         }
     }
 
