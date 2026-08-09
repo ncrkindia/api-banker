@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Change to project root directory
+cd "$(dirname "$0")/.."
+
 echo "===================================================="
 echo "ApiBanker - Native Installer Builder (macOS/Linux)"
 echo "===================================================="

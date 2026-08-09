@@ -1,4 +1,4 @@
-# ApiBanker - The Offline-First API Toolkit (v1.1.0-beta)
+# ApiBanker - The Offline-First API Toolkit (v1.2.0-beta)
 
 **ApiBanker** (formerly JAPI) is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, ApiBanker lets developers design, run, test, and manage REST/GraphQL/WebSocket requests locally on their machines without any registration, telemetry, or external network dependencies.
 
@@ -43,12 +43,12 @@ ApiBanker is distributed in three distinct formats depending on your needs. Down
 1. **Classic Portable Bundle (`.zip` / `.tar.gz`)**
    - **Description**: A highly portable archive containing the main executable JAR and simple `.bat`/`.sh` launcher scripts.
    - **Best For**: Users who already have Java 21+ installed and want to run the app directly from any folder or USB drive.
-   - **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/apibanker.zip)
+   - **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.2.0-beta/apibanker.zip)
 
 2. **Professional Native Installer (`.msi`)**
    - **Description**: A full standalone Windows installation wizard that bundles a stripped-down JRE along with the application.
    - **Best For**: End-users who want a standard setup experience (installing to `Program Files`, creating shortcuts) and do NOT have Java installed.
-   - **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-installer.msi)
+   - **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.2.0-beta/ApiBanker-installer-1.0.msi)
 
 ---
 

@@ -1,17 +1,37 @@
-# ApiBanker Release Plan — v1.1.0-beta
+# ApiBanker Release Plan — v1.2.0-beta
 
-This document outlines the release plan for **ApiBanker (v1.1.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
+This document outlines the release plan for **ApiBanker (v1.2.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
 
 ---
 
 ## 1. Release Goals
 
-ApiBanker's transition to the `1.1.0-beta` pre-release phase aims to achieve the following:
+ApiBanker's transition to the `1.2.0-beta` pre-release phase aims to achieve the following:
 * **Brand Migration**: Safely migrate all legacy user configurations, folders, and preferences from `.japi` to `.apibanker` on first boot.
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
 * **Interoperability Check**: Ensure standard Postman Collection (v2.1) and Apache JMeter (.jmx) files import and export seamlessly.
 * **Stabilization**: Collect community feedback and log reports to fix interface scaling issues, visual bugs, or script engine runtime errors.
+
+---
+
+### v1.2.0-beta Release Summary
+
+This release focuses on workspace data integrity, UI consistency, and developer workflow improvements.
+
+**Features & Enhancements:**
+- **Global Unsaved Changes Guard**: Implemented `hasUnsavedChanges()` deep-comparison checks in `SettingsPanel` and `MockServerPanel`. `MainFrame.closeTab()` now intercepts tab closures and prompts the user to save pending changes for Settings and Mock Server configurations, matching the existing guard behavior in `RequestPanel` and `CollectionPanel`.
+- **Duplicate Request Disambiguation in Runner**: Modified `CollectionRunnerPanel` to compute a unique `displayName` for every request being executed by appending the first 4 characters of its internal UUID (e.g., `"My Request -a4b2"`). This prevents identically named requests from erroneously merging in the `aggregateStatsMap`, ensuring accurate CSV/PDF/Excel/HTML metric exports.
+- **Overhauled Environment & Variable UI**: Replaced the manually managed add/delete button table in `EnvironmentManagerPanel` and `GlobalVariablesPanel` with a dynamic auto-managing table. Empty rows are automatically appended when the last row is filled, and empty rows are pruned on focus loss, with a persistent single empty row always available.
+- **Script Consolidation**: Moved all root-level utility scripts (`apibanker.bat`, `apibanker.sh`, `build-installers.bat`, `build-installers.sh`, `release.sh`, `patch_jwt_btn.py`) into a dedicated `scripts/` directory. Updated `src/assembly/bin.xml` to reference the new paths for the Maven distribution bundle.
+- **Automated Release Script**: Enhanced `scripts/release.sh` to automatically parse and extract the target version from `pom.xml` via `awk` if no version argument is provided. Each script now uses `cd "$(dirname "$0")/.."` to execute correctly against the project root regardless of the caller's working directory.
+- **Tab Style Refinement**: Refined FlatLaf tab styling in `App.java` for both dark and light themes (`tabType=underlined`, suppressed focus indicators) for a cleaner IDE appearance.
+
+**Fixes:**
+- Fixed `MockServerPanel` save button visibility and zoom responsiveness by promoting `saveConfigBtn` to a class field and implementing dynamic size recalculation in `updateFontSize()`.
+- Fixed premature "unsaved changes" prompts on `RequestPanel` and `CollectionPanel` caused by auto-appended blank rows in Variable, Param, and Header tables.
+
+---
 
 ### v1.1.0-beta Release Summary
 
@@ -46,7 +66,7 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v1.1.0-beta** release:
+Here is the current implementation status of features included in the **v1.2.0-beta** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -61,6 +81,8 @@ Here is the current implementation status of features included in the **v1.1.0-b
 | **Interop** | OpenAPI / Swagger Import | Import OpenAPI 3.x / Swagger 2.x (JSON & YAML). Selective endpoint picker, Base URL strategy (inline or `{{baseUrl}}` variable), multi-server indexed vars, security scheme mapping, and auto-generated Collection README documentation. | ✅ Complete |
 | **UI/UX** | Dark Mode & Scaling | FlatLaf Dark/Light themes and Ctrl+Scroll dynamic font scaling. | ✅ Complete |
 | **UI/UX** | Global Variables Tab | Full independent tab for managing workspace global states. | ✅ Complete |
+| **UI/UX** | Unsaved Changes Guard | Confirmation dialogs on tab close for MockServer and Settings. | ✅ Complete |
+| **Runner** | Metric Deduplication | Unique display names for identically named requests in exports. | ✅ Complete |
 
 ---
 
@@ -70,16 +92,16 @@ ApiBanker offers a professional, multi-tier distribution pipeline depending on u
 
 ### Option 1: Classic Portable Bundle (.zip / .tar.gz)
 The traditional portable archive containing a shaded fat JAR and cross-platform launcher scripts. Best for users who already have Java installed and prefer a portable folder.
-* **Target executable**: `apibanker-1.1.0-beta.jar`
-* **Launch scripts**: `apibanker.bat` (Windows), `apibanker.sh` (macOS/Linux).
+* **Target executable**: `apibanker-1.2.0-beta.jar`
+* **Launch scripts**: `scripts/apibanker.bat` (Windows), `scripts/apibanker.sh` (macOS/Linux).
 * **Generation Command**: `mvn clean package`
-* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/apibanker.tar.gz)
+* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.2.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.2.0-beta/apibanker.tar.gz)
 
 ### Option 2: Professional Native Installer (.msi)
 A complete standalone setup wizard for Windows. This format uses `jpackage` and the WiX toolset to bundle a custom, stripped-down JRE along with the application. Best for end-users who want a standard installation experience and do not have Java installed.
 * **Target executable**: `ApiBanker-installer.msi`
 * **Generation Command**: `mvn clean verify -DbuildNative`
-* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-installer.msi)
+* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.2.0-beta/ApiBanker-installer.msi)
 
 
 ---
@@ -90,11 +112,13 @@ A complete standalone setup wizard for Windows. This format uses `jpackage` and 
 | :--- | :--- | :--- |
 | **Alpha Freeze** | 2026-08-01 | Complete |
 | **Rebranding Migration** | 2026-08-06 | Complete |
-| **Beta Release (v1.1.0-beta)** | 2026-08-10 | Active |
+| **Beta Release (v1.1.0-beta)** | 2026-08-10 | Complete |
+| **Beta Release (v1.2.0-beta)** | 2026-08-09 | Active |
 | **RC1 Preparation** | 2026-08-25 | Pending |
-| **Stable v1.1.0** | 2026-09-01 | Pending |
+| **Stable v1.2.0** | 2026-09-01 | Pending |
 
 ### Next Steps for RC1:
 1. Conduct user testing on the new `StorageManager` automatic directory migration.
-2. Verify all `apibanker.bat`/`apibanker.sh` execution paths on clean systems.
+2. Verify all `scripts/apibanker.bat`/`scripts/apibanker.sh` execution paths on clean systems.
 3. Address any performance bottlenecks found in the Collection Runner scatter plot rendering.
+4. Perform full regression test of unsaved changes guard across all panel types.
