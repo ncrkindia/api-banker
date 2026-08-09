@@ -57,7 +57,7 @@
         <dependency>
             <groupId>org.mozilla</groupId>
             <artifactId>rhino</artifactId>
-            <version>1.7.14</version>
+            <version>1.7.14.1</version>
         </dependency>
         <!-- Apache POI for Excel Export -->
         <dependency>
