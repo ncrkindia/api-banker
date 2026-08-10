@@ -34,6 +34,7 @@ public class App {
      */
     public static void main(String[] args) {
         if (System.getProperty("java.home") == null) {
+
             try {
                 java.nio.file.Path tempJre = java.nio.file.Files.createTempDirectory("jre");
                 System.setProperty("java.home", tempJre.toAbsolutePath().toString());
@@ -41,7 +42,7 @@ public class App {
                 System.setProperty("java.home", ".");
             }
         }
-        
+
         try {
             int fontSize = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getFontSize();
             if (fontSize < 10)
@@ -57,14 +58,15 @@ public class App {
 
         SwingUtilities.invokeLater(() -> {
             MainFrame frame = new MainFrame();
-            
-            in.slpro.apibanker.model.AppSettings settings = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings();
+
+            in.slpro.apibanker.model.AppSettings settings = in.slpro.apibanker.storage.StorageManager.getInstance()
+                    .getSettings();
             if (settings.getWindowX() != -1 && settings.getWindowY() != -1) {
                 frame.setLocation(settings.getWindowX(), settings.getWindowY());
             } else {
                 frame.setLocation(0, 0); // Top-left corner
             }
-            
+
             frame.setVisible(true);
         });
     }
@@ -247,9 +249,8 @@ public class App {
             // fallback
         }
         if (version == null || version.isEmpty() || "${project.version}".equals(version)) {
-            version = "1.3.0-beta"; // fallback if running outside jar or un-filtered environment
+            version = "1.4.0-beta"; // fallback if running outside jar or un-filtered environment
         }
         return version;
     }
 }
-

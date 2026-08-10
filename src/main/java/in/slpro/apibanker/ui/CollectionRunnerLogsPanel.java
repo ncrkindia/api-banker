@@ -299,11 +299,13 @@ public class CollectionRunnerLogsPanel extends JPanel {
         String time, method, name;
         int status;
         long latency;
+        String tests = "-";
     }
 
     private List<LogItem> parseSummaryLog(File sumFile) throws Exception {
         List<LogItem> items = new ArrayList<>();
         List<String> lines = Files.readAllLines(sumFile.toPath());
+        LogItem lastItem = null;
         for (String line : lines) {
             // 2026-08-04 17:21:00 | GET MyReq | Status: 200 | Latency: 120ms
             if (line.contains(" | Status: ") && line.contains(" | Latency: ")) {
@@ -318,9 +320,13 @@ public class CollectionRunnerLogsPanel extends JPanel {
                         item.status = Integer.parseInt(parts[2].replace("Status:", "").trim());
                         item.latency = Long.parseLong(parts[3].replace("Latency:", "").replace("ms", "").trim());
                         items.add(item);
+                        lastItem = item;
                     }
                 } catch (Exception ignored) {
                 }
+            } else if (lastItem != null && line.contains("       Tests: ")) {
+                lastItem.tests = line.trim().replace("Tests: ", "");
+                lastItem = null;
             }
         }
         return items;
@@ -332,10 +338,10 @@ public class CollectionRunnerLogsPanel extends JPanel {
             pw.println("\"ApiBanker Generated Metrics Report\"");
             pw.println("\"Generated At:\",\"" + java.time.LocalDateTime.now().toString() + "\"");
             pw.println();
-            pw.println("Time,Method,API Name,Status,Latency (ms)");
+            pw.println("Time,Method,API Name,Status,Latency (ms),Tests");
             for (LogItem item : items) {
-                pw.println(String.format("\"%s\",\"%s\",\"%s\",%d,%d", item.time, item.method, item.name, item.status,
-                        item.latency));
+                pw.println(String.format("\"%s\",\"%s\",\"%s\",%d,%d,\"%s\"", item.time, item.method, item.name, item.status,
+                        item.latency, item.tests));
             }
         }
     }
@@ -349,11 +355,11 @@ public class CollectionRunnerLogsPanel extends JPanel {
             pw.println("</head><body>");
             pw.println("<h2>ApiBanker Generated Metrics Report</h2>");
             pw.println(
-                    "<table><tr><th>Time</th><th>Method</th><th>API Name</th><th>Status</th><th>Latency (ms)</th></tr>");
+                    "<table><tr><th>Time</th><th>Method</th><th>API Name</th><th>Status</th><th>Latency (ms)</th><th>Tests</th></tr>");
             for (LogItem item : items) {
                 String statusClass = (item.status >= 200 && item.status < 400) ? "pass" : "fail";
-                pw.println(String.format("<tr><td>%s</td><td>%s</td><td>%s</td><td class='%s'>%d</td><td>%d</td></tr>",
-                        item.time, item.method, item.name, statusClass, item.status, item.latency));
+                pw.println(String.format("<tr><td>%s</td><td>%s</td><td>%s</td><td class='%s'>%d</td><td>%d</td><td>%s</td></tr>",
+                        item.time, item.method, item.name, statusClass, item.status, item.latency, item.tests));
             }
             pw.println("</table></body></html>");
         }

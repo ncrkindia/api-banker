@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Operation;
@@ -147,7 +149,10 @@ public class OpenApiImportPanel extends JPanel {
         }
 
         try {
-            currentOpenAPI = new OpenAPIV3Parser().read(path);
+            ParseOptions options = new ParseOptions();
+            options.setResolve(true);
+            SwaggerParseResult result = new OpenAPIParser().readLocation(path, null, options);
+            currentOpenAPI = result != null ? result.getOpenAPI() : null;
             if (currentOpenAPI == null) {
                 JOptionPane.showMessageDialog(this, "Failed to parse OpenAPI spec. It might be invalid.", "Error",
                         JOptionPane.ERROR_MESSAGE);
@@ -226,6 +231,8 @@ public class OpenApiImportPanel extends JPanel {
 
         boolean useCollectionVar = baseUrlOption.getSelectedIndex() == 1;
         String prefixUrl = useCollectionVar ? "{{baseUrl}}" : baseUrl;
+        
+        java.util.Map<String, String> collectedVariables = new java.util.LinkedHashMap<>();
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             boolean isSelected = (Boolean) tableModel.getValueAt(i, 0);
@@ -248,6 +255,104 @@ public class OpenApiImportPanel extends JPanel {
                 req.getHeaders().add(new KeyValueItem("Accept", "application/json", true));
                 req.setAuthType("inherit");
 
+                // Process Request Body from OpenAPI
+                if (currentOpenAPI != null && currentOpenAPI.getPaths() != null) {
+                    io.swagger.v3.oas.models.PathItem pathItem = currentOpenAPI.getPaths().get(path);
+                    if (pathItem != null) {
+                        Operation op = switch (method.toUpperCase()) {
+                            case "GET" -> pathItem.getGet();
+                            case "POST" -> pathItem.getPost();
+                            case "PUT" -> pathItem.getPut();
+                            case "DELETE" -> pathItem.getDelete();
+                            case "PATCH" -> pathItem.getPatch();
+                            default -> null;
+                        };
+                        
+                        List<io.swagger.v3.oas.models.parameters.Parameter> params = new ArrayList<>();
+                        if (pathItem.getParameters() != null) params.addAll(pathItem.getParameters());
+                        if (op != null && op.getParameters() != null) params.addAll(op.getParameters());
+                        
+                        List<KeyValueItem> queryParams = new ArrayList<>();
+                        for (io.swagger.v3.oas.models.parameters.Parameter param : params) {
+                            String pName = param.getName();
+                            String pIn = param.getIn();
+                            String pDefault = "";
+                            
+                            if (param.getSchema() != null && param.getSchema().getDefault() != null) {
+                                pDefault = param.getSchema().getDefault().toString();
+                            } else if (param.getExample() != null) {
+                                pDefault = param.getExample().toString();
+                            }
+                            
+                            if ("query".equalsIgnoreCase(pIn)) {
+                                if (!pDefault.isEmpty()) {
+                                    queryParams.add(new KeyValueItem(pName, pDefault, true));
+                                } else {
+                                    collectedVariables.putIfAbsent(pName, "");
+                                    queryParams.add(new KeyValueItem(pName, "{{" + pName + "}}", true));
+                                }
+                            } else if ("path".equalsIgnoreCase(pIn)) {
+                                collectedVariables.putIfAbsent(pName, pDefault);
+                                finalUrl = finalUrl.replace("{" + pName + "}", "{{" + pName + "}}");
+                            } else if ("header".equalsIgnoreCase(pIn)) {
+                                if (pDefault.isEmpty()) {
+                                    collectedVariables.putIfAbsent(pName, "");
+                                    req.getHeaders().add(new KeyValueItem(pName, "{{" + pName + "}}", true));
+                                } else {
+                                    req.getHeaders().add(new KeyValueItem(pName, pDefault, true));
+                                }
+                            }
+                        }
+                        
+                        req.setParams(queryParams);
+                        
+                        if (!queryParams.isEmpty()) {
+                            StringBuilder queryStr = new StringBuilder();
+                            for (int j = 0; j < queryParams.size(); j++) {
+                                KeyValueItem kv = queryParams.get(j);
+                                queryStr.append(j == 0 ? "?" : "&");
+                                queryStr.append(kv.getKey()).append("=").append(kv.getValue());
+                            }
+                            finalUrl += queryStr.toString();
+                        }
+                        
+                        req.setUrl(finalUrl);
+                        
+                        if (op != null && op.getRequestBody() != null && op.getRequestBody().getContent() != null) {
+                            io.swagger.v3.oas.models.media.MediaType mediaType = op.getRequestBody().getContent().get("application/json");
+                            if (mediaType != null) {
+                                req.setBodyType("raw");
+                                req.getHeaders().add(new KeyValueItem("Content-Type", "application/json", true));
+                                String bodyString = "{\n  \n}";
+                                
+                                if (mediaType.getExample() != null) {
+                                    if (mediaType.getExample() instanceof String s) {
+                                        bodyString = s;
+                                    } else {
+                                        bodyString = mediaType.getExample().toString();
+                                    }
+                                } else if (mediaType.getExamples() != null && !mediaType.getExamples().isEmpty()) {
+                                    io.swagger.v3.oas.models.examples.Example ex = mediaType.getExamples().values().iterator().next();
+                                    if (ex.getValue() != null) {
+                                        if (ex.getValue() instanceof String s) {
+                                            bodyString = s;
+                                        } else {
+                                            bodyString = ex.getValue().toString();
+                                        }
+                                    }
+                                } else if (mediaType.getSchema() != null) {
+                                    bodyString = generateSampleJson(mediaType.getSchema(), currentOpenAPI.getComponents());
+                                }
+                                req.setBodyRawContent(bodyString);
+                            } else if (op.getRequestBody().getContent().containsKey("application/x-www-form-urlencoded")) {
+                                req.setBodyType("form-data");
+                                req.setFormData(new ArrayList<>());
+                                req.getHeaders().add(new KeyValueItem("Content-Type", "application/x-www-form-urlencoded", true));
+                            }
+                        }
+                    }
+                }
+
                 selectedRequests.add(req);
             }
         }
@@ -263,8 +368,8 @@ public class OpenApiImportPanel extends JPanel {
         collection.setName(collectionName);
         collection.setRequests(new ArrayList<>(selectedRequests));
 
+        List<KeyValueItem> colVars = new ArrayList<>();
         if (useCollectionVar) {
-            List<KeyValueItem> colVars = new ArrayList<>();
             if (serverUrls.isEmpty()) {
                 colVars.add(new KeyValueItem("baseUrl", "http://localhost", true));
             } else {
@@ -273,6 +378,13 @@ public class OpenApiImportPanel extends JPanel {
                     colVars.add(new KeyValueItem(varName, serverUrls.get(i), true));
                 }
             }
+        }
+        
+        for (Map.Entry<String, String> entry : collectedVariables.entrySet()) {
+            colVars.add(new KeyValueItem(entry.getKey(), entry.getValue(), true));
+        }
+        
+        if (!colVars.isEmpty()) {
             collection.setVariables(colVars);
         }
 
@@ -434,6 +546,100 @@ public class OpenApiImportPanel extends JPanel {
         }
 
         return sb.toString();
+    }
+
+    private String generateSampleJson(io.swagger.v3.oas.models.media.Schema<?> schema, io.swagger.v3.oas.models.Components components) {
+        if (schema == null) return "{\n}";
+        Object sample = generateSampleObject(schema, components, new java.util.HashSet<>());
+        return toJson(sample, 0);
+    }
+
+    private String toJson(Object obj, int indent) {
+        if (obj == null) return "null";
+        if (obj instanceof String) return "\"" + ((String) obj).replace("\"", "\\\"").replace("\n", "\\n") + "\"";
+        if (obj instanceof Number || obj instanceof Boolean) return obj.toString();
+        
+        String pad = "  ".repeat(indent);
+        String padInner = "  ".repeat(indent + 1);
+        
+        if (obj instanceof java.util.List<?> list) {
+            if (list.isEmpty()) return "[]";
+            StringBuilder sb = new StringBuilder("[\n");
+            for (int i = 0; i < list.size(); i++) {
+                sb.append(padInner).append(toJson(list.get(i), indent + 1));
+                if (i < list.size() - 1) sb.append(",");
+                sb.append("\n");
+            }
+            sb.append(pad).append("]");
+            return sb.toString();
+        }
+        
+        if (obj instanceof java.util.Map<?, ?> map) {
+            if (map.isEmpty()) return "{}";
+            StringBuilder sb = new StringBuilder("{\n");
+            int i = 0;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                sb.append(padInner).append("\"").append(entry.getKey()).append("\": ")
+                  .append(toJson(entry.getValue(), indent + 1));
+                if (i < map.size() - 1) sb.append(",");
+                sb.append("\n");
+                i++;
+            }
+            sb.append(pad).append("}");
+            return sb.toString();
+        }
+        
+        return "\"" + obj.toString() + "\"";
+    }
+
+    private Object generateSampleObject(io.swagger.v3.oas.models.media.Schema<?> schema, io.swagger.v3.oas.models.Components components, java.util.Set<String> visited) {
+        if (schema == null) return null;
+        if (schema.get$ref() != null) {
+            if (visited.contains(schema.get$ref())) return null;
+            visited.add(schema.get$ref());
+            if (components != null && components.getSchemas() != null) {
+                String refName = schema.get$ref().substring(schema.get$ref().lastIndexOf('/') + 1);
+                io.swagger.v3.oas.models.media.Schema<?> refSchema = components.getSchemas().get(refName);
+                if (refSchema != null) {
+                    return generateSampleObject(refSchema, components, visited);
+                }
+            }
+            return null;
+        }
+
+        if (schema.getExample() != null) return schema.getExample();
+
+        String type = schema.getType();
+        if (type == null) {
+            if (schema.getProperties() != null) type = "object";
+            else if (schema.getItems() != null) type = "array";
+            else return "string";
+        }
+
+        return switch (type) {
+            case "object" -> {
+                java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+                if (schema.getProperties() != null) {
+                    for (Map.Entry<String, io.swagger.v3.oas.models.media.Schema<?>> entry : ((java.util.Map<String, io.swagger.v3.oas.models.media.Schema<?>>) (Object) schema.getProperties()).entrySet()) {
+                        map.put(entry.getKey(), generateSampleObject(entry.getValue(), components, new java.util.HashSet<>(visited)));
+                    }
+                }
+                yield map;
+            }
+            case "array" -> {
+                java.util.List<Object> list = new java.util.ArrayList<>();
+                if (schema.getItems() != null) {
+                    Object itemSample = generateSampleObject(schema.getItems(), components, visited);
+                    if (itemSample != null) list.add(itemSample);
+                }
+                yield list;
+            }
+            case "string" -> schema.getEnum() != null && !schema.getEnum().isEmpty() ? schema.getEnum().get(0) : "string";
+            case "integer" -> 0;
+            case "number" -> 0.0;
+            case "boolean" -> true;
+            default -> "string";
+        };
     }
 
     private Color getMethodColor(String method) {

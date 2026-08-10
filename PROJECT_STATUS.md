@@ -66,7 +66,7 @@ Here is a list of features queued for future development iterations:
 
 ---
 
-## 4. Release Plan (v1.3.0-beta)
+## 4. Release Plan (v1.4.0-beta)
 
 * **Current Status**: Pre-release Beta Testing.
 * **Next Steps**: Code freeze, complete end-to-end user acceptance testing, resolve critical GitHub issues, and prepare for stable v1.0.0 public launch.

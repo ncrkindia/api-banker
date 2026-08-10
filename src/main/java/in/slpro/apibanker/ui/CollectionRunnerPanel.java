@@ -100,6 +100,7 @@ public class CollectionRunnerPanel extends JPanel {
     private JLabel passedLabel;
     private JLabel failedLabel;
     private JLabel avgTimeLabel;
+    private JLabel testsLabel;
 
     private DefaultTableModel resultsTableModel;
     private JTable resultsTable;
@@ -124,6 +125,8 @@ public class CollectionRunnerPanel extends JPanel {
         final List<Long> sizes = new CopyOnWriteArrayList<>();
         int successCount = 0;
         int failCount = 0;
+        int testPassedCount = 0;
+        int testTotalCount = 0;
         final Set<Integer> statusCodes = ConcurrentHashMap.newKeySet();
         final Set<String> formats = ConcurrentHashMap.newKeySet();
 
@@ -329,30 +332,10 @@ public class CollectionRunnerPanel extends JPanel {
         selTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
         selHeader.add(selTitle, BorderLayout.WEST);
 
-        JPanel selectControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-        selectControls.setOpaque(false);
-        JButton selectAllBtn = new JButton("All");
-        selectAllBtn.setMargin(new Insets(2, 6, 2, 6));
-        selectAllBtn.addActionListener(e -> {
-            for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
-                requestSelectionModel.setValueAt(true, i, 0);
-            }
-            autoSave();
-        });
-        JButton deselectAllBtn = new JButton("None");
-        deselectAllBtn.setMargin(new Insets(2, 6, 2, 6));
-        deselectAllBtn.addActionListener(e -> {
-            for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
-                requestSelectionModel.setValueAt(false, i, 0);
-            }
-            autoSave();
-        });
-        selectControls.add(selectAllBtn);
-        selectControls.add(deselectAllBtn);
-        selHeader.add(selectControls, BorderLayout.EAST);
+        // Removed All/None buttons to fix overlap; replaced by Tri-state Checkbox in table header.
         selectionPanel.add(selHeader, BorderLayout.NORTH);
 
-        requestSelectionModel = new DefaultTableModel(new String[] { "Run", "Method", "Request Name" }, 0) {
+        requestSelectionModel = new DefaultTableModel(new String[] { "", "Method", "Request Name" }, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
                 if (columnIndex == 0)
@@ -369,6 +352,9 @@ public class CollectionRunnerPanel extends JPanel {
         requestSelectionModel.addTableModelListener(e -> {
             if (!isInitializing) {
                 autoSave();
+                if (requestSelectionTable != null && requestSelectionTable.getTableHeader() != null) {
+                    requestSelectionTable.getTableHeader().repaint();
+                }
             }
         });
 
@@ -376,6 +362,9 @@ public class CollectionRunnerPanel extends JPanel {
         requestSelectionTable.setRowHeight(24);
         requestSelectionTable.getColumnModel().getColumn(0).setMaxWidth(50);
         requestSelectionTable.getColumnModel().getColumn(1).setMaxWidth(70);
+
+        HeaderCheckboxHandler headerHandler = new HeaderCheckboxHandler(requestSelectionTable, 0);
+        requestSelectionTable.getColumnModel().getColumn(0).setHeaderRenderer(headerHandler);
 
         JScrollPane selectionScroll = new JScrollPane(requestSelectionTable);
         selectionPanel.add(selectionScroll, BorderLayout.CENTER);
@@ -389,7 +378,7 @@ public class CollectionRunnerPanel extends JPanel {
         centerPanel.setBackground(UIManager.getColor("Panel.background"));
 
         // Summary Cards
-        metricsPanel = new JPanel(new GridLayout(1, 5, 10, 0));
+        metricsPanel = new JPanel(new GridLayout(1, 6, 10, 0));
         metricsPanel.setBackground(UIManager.getColor("Panel.background"));
         metricsPanel.setPreferredSize(new Dimension(0, 65));
 
@@ -397,6 +386,7 @@ public class CollectionRunnerPanel extends JPanel {
         passedLabel = createMetricCard(metricsPanel, "Passed", "0", new Color(39, 174, 96));
         failedLabel = createMetricCard(metricsPanel, "Failed", "0", new Color(231, 76, 60));
         avgTimeLabel = createMetricCard(metricsPanel, "Avg Duration", "0 ms", new Color(155, 89, 182));
+        testsLabel = createMetricCard(metricsPanel, "Test Assertions", "0/0", new Color(243, 156, 18));
         statusLabel = createMetricCard(metricsPanel, "Runner Status", "Idle", new Color(127, 140, 141));
 
         centerPanel.add(metricsPanel, BorderLayout.NORTH);
@@ -407,7 +397,7 @@ public class CollectionRunnerPanel extends JPanel {
 
         // 1. Raw Execution Table
         resultsTableModel = new DefaultTableModel(
-                new String[] { "#", "Iteration", "Request", "Method", "Status", "Duration (ms)", "URL" }, 0) {
+                new String[] { "#", "Iteration", "Request", "Method", "Status", "Duration (ms)", "Tests", "URL" }, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -420,13 +410,14 @@ public class CollectionRunnerPanel extends JPanel {
         resultsTable.getColumnModel().getColumn(3).setMaxWidth(70);
         resultsTable.getColumnModel().getColumn(4).setMaxWidth(90);
         resultsTable.getColumnModel().getColumn(5).setMaxWidth(100);
+        resultsTable.getColumnModel().getColumn(6).setMaxWidth(100);
         JScrollPane tableScroll = new JScrollPane(resultsTable);
         runnerTabs.addTab("Execution Log", tableScroll);
 
         // 2. Aggregate Report Table
         aggregateModel = new DefaultTableModel(new String[] {
                 "API Name", "Method", "Samples", "StatusCodes", "Avg (ms)", "Min (ms)", "Max (ms)",
-                "p75 (ms)", "p90 (ms)", "p95 (ms)", "p99 (ms)", "Avg Size(B)", "Pass", "Fail", "Success %", "Format"
+                "p75 (ms)", "p90 (ms)", "p95 (ms)", "p99 (ms)", "Avg Size(B)", "Tests", "Pass", "Fail", "Success %", "Format"
         }, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -462,8 +453,23 @@ public class CollectionRunnerPanel extends JPanel {
         if (collection != null) {
             List<RequestModel> allReqs = new ArrayList<>();
             collectRequestsRecursive(collection, allReqs);
+            
+            Set<String> seenKeys = new HashSet<>();
+            Set<String> duplicateKeys = new HashSet<>();
             for (RequestModel req : allReqs) {
-                requestSelectionModel.addRow(new Object[] { true, req.getMethod(), req.getName() });
+                String key = req.getName() + "|" + req.getMethod();
+                if (!seenKeys.add(key)) {
+                    duplicateKeys.add(key);
+                }
+            }
+            
+            for (RequestModel req : allReqs) {
+                String key = req.getName() + "|" + req.getMethod();
+                String displayName = req.getName();
+                if (duplicateKeys.contains(key) && req.getId() != null && req.getId().length() >= 4) {
+                    displayName += " -" + req.getId().substring(0, 4);
+                }
+                requestSelectionModel.addRow(new Object[] { true, req.getMethod(), displayName });
             }
         }
     }
@@ -817,13 +823,19 @@ public class CollectionRunnerPanel extends JPanel {
                 }
                 if (cfg.has("selectedRequests") && requestSelectionModel != null) {
                     com.google.gson.JsonArray selectedList = cfg.getAsJsonArray("selectedRequests");
-                    Set<String> selectedNames = new HashSet<>();
+                    Set<String> selectedKeys = new HashSet<>();
                     for (com.google.gson.JsonElement el : selectedList) {
-                        selectedNames.add(el.getAsString());
+                        selectedKeys.add(el.getAsString());
                     }
                     for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
+                        String reqMethod = (String) requestSelectionModel.getValueAt(i, 1);
                         String reqName = (String) requestSelectionModel.getValueAt(i, 2);
-                        requestSelectionModel.setValueAt(selectedNames.contains(reqName), i, 0);
+                        String key = reqMethod + "|" + reqName;
+                        if (selectedKeys.contains(key) || selectedKeys.contains(reqName)) {
+                            requestSelectionModel.setValueAt(true, i, 0);
+                        } else {
+                            requestSelectionModel.setValueAt(false, i, 0);
+                        }
                     }
                 }
             } catch (Exception ignored) {
@@ -850,8 +862,9 @@ public class CollectionRunnerPanel extends JPanel {
             for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
                 boolean checked = (Boolean) requestSelectionModel.getValueAt(i, 0);
                 if (checked) {
+                    String reqMethod = (String) requestSelectionModel.getValueAt(i, 1);
                     String reqName = (String) requestSelectionModel.getValueAt(i, 2);
-                    selectedList.add(reqName);
+                    selectedList.add(reqMethod + "|" + reqName);
                 }
             }
         }
@@ -915,12 +928,28 @@ public class CollectionRunnerPanel extends JPanel {
             List<RequestModel> temp = new ArrayList<>();
             List<RequestModel> allReqs = new ArrayList<>();
             collectRequestsRecursive(collection, allReqs);
+            
+            Set<String> seenKeys = new HashSet<>();
+            Set<String> duplicateKeys = new HashSet<>();
+            for (RequestModel req : allReqs) {
+                String key = req.getName() + "|" + req.getMethod();
+                if (!seenKeys.add(key)) {
+                    duplicateKeys.add(key);
+                }
+            }
+            
             for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
                 boolean checked = (Boolean) requestSelectionModel.getValueAt(i, 0);
                 if (checked) {
+                    String reqMethod = (String) requestSelectionModel.getValueAt(i, 1);
                     String reqName = (String) requestSelectionModel.getValueAt(i, 2);
                     for (RequestModel r : allReqs) {
-                        if (reqName.equals(r.getName())) {
+                        String key = r.getName() + "|" + r.getMethod();
+                        String rDisplayName = r.getName();
+                        if (duplicateKeys.contains(key) && r.getId() != null && r.getId().length() >= 4) {
+                            rDisplayName += " -" + r.getId().substring(0, 4);
+                        }
+                        if (reqName.equals(rDisplayName) && reqMethod.equals(r.getMethod())) {
                             temp.add(r);
                             break;
                         }
@@ -953,6 +982,7 @@ public class CollectionRunnerPanel extends JPanel {
         passedLabel.setText("0");
         failedLabel.setText("0");
         avgTimeLabel.setText("0 ms");
+        testsLabel.setText("0/0");
         statusLabel.setText("Running...");
         statusLabel.setForeground(new Color(230, 126, 34));
 
@@ -971,7 +1001,20 @@ public class CollectionRunnerPanel extends JPanel {
         AtomicInteger completedCount = new AtomicInteger(0);
         AtomicInteger passedCount = new AtomicInteger(0);
         AtomicInteger failedCount = new AtomicInteger(0);
+        AtomicInteger globalTestPassed = new AtomicInteger(0);
+        AtomicInteger globalTestTotal = new AtomicInteger(0);
         AtomicLong totalDuration = new AtomicLong(0);
+
+        List<RequestModel> allReqsWorker = new ArrayList<>();
+        collectRequestsRecursive(collection, allReqsWorker);
+        Set<String> duplicateKeys = new HashSet<>();
+        Set<String> seenKeys = new HashSet<>();
+        for (RequestModel req : allReqsWorker) {
+            String key = req.getName() + "|" + req.getMethod();
+            if (!seenKeys.add(key)) {
+                duplicateKeys.add(key);
+            }
+        }
 
         executorService = Executors.newFixedThreadPool(vusers);
 
@@ -1022,7 +1065,10 @@ public class CollectionRunnerPanel extends JPanel {
                                 return;
 
                             long startMs = System.currentTimeMillis();
-                            ResponseModel response = client.execute(req, env);
+                            HttpClientWrapper.ExecutionResult execResult = client.executeWithScripts(req, env);
+                            ResponseModel response = execResult.getResponse();
+                            ScriptResult preResult = execResult.getPreRequestResult();
+                            ScriptResult testResult = execResult.getTestResult();
                             long dur = System.currentTimeMillis() - startMs;
 
                             int count = completedCount.incrementAndGet();
@@ -1033,19 +1079,32 @@ public class CollectionRunnerPanel extends JPanel {
                                 failedCount.incrementAndGet();
                             totalDuration.addAndGet(dur);
 
-                            String suffix = (req.getId() != null && req.getId().length() >= 4) ? " -" + req.getId().substring(0, 4) : "";
+                            String key = req.getName() + "|" + req.getMethod();
+                            String suffix = "";
+                            if (duplicateKeys.contains(key) && req.getId() != null && req.getId().length() >= 4) {
+                                suffix = " -" + req.getId().substring(0, 4);
+                            }
                             String displayName = req.getName() + suffix;
 
                             runSamples.add(new RunSample(System.currentTimeMillis(), displayName, req.getMethod(),
                                     response.getStatusCode(), dur, ok));
 
                             String statusStr = response.getStatusCode() + " " + response.getStatusText();
+                            
+                            String testSummary = "-";
+                            if (testResult.getTotalCount() > 0) {
+                                testSummary = testResult.getPassedCount() + "/" + testResult.getTotalCount() + " Passed";
+                                globalTestPassed.addAndGet(testResult.getPassedCount());
+                                globalTestTotal.addAndGet(testResult.getTotalCount());
+                            }
+                            
                             publish(new Object[] { count, currentIter, displayName, req.getMethod(), statusStr, dur,
+                                    testSummary,
                                     response.getActualUrl() != null ? response.getActualUrl() : req.getUrl() });
 
                             // Calculate aggregate stats
-                            String key = displayName + " [" + req.getMethod() + "]";
-                            RequestStats stats = aggregateStatsMap.computeIfAbsent(key,
+                            String statsKey = displayName + " [" + req.getMethod() + "]";
+                            RequestStats stats = aggregateStatsMap.computeIfAbsent(statsKey,
                                     k -> new RequestStats(displayName, req.getMethod()));
                             synchronized (stats) {
                                 stats.latencies.add(dur);
@@ -1055,6 +1114,11 @@ public class CollectionRunnerPanel extends JPanel {
                                 else
                                     stats.failCount++;
                                 stats.statusCodes.add(response.getStatusCode());
+                                
+                                if (testResult.getTotalCount() > 0) {
+                                    stats.testPassedCount += testResult.getPassedCount();
+                                    stats.testTotalCount += testResult.getTotalCount();
+                                }
 
                                 // Check format
                                 String format = "Text";
@@ -1078,6 +1142,9 @@ public class CollectionRunnerPanel extends JPanel {
                                             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                     finalWriter.printf("%s | %s %s | Status: %d | Latency: %dms%n",
                                             logTime, req.getMethod(), displayName, response.getStatusCode(), dur);
+                                    if (testResult.getTotalCount() > 0) {
+                                        finalWriter.printf("       Tests: %d Passed, %d Failed%n", testResult.getPassedCount(), testResult.getFailedCount());
+                                    }
                                 }
                             }
                             if (finalDumpWriter != null) {
@@ -1192,6 +1259,24 @@ public class CollectionRunnerPanel extends JPanel {
                                     }
                                     finalDumpWriter.println("\nResponse Body:");
                                     finalDumpWriter.println(response.getBody());
+                                    
+                                    if (!preResult.getConsoleLogs().isEmpty()) {
+                                        finalDumpWriter.println("\n[Pre-Request Console Logs]");
+                                        for (String cl : preResult.getConsoleLogs()) finalDumpWriter.println(cl);
+                                    }
+                                    if (!testResult.getConsoleLogs().isEmpty()) {
+                                        finalDumpWriter.println("\n[Test Console Logs]");
+                                        for (String cl : testResult.getConsoleLogs()) finalDumpWriter.println(cl);
+                                    }
+                                    if (testResult.getTotalCount() > 0) {
+                                        finalDumpWriter.println("\n[Test Results]");
+                                        for (ScriptResult.TestAssertion ta : testResult.getAssertions()) {
+                                            finalDumpWriter.println((ta.isPassed() ? "PASS" : "FAIL") + " | " + ta.getName());
+                                            if (!ta.isPassed() && ta.getFailureMessage() != null) {
+                                                finalDumpWriter.println("       Error: " + ta.getFailureMessage());
+                                            }
+                                        }
+                                    }
                                     finalDumpWriter.println("-------------------------------------------------\n");
                                     finalDumpWriter.flush();
                                 }
@@ -1244,6 +1329,14 @@ public class CollectionRunnerPanel extends JPanel {
                 failedLabel.setText(String.valueOf(failedCount.get()));
                 long avg = done > 0 ? totalDuration.get() / done : 0;
                 avgTimeLabel.setText(avg + " ms");
+                
+                int gt = globalTestTotal.get();
+                if (gt > 0) {
+                    testsLabel.setText(globalTestPassed.get() + "/" + gt);
+                } else {
+                    testsLabel.setText("0/0");
+                }
+                
                 if (chartPanel != null) {
                     chartPanel.repaint();
                 }
@@ -1269,15 +1362,7 @@ public class CollectionRunnerPanel extends JPanel {
                     chartPanel.repaint();
                 }
 
-                if (currentRunDir != null && currentRunDir.exists()) {
-                    try {
-                        exportCSV(new File(currentRunDir, "metrics.csv"));
-                        exportHTML(new File(currentRunDir, "metrics.html"));
-                        exportExcel(new File(currentRunDir, "metrics.xlsx"));
-                        exportPDF(new File(currentRunDir, "metrics.pdf"));
-                    } catch (Exception ignored) {
-                    }
-                }
+                // Reports are exported on request only
             }
         };
         worker.execute();
@@ -1292,6 +1377,8 @@ public class CollectionRunnerPanel extends JPanel {
         List<Long> allSizes = new ArrayList<>();
         int totalPass = 0;
         int totalFail = 0;
+        int totalTestPassed = 0;
+        int totalTestTotal = 0;
         Set<Integer> allStatusCodes = new HashSet<>();
         Set<String> allFormats = new HashSet<>();
 
@@ -1308,6 +1395,8 @@ public class CollectionRunnerPanel extends JPanel {
                 allSizes.addAll(szs);
                 totalPass += stats.successCount;
                 totalFail += stats.failCount;
+                totalTestPassed += stats.testPassedCount;
+                totalTestTotal += stats.testTotalCount;
                 allStatusCodes.addAll(stats.statusCodes);
                 allFormats.addAll(stats.formats);
 
@@ -1330,6 +1419,11 @@ public class CollectionRunnerPanel extends JPanel {
                 long avgSize = sizeSum / samples;
 
                 double succPercent = (double) stats.successCount / samples * 100.0;
+                
+                String testsSummary = "-";
+                if (stats.testTotalCount > 0) {
+                    testsSummary = stats.testPassedCount + "/" + stats.testTotalCount;
+                }
 
                 aggregateModel.addRow(new Object[] {
                         stats.name,
@@ -1344,6 +1438,7 @@ public class CollectionRunnerPanel extends JPanel {
                         p95,
                         p99,
                         avgSize,
+                        testsSummary,
                         stats.successCount,
                         stats.failCount,
                         String.format("%.1f%%", succPercent),
@@ -1375,6 +1470,11 @@ public class CollectionRunnerPanel extends JPanel {
             long avgSize = sizeSum / samples;
 
             double succPercent = (double) totalPass / samples * 100.0;
+            
+            String testsSummaryTotal = "-";
+            if (totalTestTotal > 0) {
+                testsSummaryTotal = totalTestPassed + "/" + totalTestTotal;
+            }
 
             aggregateModel.addRow(new Object[] {
                     "TOTAL",
@@ -1389,6 +1489,7 @@ public class CollectionRunnerPanel extends JPanel {
                     p95,
                     p99,
                     avgSize,
+                    testsSummaryTotal,
                     totalPass,
                     totalFail,
                     String.format("%.1f%%", succPercent),
@@ -1580,7 +1681,7 @@ public class CollectionRunnerPanel extends JPanel {
         document.add(new com.lowagie.text.Paragraph("\n"));
 
         // Overview Summary Metrics (Grid/Table)
-        com.lowagie.text.pdf.PdfPTable summaryTable = new com.lowagie.text.pdf.PdfPTable(4);
+        com.lowagie.text.pdf.PdfPTable summaryTable = new com.lowagie.text.pdf.PdfPTable(5);
         summaryTable.setWidthPercentage(100);
         summaryTable.setSpacingBefore(10);
         summaryTable.setSpacingAfter(20);
@@ -1590,13 +1691,13 @@ public class CollectionRunnerPanel extends JPanel {
         com.lowagie.text.Font cellValFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 12,
                 com.lowagie.text.Font.BOLD, pdfFg);
 
-        String[] headers = { "Total Requests", "Passed", "Failed", "Avg Duration" };
+        String[] headers = { "Total Requests", "Passed", "Failed", "Avg Duration", "Test Assertions" };
         String[] vals = { totalReqLabel.getText(), passedLabel.getText(), failedLabel.getText(),
-                avgTimeLabel.getText() };
+                avgTimeLabel.getText(), testsLabel.getText() };
         Color[] bgColors = { new Color(52, 152, 219), new Color(46, 204, 113), new Color(231, 76, 60),
-                new Color(155, 89, 182) };
+                new Color(155, 89, 182), new Color(243, 156, 18) };
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(
                     new com.lowagie.text.Paragraph(headers[i], cellHeaderFont));
             cell.setBackgroundColor(bgColors[i]);
@@ -1606,7 +1707,7 @@ public class CollectionRunnerPanel extends JPanel {
             summaryTable.addCell(cell);
         }
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(
                     new com.lowagie.text.Paragraph(vals[i], cellValFont));
             cell.setHorizontalAlignment(com.lowagie.text.Element.ALIGN_CENTER);
@@ -1646,9 +1747,9 @@ public class CollectionRunnerPanel extends JPanel {
         document.add(new com.lowagie.text.Paragraph("Aggregate Execution Summary", sectionFont));
         document.add(new com.lowagie.text.Paragraph("\n"));
 
-        com.lowagie.text.pdf.PdfPTable aggTable = new com.lowagie.text.pdf.PdfPTable(8);
+        com.lowagie.text.pdf.PdfPTable aggTable = new com.lowagie.text.pdf.PdfPTable(9);
         aggTable.setWidthPercentage(100);
-        aggTable.setWidths(new float[] { 3f, 1f, 1.2f, 1.5f, 1.2f, 1f, 1f, 1.2f });
+        aggTable.setWidths(new float[] { 3f, 1f, 1.2f, 1.5f, 1.2f, 1f, 1f, 1.2f, 1.2f });
 
         com.lowagie.text.Font tableHeaderFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 9,
                 com.lowagie.text.Font.BOLD, pdfFg);
@@ -1657,7 +1758,7 @@ public class CollectionRunnerPanel extends JPanel {
         com.lowagie.text.Font totalRowFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 8,
                 com.lowagie.text.Font.BOLD, pdfFg);
 
-        String[] colHeaders = { "Name", "Method", "Samples", "Codes", "Avg", "Min", "Max", "Success %" };
+        String[] colHeaders = { "Name", "Method", "Samples", "Codes", "Avg", "Min", "Max", "Tests", "Success %" };
         for (String colHeader : colHeaders) {
             com.lowagie.text.pdf.PdfPCell hCell = new com.lowagie.text.pdf.PdfPCell(
                     new com.lowagie.text.Paragraph(colHeader, tableHeaderFont));
@@ -1671,8 +1772,10 @@ public class CollectionRunnerPanel extends JPanel {
             boolean isTotal = "TOTAL".equals(aggregateModel.getValueAt(i, 0));
             com.lowagie.text.Font rowF = isTotal ? totalRowFont : tableRowFont;
 
-            for (int j = 0; j < 8; j++) {
-                int colIdx = j == 7 ? 14 : j; // Map success %
+            for (int j = 0; j < 9; j++) {
+                int colIdx = j;
+                if (j == 7) colIdx = 12; // Map Tests
+                else if (j == 8) colIdx = 15; // Map Success %
                 com.lowagie.text.pdf.PdfPCell dCell = new com.lowagie.text.pdf.PdfPCell(
                         new com.lowagie.text.Paragraph(String.valueOf(aggregateModel.getValueAt(i, colIdx)), rowF));
                 dCell.setBorderColor(isDark ? new Color(68, 68, 68) : Color.LIGHT_GRAY);
@@ -1734,10 +1837,10 @@ public class CollectionRunnerPanel extends JPanel {
         Row headerRow = summarySheet.createRow(9);
         Row valRow = summarySheet.createRow(10);
 
-        String[] summaryHeaders = { "Total Requests", "Passed", "Failed", "Avg Duration" };
+        String[] summaryHeaders = { "Total Requests", "Passed", "Failed", "Avg Duration", "Test Assertions" };
         String[] summaryVals = { totalReqLabel.getText(), passedLabel.getText(), failedLabel.getText(),
-                avgTimeLabel.getText() };
-        for (int i = 0; i < 4; i++) {
+                avgTimeLabel.getText(), testsLabel.getText() };
+        for (int i = 0; i < 5; i++) {
             headerRow.createCell(i).setCellValue(summaryHeaders[i]);
             valRow.createCell(i).setCellValue(summaryVals[i]);
         }
@@ -1885,7 +1988,10 @@ public class CollectionRunnerPanel extends JPanel {
                     + failedLabel.getText() + "</p></div>");
             pw.println(
                     "<div class='card'><h4>Avg Duration</h4><p style='font-size:20px;font-weight:bold;color:#9b59b6;'>"
-                            + avgTimeLabel.getText() + "</p></div></div>");
+                            + avgTimeLabel.getText() + "</p></div>");
+            pw.println(
+                    "<div class='card'><h4>Test Assertions</h4><p style='font-size:20px;font-weight:bold;color:#f39c12;'>"
+                            + testsLabel.getText() + "</p></div></div>");
 
             pw.println("<h3>Performance Analytics Charts</h3>");
             pw.println("<div style='display:flex; gap:15px; margin-bottom:20px;'>");
@@ -1901,7 +2007,7 @@ public class CollectionRunnerPanel extends JPanel {
 
             pw.println("<h3>Aggregate Summary</h3>");
             pw.println(
-                    "<table><thead><tr><th>API Name</th><th>Method</th><th>Samples</th><th>StatusCodes</th><th>Avg (ms)</th><th>Min (ms)</th><th>Max (ms)</th><th>p75</th><th>p90</th><th>p95</th><th>p99</th><th>Avg Size(B)</th><th>Pass</th><th>Fail</th><th>Success %</th><th>Format</th></tr></thead><tbody>");
+                    "<table><thead><tr><th>API Name</th><th>Method</th><th>Samples</th><th>StatusCodes</th><th>Avg (ms)</th><th>Min (ms)</th><th>Max (ms)</th><th>p75</th><th>p90</th><th>p95</th><th>p99</th><th>Avg Size(B)</th><th>Tests</th><th>Pass</th><th>Fail</th><th>Success %</th><th>Format</th></tr></thead><tbody>");
             for (int i = 0; i < aggregateModel.getRowCount(); i++) {
                 boolean isTotal = "TOTAL".equals(aggregateModel.getValueAt(i, 0));
                 pw.println(isTotal ? "<tr class='total'>" : "<tr>");
@@ -1914,7 +2020,7 @@ public class CollectionRunnerPanel extends JPanel {
 
             pw.println("<h3>Execution Log Detail</h3>");
             pw.println(
-                    "<table><thead><tr><th>#</th><th>Iteration</th><th>Request</th><th>Method</th><th>Status</th><th>Duration (ms)</th><th>URL</th></tr></thead><tbody>");
+                    "<table><thead><tr><th>#</th><th>Iteration</th><th>Request</th><th>Method</th><th>Status</th><th>Duration (ms)</th><th>Tests</th><th>URL</th></tr></thead><tbody>");
             for (int i = 0; i < resultsTableModel.getRowCount(); i++) {
                 pw.println("<tr>");
                 for (int j = 0; j < resultsTableModel.getColumnCount(); j++) {
@@ -1938,7 +2044,7 @@ public class CollectionRunnerPanel extends JPanel {
             pw.println("\"Generated At:\",\"" + LocalDateTime.now().toString() + "\"");
             pw.println();
             pw.println(
-                    "API Name,Method,Samples,StatusCodes,Avg (ms),Min (ms),Max (ms),p75,p90,p95,p99,Avg Size(B),Pass,Fail,Success %,Format");
+                    "API Name,Method,Samples,StatusCodes,Avg (ms),Min (ms),Max (ms),p75,p90,p95,p99,Avg Size(B),Tests,Pass,Fail,Success %,Format");
             for (int i = 0; i < aggregateModel.getRowCount(); i++) {
                 StringBuilder sb = new StringBuilder();
                 for (int j = 0; j < aggregateModel.getColumnCount(); j++) {
@@ -2098,6 +2204,74 @@ public class CollectionRunnerPanel extends JPanel {
     public RequestModel getRequestModel() {
         saveConfig();
         return runnerModel;
+    }
+
+    private class HeaderCheckboxHandler extends java.awt.event.MouseAdapter implements javax.swing.table.TableCellRenderer {
+        private final JCheckBox checkBox = new JCheckBox();
+        private int column;
+
+        public HeaderCheckboxHandler(JTable table, int column) {
+            this.column = column;
+            checkBox.setHorizontalAlignment(SwingConstants.CENTER);
+            checkBox.setOpaque(false);
+            table.getTableHeader().addMouseListener(this);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+            int rowCount = table.getModel().getRowCount();
+            if (rowCount == 0) {
+                checkBox.setSelected(false);
+                checkBox.putClientProperty("JButton.selectedState", null);
+                checkBox.setToolTipText("None Selected");
+            } else {
+                int selectedCount = 0;
+                for (int i = 0; i < rowCount; i++) {
+                    if (Boolean.TRUE.equals(table.getModel().getValueAt(i, column))) {
+                        selectedCount++;
+                    }
+                }
+                if (selectedCount == 0) {
+                    checkBox.setSelected(false);
+                    checkBox.putClientProperty("JButton.selectedState", null);
+                    checkBox.setToolTipText("None Selected");
+                } else if (selectedCount == rowCount) {
+                    checkBox.setSelected(true);
+                    checkBox.putClientProperty("JButton.selectedState", null);
+                    checkBox.setToolTipText("All Selected");
+                } else {
+                    checkBox.setSelected(true);
+                    checkBox.putClientProperty("JButton.selectedState", "indeterminate");
+                    checkBox.setToolTipText("Custom Selection");
+                }
+            }
+            return checkBox;
+        }
+
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+            JTable table = ((javax.swing.table.JTableHeader) e.getSource()).getTable();
+            javax.swing.table.TableColumnModel columnModel = table.getColumnModel();
+            int viewColumn = columnModel.getColumnIndexAtX(e.getX());
+            int modelColumn = table.convertColumnIndexToModel(viewColumn);
+
+            if (modelColumn == column) {
+                boolean allSelected = true;
+                for (int i = 0; i < table.getModel().getRowCount(); i++) {
+                    if (!Boolean.TRUE.equals(table.getModel().getValueAt(i, column))) {
+                        allSelected = false;
+                        break;
+                    }
+                }
+                
+                boolean newState = !allSelected;
+                for (int i = 0; i < table.getModel().getRowCount(); i++) {
+                    table.getModel().setValueAt(newState, i, column);
+                }
+                table.getTableHeader().repaint();
+                autoSave();
+            }
+        }
     }
 }
 

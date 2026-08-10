@@ -1,17 +1,32 @@
-# ApiBanker Release Plan — v1.3.0-beta
+# ApiBanker Release Plan — v1.4.0-beta
 
-This document outlines the release plan for **ApiBanker (v1.3.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
+This document outlines the release plan for **ApiBanker (v1.4.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
 
 ---
 
 ## 1. Release Goals
 
-ApiBanker's transition to the `1.3.0-beta` pre-release phase aims to achieve the following:
+ApiBanker's transition to the `1.4.0-beta` pre-release phase aims to achieve the following:
 * **Brand Migration**: Safely migrate all legacy user configurations, folders, and preferences from `.japi` to `.apibanker` on first boot.
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
 * **Interoperability Check**: Ensure standard Postman Collection (v2.1) and Apache JMeter (.jmx) files import and export seamlessly.
 * **Stabilization**: Collect community feedback and log reports to fix interface scaling issues, visual bugs, or script engine runtime errors.
+
+---
+
+### v1.4.0-beta Release Summary
+
+This release focuses on massive improvements to OpenAPI specification support and distribution automation.
+
+**Features & Enhancements:**
+- **Universal OpenAPI/Swagger Import**: Completely overhauled the OpenAPI importer. Migrated from `OpenAPIV3Parser` to the generic `OpenAPIParser`, providing seamless, native support for legacy **Swagger 2.0** alongside **OpenAPI 3.0.x** and **OpenAPI 3.1.x** specifications.
+- **Intelligent JSON Body Generation**: The importer now dynamically generates accurate sample JSON request bodies for `POST`, `PUT`, and `PATCH` methods by recursively traversing the OpenAPI schema components, resolving `$ref`s, arrays, and nested objects if explicit examples are missing.
+- **Advanced Parameter Extraction**: The importer now robustly extracts `query`, `path`, and `header` parameters from both path-level and operation-level definitions, successfully loading them into the respective configuration tables. 
+- **Query Parameter Synchronization**: During OpenAPI import, query parameters are now correctly appended to the `RequestModel`'s URL string automatically (`?key=value`), ensuring proper synchronization with the URL bar UI.
+- **Dynamic Collection Variables**: If OpenAPI parameters lack default or example values, the system now automatically generates them as Collection Variables and injects them into the request using `{{variable}}` syntax for maximum flexibility.
+- **Automated ZIP Distribution**: Enhanced the `build-installers.bat` Windows pipeline to automatically compress the generated app-image into a portable `.zip` bundle (`ApiBanker-jre21-winX64.zip`) immediately following `.msi` creation.
+- **Artifact Cleanup**: The build scripts now proactively clean up intermediate app-image directories (`target/artifacts/ApiBanker`) after the `.zip` generation, preventing disk bloat.
 
 ---
 
@@ -80,7 +95,7 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v1.3.0-beta** release:
+Here is the current implementation status of features included in the **v1.4.0-beta** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -106,16 +121,16 @@ ApiBanker offers a professional, multi-tier distribution pipeline depending on u
 
 ### Option 1: Classic Portable Bundle (.zip / .tar.gz)
 The traditional portable archive containing a shaded fat JAR and cross-platform launcher scripts. Best for users who already have Java installed and prefer a portable folder.
-* **Target executable**: `apibanker-1.3.0-beta.jar`
+* **Target executable**: `apibanker-1.4.0-beta.jar`
 * **Launch scripts**: `scripts/apibanker.bat` (Windows), `scripts/apibanker.sh` (macOS/Linux).
 * **Generation Command**: `mvn clean package`
-* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/apibanker.tar.gz)
+* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.4.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.4.0-beta/apibanker.tar.gz)
 
 ### Option 2: Professional Native Installer (.msi)
 A complete standalone setup wizard for Windows. This format uses `jpackage` and the WiX toolset to bundle a custom, stripped-down JRE along with the application. Best for end-users who want a standard installation experience and do not have Java installed.
 * **Target executable**: `ApiBanker-installer.msi`
 * **Generation Command**: `mvn clean verify -DbuildNative`
-* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/ApiBanker-installer.msi)
+* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.4.0-beta/ApiBanker-installer.msi)
 
 
 ---
@@ -128,7 +143,7 @@ A complete standalone setup wizard for Windows. This format uses `jpackage` and 
 | **Rebranding Migration** | 2026-08-06 | Complete |
 | **Beta Release (v1.1.0-beta)** | 2026-08-10 | Complete |
 | **Beta Release (v1.2.0-beta)** | 2026-08-09 | Complete |
-| **Beta Release (v1.3.0-beta)** | 2026-08-09 | Active |
+| **Beta Release (v1.4.0-beta)** | 2026-08-09 | Active |
 | **RC1 Preparation** | 2026-08-25 | Pending |
 | **Stable v1.2.0** | 2026-09-01 | Pending |
 

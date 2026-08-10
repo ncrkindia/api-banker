@@ -64,37 +64,47 @@ public class HighlightTextField extends JTextField {
             }
 
             try {
-                Rectangle r0, r1;
-                try {
-                    r0 = modelToView2D(start).getBounds();
-                    r1 = modelToView2D(end).getBounds();
-                } catch (NoSuchMethodError e) {
-                    r0 = modelToView(start);
-                    r1 = modelToView(end);
+                int selS = Math.max(start, selStart);
+                int selE = Math.min(end, selEnd);
+
+                if (selS < selE) { // there is an overlap
+                    drawSegment(g2, text, start, selS, getBackground(), textColor, fm);
+                    drawSegment(g2, text, selS, selE, getSelectionColor(), getSelectedTextColor(), fm);
+                    drawSegment(g2, text, selE, end, getBackground(), textColor, fm);
+                } else {
+                    drawSegment(g2, text, start, end, getBackground(), textColor, fm);
                 }
-
-                int x = r0.x;
-                int y = r0.y;
-                int w = r1.x - r0.x;
-                int h = r0.height;
-
-                if (w > 0) {
-                    // Erase the original text painted by the base component UI
-                    Color bg = getBackground();
-                    if (selStart != selEnd && start >= selStart && end <= selEnd) {
-                        bg = getSelectionColor();
-                    }
-                    g2.setColor(bg);
-                    g2.fillRect(x, y, w, h);
-
-                    // Draw the colored bold variable text
-                    g2.setColor(textColor);
-                    g2.drawString(text.substring(start, end), x, y + fm.getAscent());
-                }
-            } catch (BadLocationException ignored) {
+            } catch (Exception ignored) {
             }
         }
         g2.dispose();
+    }
+
+    private void drawSegment(Graphics2D g2, String text, int s, int e, Color bg, Color fg, FontMetrics fm) {
+        if (s >= e)
+            return;
+        try {
+            Rectangle r0, r1;
+            try {
+                r0 = modelToView2D(s).getBounds();
+                r1 = modelToView2D(e).getBounds();
+            } catch (NoSuchMethodError ex) {
+                r0 = modelToView(s);
+                r1 = modelToView(e);
+            }
+            int x = r0.x;
+            int y = r0.y;
+            int w = r1.x - r0.x;
+            int h = r0.height;
+
+            if (w > 0) {
+                g2.setColor(bg);
+                g2.fillRect(x, y, w, h);
+                g2.setColor(fg);
+                g2.drawString(text.substring(s, e), x, y + fm.getAscent());
+            }
+        } catch (BadLocationException ignored) {
+        }
     }
 }
 
