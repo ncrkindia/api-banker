@@ -977,6 +977,7 @@ public class SidebarPanel extends JPanel {
                         parentCol.setFolders(new ArrayList<>());
                     parentCol.getFolders().add(folder);
                     changed = true;
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("COPY_COLLECTION", "User", "Source: [" + ((CollectionModel)clipboardNode).getName() + " / " + ((CollectionModel)clipboardNode).getId() + "] -> Copied to: [" + folder.getName() + " / " + folder.getId() + "]");
                 }
             }
             if (changed) {

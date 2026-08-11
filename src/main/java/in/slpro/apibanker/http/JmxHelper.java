@@ -99,7 +99,7 @@ public class JmxHelper {
      * @throws Exception If the XML Document cannot be generated or transformed to
      *                   the output file.
      */
-    public static void exportJmx(CollectionModel col, File file) throws Exception {
+    public static void exportJmx(CollectionModel col, RequestModel runnerModel, File file) throws Exception {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
         Document doc = db.newDocument();
@@ -150,10 +150,37 @@ public class JmxHelper {
         threadGroup.setAttribute("enabled", "true");
         planHash.appendChild(threadGroup);
 
+        int threads = 1;
+        int rampTime = 1;
+        int loops = 1;
+        boolean scheduler = false;
+        int durationSec = 0;
+        
+        if (runnerModel != null && runnerModel.getBodyRawContent() != null) {
+            try {
+                com.google.gson.JsonObject cfg = com.google.gson.JsonParser.parseString(runnerModel.getBodyRawContent()).getAsJsonObject();
+                if (cfg.has("vusers")) threads = cfg.get("vusers").getAsInt();
+                if (cfg.has("rampUp")) rampTime = cfg.get("rampUp").getAsInt();
+                
+                String mode = cfg.has("runMode") ? cfg.get("runMode").getAsString() : "iterations";
+                if ("duration".equals(mode)) {
+                    scheduler = true;
+                    loops = -1; // continue forever until scheduler stops
+                    if (cfg.has("durationSec")) durationSec = cfg.get("durationSec").getAsInt();
+                } else {
+                    if (cfg.has("iterations")) loops = cfg.get("iterations").getAsInt();
+                }
+            } catch (Exception ignored) {}
+        }
+
         addStringProp(doc, threadGroup, "ThreadGroup.on_sample_error", "continue");
-        addStringProp(doc, threadGroup, "ThreadGroup.num_threads", "1");
-        addStringProp(doc, threadGroup, "ThreadGroup.ramp_time", "1");
-        addBoolProp(doc, threadGroup, "ThreadGroup.scheduler", false);
+        addStringProp(doc, threadGroup, "ThreadGroup.num_threads", String.valueOf(threads));
+        addStringProp(doc, threadGroup, "ThreadGroup.ramp_time", String.valueOf(rampTime));
+        addBoolProp(doc, threadGroup, "ThreadGroup.scheduler", scheduler);
+        if (scheduler) {
+            addStringProp(doc, threadGroup, "ThreadGroup.duration", String.valueOf(durationSec));
+            addStringProp(doc, threadGroup, "ThreadGroup.delay", "0");
+        }
 
         Element controller = doc.createElement("elementProp");
         controller.setAttribute("name", "ThreadGroup.main_controller");
@@ -163,7 +190,7 @@ public class JmxHelper {
         controller.setAttribute("testname", "Loop Controller");
         controller.setAttribute("enabled", "true");
         addBoolProp(doc, controller, "LoopController.continue_forever", false);
-        addStringProp(doc, controller, "LoopController.loops", "1");
+        addStringProp(doc, controller, "LoopController.loops", String.valueOf(loops));
         threadGroup.appendChild(controller);
 
         Element threadHash = doc.createElement("hashTree");

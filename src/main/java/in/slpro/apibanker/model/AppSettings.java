@@ -25,6 +25,7 @@ public class AppSettings {
     private int windowX = -1;
     private int windowY = -1;
     private boolean windowMaximized = true;
+    private boolean enableActionAuditLog = true;
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
     private java.util.List<String> expandedTreeNodes = new java.util.ArrayList<>();
@@ -92,6 +93,14 @@ public class AppSettings {
 
     public void setFontSize(int fontSize) {
         this.fontSize = fontSize;
+    }
+
+    public boolean isEnableActionAuditLog() {
+        return enableActionAuditLog;
+    }
+
+    public void setEnableActionAuditLog(boolean enableActionAuditLog) {
+        this.enableActionAuditLog = enableActionAuditLog;
     }
 
     public String getGlobalSslSetting() {

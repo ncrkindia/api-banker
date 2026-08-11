@@ -85,6 +85,12 @@ public class CollectionRunnerPanel extends JPanel {
     private final List<RunSample> runSamples = new CopyOnWriteArrayList<>();
 
     // UI Components
+    private JRadioButton fixedIterationsRadio;
+    private JRadioButton fixedDurationRadio;
+    private JSpinner durationSpinner;
+    private JComboBox<String> durationUnitCombo;
+    private JSpinner rampUpSpinner;
+    
     private JSpinner iterationsSpinner;
     private JSpinner delaySpinner;
     private JSpinner vusersSpinner;
@@ -107,6 +113,8 @@ public class CollectionRunnerPanel extends JPanel {
 
     private DefaultTableModel aggregateModel;
     private JTable aggregateTable;
+    
+    private volatile boolean wasAborted = false;
 
     private ExecutorService executorService;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -199,53 +207,79 @@ public class CollectionRunnerPanel extends JPanel {
         gbc.insets = new Insets(4, 8, 4, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Iterations
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0;
-        configPanel.add(new JLabel("Iterations:"), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 0.2;
-        iterationsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 10000, 1));
-        configPanel.add(iterationsSpinner, gbc);
+        // Row 0: Run Mode
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        configPanel.add(new JLabel("Run Mode:"), gbc);
+        
+        fixedIterationsRadio = new JRadioButton("Fixed Iterations", true);
+        fixedDurationRadio = new JRadioButton("Fixed Duration");
+        fixedIterationsRadio.setOpaque(false);
+        fixedDurationRadio.setOpaque(false);
+        ButtonGroup modeGroup = new ButtonGroup();
+        modeGroup.add(fixedIterationsRadio);
+        modeGroup.add(fixedDurationRadio);
+        
+        JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        modePanel.setOpaque(false);
+        modePanel.add(fixedIterationsRadio);
+        modePanel.add(fixedDurationRadio);
+        gbc.gridx = 1; gbc.gridwidth = 3;
+        configPanel.add(modePanel, gbc);
 
-        // Delay ms
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        configPanel.add(new JLabel("Delay (ms):"), gbc);
-        gbc.gridx = 3;
-        gbc.weightx = 0.2;
-        delaySpinner = new JSpinner(new SpinnerNumberModel(0, 0, 60000, 50));
+        // Row 1: Iterations & Duration
+        gbc.gridy = 1; gbc.gridwidth = 1;
+        gbc.gridx = 0; configPanel.add(new JLabel("Iterations:"), gbc);
+        gbc.gridx = 1; iterationsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000000, 1));
+        configPanel.add(iterationsSpinner, gbc);
+        
+        gbc.gridx = 2; configPanel.add(new JLabel("Duration:"), gbc);
+        gbc.gridx = 3; 
+        JPanel durationPanel = new JPanel(new BorderLayout(5, 0));
+        durationPanel.setOpaque(false);
+        durationSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000000, 1));
+        durationUnitCombo = new JComboBox<>(new String[]{"Sec", "Minutes", "Hours", "Days"});
+        durationPanel.add(durationSpinner, BorderLayout.CENTER);
+        durationPanel.add(durationUnitCombo, BorderLayout.EAST);
+        configPanel.add(durationPanel, gbc);
+
+        // Row 2: VUsers, Ramp-up, Delay
+        gbc.gridy = 2;
+        gbc.gridx = 0; configPanel.add(new JLabel("Concurrent Users:"), gbc);
+        gbc.gridx = 1; vusersSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
+        configPanel.add(vusersSpinner, gbc);
+        
+        gbc.gridx = 2; configPanel.add(new JLabel("Ramp-up (s):"), gbc);
+        gbc.gridx = 3; rampUpSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 3600, 1));
+        configPanel.add(rampUpSpinner, gbc);
+
+        gbc.gridx = 4; configPanel.add(new JLabel("Delay (ms):"), gbc);
+        gbc.gridx = 5; delaySpinner = new JSpinner(new SpinnerNumberModel(0, 0, 60000, 50));
         configPanel.add(delaySpinner, gbc);
 
-        // Virtual Users / Concurrency
-        gbc.gridx = 4;
-        gbc.weightx = 0;
-        configPanel.add(new JLabel("Concurrent Users:"), gbc);
-        gbc.gridx = 5;
-        gbc.weightx = 0.2;
-        vusersSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
-        configPanel.add(vusersSpinner, gbc);
-
-        // Environment
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0;
-        configPanel.add(new JLabel("Environment:"), gbc);
-        gbc.gridx = 1;
-        gbc.gridwidth = 3;
-        gbc.weightx = 0.5;
+        // Row 3: Environment & Save Logs
+        gbc.gridy = 3;
+        gbc.gridx = 0; configPanel.add(new JLabel("Environment:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 3;
         envSelectCombo = new JComboBox<>();
         refreshEnvCombo();
         configPanel.add(envSelectCombo, gbc);
 
-        // Save logs checkbox
-        gbc.gridx = 4;
-        gbc.gridwidth = 2;
-        gbc.weightx = 0.3;
+        gbc.gridx = 4; gbc.gridwidth = 2;
         saveLogsCheck = new JCheckBox("Save Execution Logs", true);
         saveLogsCheck.setOpaque(false);
         configPanel.add(saveLogsCheck, gbc);
+        
+        // Listener to toggle fields based on mode
+        java.awt.event.ActionListener modeListener = e -> {
+            boolean isIter = fixedIterationsRadio.isSelected();
+            iterationsSpinner.setEnabled(isIter);
+            durationSpinner.setEnabled(!isIter);
+            durationUnitCombo.setEnabled(!isIter);
+            autoSave();
+        };
+        fixedIterationsRadio.addActionListener(modeListener);
+        fixedDurationRadio.addActionListener(modeListener);
+        modeListener.actionPerformed(null);
 
         // Control Buttons
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -263,7 +297,7 @@ public class CollectionRunnerPanel extends JPanel {
         runBtn.addActionListener(e -> startRun());
 
         stopBtn = new JButton("Stop");
-        stopBtn.setBackground(new Color(231, 76, 60));
+        stopBtn.setBackground(Color.RED);
         stopBtn.setForeground(Color.WHITE);
         stopBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         stopBtn.setEnabled(false);
@@ -312,7 +346,7 @@ public class CollectionRunnerPanel extends JPanel {
         controlPanel.add(runBtn);
 
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 4;
         gbc.gridwidth = 6;
         gbc.weightx = 1.0;
         configPanel.add(controlPanel, gbc);
@@ -802,12 +836,26 @@ public class CollectionRunnerPanel extends JPanel {
             try {
                 com.google.gson.JsonObject cfg = com.google.gson.JsonParser.parseString(runnerModel.getBodyRawContent())
                         .getAsJsonObject();
+                if (cfg.has("runMode")) {
+                    String mode = cfg.get("runMode").getAsString();
+                    if ("duration".equals(mode)) {
+                        fixedDurationRadio.setSelected(true);
+                    } else {
+                        fixedIterationsRadio.setSelected(true);
+                    }
+                }
                 if (cfg.has("iterations"))
                     iterationsSpinner.setValue(cfg.get("iterations").getAsInt());
+                if (cfg.has("durationVal"))
+                    durationSpinner.setValue(cfg.get("durationVal").getAsInt());
+                if (cfg.has("durationUnit"))
+                    durationUnitCombo.setSelectedItem(cfg.get("durationUnit").getAsString());
                 if (cfg.has("delay"))
                     delaySpinner.setValue(cfg.get("delay").getAsInt());
                 if (cfg.has("vusers"))
                     vusersSpinner.setValue(cfg.get("vusers").getAsInt());
+                if (cfg.has("rampUp"))
+                    rampUpSpinner.setValue(cfg.get("rampUp").getAsInt());
                 if (cfg.has("saveLogs"))
                     saveLogsCheck.setSelected(cfg.get("saveLogs").getAsBoolean());
                 if (cfg.has("environmentId")) {
@@ -838,6 +886,11 @@ public class CollectionRunnerPanel extends JPanel {
                         }
                     }
                 }
+                
+                boolean isIter = fixedIterationsRadio.isSelected();
+                iterationsSpinner.setEnabled(isIter);
+                durationSpinner.setEnabled(!isIter);
+                durationUnitCombo.setEnabled(!isIter);
             } catch (Exception ignored) {
             }
         }
@@ -845,9 +898,23 @@ public class CollectionRunnerPanel extends JPanel {
 
     public void saveConfig() {
         com.google.gson.JsonObject cfg = new com.google.gson.JsonObject();
+        cfg.addProperty("runMode", fixedDurationRadio.isSelected() ? "duration" : "iterations");
         cfg.addProperty("iterations", (Integer) iterationsSpinner.getValue());
+        
+        int durationVal = (Integer) durationSpinner.getValue();
+        String durationUnit = (String) durationUnitCombo.getSelectedItem();
+        cfg.addProperty("durationVal", durationVal);
+        cfg.addProperty("durationUnit", durationUnit);
+        
+        int durationSec = durationVal;
+        if ("Minutes".equals(durationUnit)) durationSec *= 60;
+        else if ("Hours".equals(durationUnit)) durationSec *= 3600;
+        else if ("Days".equals(durationUnit)) durationSec *= 86400;
+        cfg.addProperty("durationSec", durationSec);
+
         cfg.addProperty("delay", (Integer) delaySpinner.getValue());
         cfg.addProperty("vusers", (Integer) vusersSpinner.getValue());
+        cfg.addProperty("rampUp", (Integer) rampUpSpinner.getValue());
         cfg.addProperty("saveLogs", saveLogsCheck.isSelected());
 
         int envIdx = envSelectCombo.getSelectedIndex();
@@ -985,15 +1052,54 @@ public class CollectionRunnerPanel extends JPanel {
         testsLabel.setText("0/0");
         statusLabel.setText("Running...");
         statusLabel.setForeground(new Color(230, 126, 34));
+        wasAborted = false;
+
+        boolean isDurationMode = fixedDurationRadio.isSelected();
+        int tempDurationSec = 0;
+        if (isDurationMode) {
+            int val = (Integer) durationSpinner.getValue();
+            String unit = (String) durationUnitCombo.getSelectedItem();
+            tempDurationSec = val;
+            if ("Minutes".equals(unit)) tempDurationSec *= 60;
+            else if ("Hours".equals(unit)) tempDurationSec *= 3600;
+            else if ("Days".equals(unit)) tempDurationSec *= 86400;
+        }
+        final int durationSec = tempDurationSec;
+        int rampUp = (Integer) rampUpSpinner.getValue();
 
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
         isRunning.set(true);
 
         startTime = LocalDateTime.now();
-        int totalTotalReqs = requests.size() * iterations;
-        progressBar.setMaximum(totalTotalReqs);
-        progressBar.setValue(0);
+        if (isDurationMode) {
+            progressBar.setIndeterminate(false);
+            progressBar.setStringPainted(true);
+            progressBar.setMaximum(durationSec);
+            progressBar.setValue(0);
+            progressBar.setString("0s elapsed / " + formatDuration(durationSec) + " pending");
+        } else {
+            progressBar.setIndeterminate(false);
+            progressBar.setStringPainted(true);
+            int totalTotalReqs = requests.size() * iterations;
+            progressBar.setMaximum(totalTotalReqs);
+            progressBar.setValue(0);
+            progressBar.setString(null);
+        }
+
+        if (isDurationMode) {
+            new javax.swing.Timer(1000, e -> {
+                if (!isRunning.get()) {
+                    ((javax.swing.Timer) e.getSource()).stop();
+                    return;
+                }
+                long elapsed = java.time.Duration.between(startTime, LocalDateTime.now()).getSeconds();
+                long pending = durationSec - elapsed;
+                if (pending < 0) pending = 0;
+                progressBar.setValue((int) elapsed);
+                progressBar.setString(formatDuration(elapsed) + " elapsed / " + formatDuration(pending) + " pending");
+            }).start();
+        }
 
         currentRunDir = saveLogs ? getLogDir() : null;
         File runDir = currentRunDir;
@@ -1036,8 +1142,8 @@ public class CollectionRunnerPanel extends JPanel {
                         logWriter.println("Runner: " + runnerModel.getName());
                         logWriter.println("Started: " + startedStr);
                         logWriter.println("Environment: " + (env != null ? env.getName() : "None"));
-                        logWriter.println("Load Profile: Fixed (Threads: " + vusers + ")");
-                        logWriter.println("Limit: Iterations = " + iterations);
+                        logWriter.println("Load Profile: " + (isDurationMode ? "Fixed Duration" : "Fixed Iterations") + " (Threads: " + vusers + ", Ramp-Up: " + rampUp + "s)");
+                        logWriter.println("Limit: " + (isDurationMode ? (durationSec + " seconds") : ("Iterations = " + iterations)));
                         logWriter.println("=================================================");
 
                         dumpWriter.println("=== Full Request/Response Dump ===");
@@ -1054,7 +1160,17 @@ public class CollectionRunnerPanel extends JPanel {
                 HttpClientWrapper client = new HttpClientWrapper();
                 client.setSilentMode(true);
 
-                for (int iter = 1; iter <= iterations && isRunning.get(); iter++) {
+                long startMsExec = System.currentTimeMillis();
+                long durationMs = durationSec * 1000L;
+                
+                int iter = 1;
+                while (isRunning.get()) {
+                    if (isDurationMode) {
+                        if (System.currentTimeMillis() - startMsExec >= durationMs) break;
+                    } else {
+                        if (iter > iterations) break;
+                    }
+                    
                     final int currentIter = iter;
                     for (RequestModel req : requests) {
                         if (!isRunning.get())
@@ -1290,6 +1406,8 @@ public class CollectionRunnerPanel extends JPanel {
                             }
                         });
                     }
+                    
+                    iter++;
                 }
 
                 executorService.shutdown();
@@ -1321,7 +1439,9 @@ public class CollectionRunnerPanel extends JPanel {
             protected void process(List<Object[]> chunks) {
                 for (Object[] row : chunks) {
                     resultsTableModel.addRow(row);
-                    progressBar.setValue((Integer) row[0]);
+                    if (!isDurationMode) {
+                        progressBar.setValue((Integer) row[0]);
+                    }
                 }
                 int done = completedCount.get();
                 totalReqLabel.setText(String.valueOf(done));
@@ -1349,7 +1469,10 @@ public class CollectionRunnerPanel extends JPanel {
                 runBtn.setEnabled(true);
                 stopBtn.setEnabled(false);
 
-                if (failedCount.get() > 0) {
+                if (wasAborted) {
+                    statusLabel.setText("Aborted");
+                    statusLabel.setForeground(new Color(231, 76, 60));
+                } else if (failedCount.get() > 0) {
                     statusLabel.setText("Completed with Failures");
                     statusLabel.setForeground(new Color(231, 76, 60));
                 } else {
@@ -1500,6 +1623,7 @@ public class CollectionRunnerPanel extends JPanel {
 
     private void stopRun() {
         isRunning.set(false);
+        wasAborted = true;
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdownNow();
         }
@@ -1537,13 +1661,41 @@ public class CollectionRunnerPanel extends JPanel {
         chooser.setSelectedFile(new File(sanitizeFilename(collection.getName()) + ".jmx"));
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
-                JmxHelper.exportJmx(collection, chooser.getSelectedFile());
+                saveConfig();
+                JmxHelper.exportJmx(collection, runnerModel, chooser.getSelectedFile());
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: JMeter (.jmx), Source: [" + collection.getName() + " / " + collection.getId() + "] -> Exported to: " + chooser.getSelectedFile().getAbsolutePath());
                 showToast(this, "Successfully exported collection to JMeter plan!");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "JMX Export failed: " + ex.getMessage(), "Error",
                         JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private String getLoadProfileString() {
+        boolean isDuration = fixedDurationRadio.isSelected();
+        String base = isDuration ? "Duration=" + durationSpinner.getValue() + " " + durationUnitCombo.getSelectedItem()
+                : "Iterations=" + iterationsSpinner.getValue();
+        base += ", Concurrency=" + vusersSpinner.getValue() + ", Ramp-Up=" + rampUpSpinner.getValue() + "s, Delay=" + delaySpinner.getValue() + "ms";
+        if (wasAborted) {
+            base += " (ABORTED)";
+        }
+        return base;
+    }
+
+    private String formatDuration(long totalSecs) {
+        if (totalSecs < 60) return totalSecs + "s";
+        long days = totalSecs / 86400;
+        long hours = (totalSecs % 86400) / 3600;
+        long mins = ((totalSecs % 86400) % 3600) / 60;
+        long secs = totalSecs % 60;
+        
+        StringBuilder sb = new StringBuilder();
+        if (days > 0) sb.append(days).append("d ");
+        if (hours > 0) sb.append(hours).append("h ");
+        if (mins > 0) sb.append(mins).append("m ");
+        sb.append(secs).append("s");
+        return sb.toString().trim();
     }
 
     private void exportReport(String format) {
@@ -1574,6 +1726,7 @@ public class CollectionRunnerPanel extends JPanel {
             } else if ("csv".equalsIgnoreCase(format)) {
                 exportCSV(file);
             }
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_REPORT", "User", "Format: " + format.toUpperCase() + ", Source: [" + collection.getName() + " / " + collection.getId() + "] -> Exported to: " + file.getAbsolutePath());
             showToast(this, "Report exported successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();
@@ -1616,6 +1769,7 @@ public class CollectionRunnerPanel extends JPanel {
                     java.nio.file.Files.lines(dumpFile.toPath()).forEach(pw::println);
                 }
             }
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_LOGS", "User", "Type: " + type.toUpperCase() + ", Source: [" + collection.getName() + " / " + collection.getId() + "] -> Exported to: " + file.getAbsolutePath());
             showToast(this, "Logs exported successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();
@@ -1670,8 +1824,7 @@ public class CollectionRunnerPanel extends JPanel {
         document.add(new com.lowagie.text.Paragraph("Runner Model: " + runnerModel.getName(), metaFont));
         document.add(new com.lowagie.text.Paragraph("Run Started: " + (startTime != null ? startTime.toString() : "-")
                 + " | Finished: " + (endTime != null ? endTime.toString() : "-"), metaFont));
-        document.add(new com.lowagie.text.Paragraph("Load Profile: Iterations=" + iterationsSpinner.getValue()
-                + ", Concurrency=" + vusersSpinner.getValue() + ", Delay=" + delaySpinner.getValue() + "ms", metaFont));
+        document.add(new com.lowagie.text.Paragraph("Load Profile: " + getLoadProfileString(), metaFont));
 
         EnvironmentModel env = resolveSelectedEnvironment();
         document.add(
@@ -1821,8 +1974,7 @@ public class CollectionRunnerPanel extends JPanel {
 
         Row r4 = summarySheet.createRow(5);
         r4.createCell(0).setCellValue("Load Profile:");
-        r4.createCell(1).setCellValue("Iterations=" + iterationsSpinner.getValue() + ", Concurrency="
-                + vusersSpinner.getValue() + ", Delay=" + delaySpinner.getValue() + "ms");
+        r4.createCell(1).setCellValue(getLoadProfileString());
 
         Row r5 = summarySheet.createRow(6);
         r5.createCell(0).setCellValue("Generated At:");
@@ -1975,8 +2127,7 @@ public class CollectionRunnerPanel extends JPanel {
                     + (endTime != null ? endTime : "-") + "</p>");
             pw.println("<p><b>Environment:</b> " + (env != null ? env.getName() : "None")
                     + " | <b>Report Generated At:</b> " + genAt + "</p>");
-            pw.println("<p><b>Load Profile:</b> Iterations=" + iterationsSpinner.getValue() + ", Concurrent Users="
-                    + vusersSpinner.getValue() + ", Delay=" + delaySpinner.getValue() + "ms</p></div>");
+            pw.println("<p><b>Load Profile:</b> " + getLoadProfileString() + "</p></div>");
 
             pw.println("<div class='metrics'>");
             pw.println(
@@ -2041,6 +2192,7 @@ public class CollectionRunnerPanel extends JPanel {
             pw.println("\"ApiBanker Performance Runner Report - from SL Pro\"");
             pw.println("\"Collection:\",\"" + collection.getName() + "\"");
             pw.println("\"Runner Model:\",\"" + runnerModel.getName() + "\"");
+            pw.println("\"Load Profile:\",\"" + getLoadProfileString() + "\"");
             pw.println("\"Generated At:\",\"" + LocalDateTime.now().toString() + "\"");
             pw.println();
             pw.println(

@@ -99,7 +99,7 @@ if %errorlevel% neq 0 ( echo [ERROR] .msi creation failed. Ensure WiX Toolset v3
 
 echo.
 echo Building .zip Bundle from app-image...
-powershell -NoProfile -Command "Compress-Archive -Path 'target\artifacts\ApiBanker' -DestinationPath 'target\artifacts\ApiBanker-jre21-winX64.zip' -Force"
+powershell -NoProfile -Command "Compress-Archive -Path 'target\artifacts\ApiBanker' -DestinationPath 'target\artifacts\ApiBanker-%APP_VERSION%-jre21-winX64.zip' -Force"
 if %errorlevel% neq 0 ( echo [ERROR] .zip creation failed. & exit /b 1 )
 
 echo Cleaning up app-image directory...

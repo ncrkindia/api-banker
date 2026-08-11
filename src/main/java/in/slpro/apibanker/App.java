@@ -68,6 +68,7 @@ public class App {
             }
 
             frame.setVisible(true);
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_START", "System", "ApiBanker Version " + getVersion() + " launched.");
         });
     }
 
@@ -249,7 +250,7 @@ public class App {
             // fallback
         }
         if (version == null || version.isEmpty() || "${project.version}".equals(version)) {
-            version = "1.4.0-beta"; // fallback if running outside jar or un-filtered environment
+            version = "1.5.0-beta"; // fallback if running outside jar or un-filtered environment
         }
         return version;
     }

@@ -41,7 +41,7 @@ public class OpenApiImportPanel extends JPanel {
     private final MainFrame mainFrame;
     private final JTextField fileField;
     private final DefaultTableModel tableModel;
-    private final JComboBox<String> baseUrlOption;
+    private final JTextField baseUrlVarNameField;
     private OpenAPI currentOpenAPI;
     private String collectionName = "OpenAPI Import";
     private final JTable table;
@@ -62,10 +62,9 @@ public class OpenApiImportPanel extends JPanel {
 
         JPanel configPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         configPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
-        configPanel.add(new JLabel("Import Base URL as:"));
-        baseUrlOption = new JComboBox<>(
-                new String[] { "Directly in Request URL", "Collection Variable ({{baseUrl}})" });
-        configPanel.add(baseUrlOption);
+        configPanel.add(new JLabel("Base URL Variable Name:"));
+        baseUrlVarNameField = new JTextField("baseUrl", 15);
+        configPanel.add(baseUrlVarNameField);
 
         JButton analyzeBtn = new JButton("Analyze Spec");
         configPanel.add(analyzeBtn);
@@ -227,10 +226,13 @@ public class OpenApiImportPanel extends JPanel {
             }
         }
 
-        String baseUrl = serverUrls.isEmpty() ? "http://localhost" : serverUrls.get(0);
+        // baseUrl is unused, skipping
 
-        boolean useCollectionVar = baseUrlOption.getSelectedIndex() == 1;
-        String prefixUrl = useCollectionVar ? "{{baseUrl}}" : baseUrl;
+        String baseVarName = baseUrlVarNameField.getText().trim();
+        if (baseVarName.isEmpty()) {
+            baseVarName = "baseUrl";
+        }
+        String prefixUrl = "{{" + baseVarName + "}}";
         
         java.util.Map<String, String> collectedVariables = new java.util.LinkedHashMap<>();
 
@@ -369,14 +371,12 @@ public class OpenApiImportPanel extends JPanel {
         collection.setRequests(new ArrayList<>(selectedRequests));
 
         List<KeyValueItem> colVars = new ArrayList<>();
-        if (useCollectionVar) {
-            if (serverUrls.isEmpty()) {
-                colVars.add(new KeyValueItem("baseUrl", "http://localhost", true));
-            } else {
-                for (int i = 0; i < serverUrls.size(); i++) {
-                    String varName = i == 0 ? "baseUrl" : "baseUrl_" + i;
-                    colVars.add(new KeyValueItem(varName, serverUrls.get(i), true));
-                }
+        if (serverUrls.isEmpty()) {
+            colVars.add(new KeyValueItem(baseVarName, "http://localhost", true));
+        } else {
+            for (int i = 0; i < serverUrls.size(); i++) {
+                String varName = i == 0 ? baseVarName : baseVarName + "_" + i;
+                colVars.add(new KeyValueItem(varName, serverUrls.get(i), true));
             }
         }
         
@@ -422,6 +422,9 @@ public class OpenApiImportPanel extends JPanel {
 
         mainFrame.addCollection(collection);
         mainFrame.saveWorkspace();
+
+        String specVersion = currentOpenAPI.getOpenapi() != null ? currentOpenAPI.getOpenapi() : "3.0.1";
+        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_OPENAPI", "User", "Format: OpenAPI " + specVersion + ", Status: Success, Collection: [" + collection.getName() + " / " + collection.getId() + "], Requests: " + selectedRequests.size() + ", Imported From: " + new File(fileField.getText().trim()).getAbsolutePath());
 
         JOptionPane.showMessageDialog(this, "Successfully imported " + selectedRequests.size()
                 + " requests into collection '" + collectionName + "'.", "Success", JOptionPane.INFORMATION_MESSAGE);

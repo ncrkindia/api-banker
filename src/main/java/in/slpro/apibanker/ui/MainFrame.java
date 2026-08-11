@@ -175,6 +175,7 @@ public class MainFrame extends JFrame {
                     this.collections.addAll(restored);
                     saveCollections();
                     sidebarPanel.refreshCollections(this.collections);
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("UNDO_COLLECTION_ACTION", "User", "Restored previous collection state.");
                     showToast(this, "Undo successful");
                 }
             } catch (Exception e) {
@@ -1629,6 +1630,15 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
+    public void refreshEnvironmentPanels() {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            Component comp = workspaceTabs.getComponentAt(i);
+            if (comp instanceof EnvironmentManagerPanel emp) {
+                emp.refreshEnvironments(environments);
+            }
+        }
+    }
+
     public void importPostmanFiles() {
         JFileChooser chooser = new JFileChooser(lastFileChooserDirectory);
         chooser.setDialogTitle("Import Postman Files (Collections/Environments)");
@@ -1704,8 +1714,53 @@ public class MainFrame extends JFrame {
                     collections.add(col);
                     int totalRequests = countRequestsRecursive(col);
                     importedCollections.add(col.getName() + " (" + totalRequests + " requests)");
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_COLLECTION", "User", "Format: Postman, Status: Success, Collection: [" + col.getName() + " / " + col.getId() + "], Requests: " + totalRequests + ", Imported From: " + file.getAbsolutePath());
+                } else if (root.has("environments") && root.get("environments").isJsonArray()) {
+                    // Postman Data Export containing multiple environments
+                    for (com.google.gson.JsonElement envEl : root.getAsJsonArray("environments")) {
+                        com.google.gson.JsonObject envObj = envEl.getAsJsonObject();
+                        EnvironmentModel env = new EnvironmentModel();
+                        env.setId(UUID.randomUUID().toString());
+                        env.setName(envObj.has("name") ? envObj.get("name").getAsString() : "Imported");
+
+                        List<KeyValueItem> vars = new ArrayList<>();
+                        if (envObj.has("values") && envObj.get("values").isJsonArray()) {
+                            for (com.google.gson.JsonElement el : envObj.getAsJsonArray("values")) {
+                                com.google.gson.JsonObject v = el.getAsJsonObject();
+                                String key = v.has("key") ? v.get("key").getAsString() : "";
+                                String value = v.has("value") ? v.get("value").getAsString() : "";
+                                boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
+                                vars.add(new KeyValueItem(key, value, enabled));
+                            }
+                        }
+                        env.setVariables(vars);
+                        environments.add(env);
+                        importedEnvironments.add(env.getName());
+                        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: Postman, Status: Success, Environment: [" + env.getName() + " / " + env.getId() + "], Imported From: " + file.getAbsolutePath());
+                    }
+                    
+                    // Also import global variables as a separate environment if they exist
+                    if (root.has("values") && root.get("values").isJsonArray()) {
+                        EnvironmentModel globals = new EnvironmentModel();
+                        globals.setId(UUID.randomUUID().toString());
+                        globals.setName("Postman Globals");
+                        List<KeyValueItem> globalVars = new ArrayList<>();
+                        for (com.google.gson.JsonElement el : root.getAsJsonArray("values")) {
+                            com.google.gson.JsonObject v = el.getAsJsonObject();
+                            String key = v.has("key") ? v.get("key").getAsString() : "";
+                            String value = v.has("value") ? v.get("value").getAsString() : "";
+                            boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
+                            globalVars.add(new KeyValueItem(key, value, enabled));
+                        }
+                        if (!globalVars.isEmpty()) {
+                            globals.setVariables(globalVars);
+                            environments.add(globals);
+                            importedEnvironments.add(globals.getName());
+                            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: Postman Globals, Status: Success, Environment: [" + globals.getName() + " / " + globals.getId() + "], Imported From: " + file.getAbsolutePath());
+                        }
+                    }
                 } else if (root.has("values")) {
-                    // Import as Environment
+                    // Import as single Environment
                     EnvironmentModel env = new EnvironmentModel();
                     env.setId(UUID.randomUUID().toString());
                     env.setName(
@@ -1724,11 +1779,14 @@ public class MainFrame extends JFrame {
                     env.setVariables(vars);
                     environments.add(env);
                     importedEnvironments.add(env.getName());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: Postman, Status: Success, Environment: [" + env.getName() + " / " + env.getId() + "], Imported From: " + file.getAbsolutePath());
                 } else {
                     failedFiles.add(file.getName() + " (unrecognized Postman format)");
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: Postman, Status: Failed (unrecognized format), Imported From: " + file.getAbsolutePath());
                 }
             } catch (Exception e) {
                 failedFiles.add(file.getName() + " (" + e.getMessage() + ")");
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: Postman, Status: Error (" + e.getMessage() + "), Imported From: " + file.getAbsolutePath());
             }
         }
 
@@ -1739,12 +1797,7 @@ public class MainFrame extends JFrame {
 
         if (!importedEnvironments.isEmpty()) {
             setEnvironments(environments);
-            for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
-                Component comp = workspaceTabs.getComponentAt(i);
-                if (comp instanceof EnvironmentManagerPanel emp) {
-                    emp.refreshEnvironments(environments);
-                }
-            }
+            refreshEnvironmentPanels();
         }
 
         StringBuilder sb = new StringBuilder();
@@ -1805,16 +1858,20 @@ public class MainFrame extends JFrame {
                     col.setId(UUID.randomUUID().toString()); // new ID to avoid clash
                     collections.add(col);
                     importedCollections.add(col.getName());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_COLLECTION", "User", "Format: ApiBanker, Status: Success, Collection: [" + col.getName() + " / " + col.getId() + "], Imported From: " + file.getAbsolutePath());
                 } else if (root.has("variables")) {
                     EnvironmentModel env = gson.fromJson(root, EnvironmentModel.class);
                     env.setId(UUID.randomUUID().toString());
                     environments.add(env);
                     importedEnvironments.add(env.getName());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: ApiBanker, Status: Success, Environment: [" + env.getName() + " / " + env.getId() + "], Imported From: " + file.getAbsolutePath());
                 } else {
                     failedFiles.add(file.getName() + " (Unknown format)");
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: ApiBanker, Status: Failed (Unknown format), Imported From: " + file.getAbsolutePath());
                 }
             } catch (Exception e) {
                 failedFiles.add(file.getName() + " (" + e.getMessage() + ")");
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: ApiBanker, Status: Error (" + e.getMessage() + "), Imported From: " + file.getAbsolutePath());
             }
         }
 
@@ -2076,6 +2133,7 @@ public class MainFrame extends JFrame {
 
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: Postman, Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: " + chooser.getSelectedFile().getAbsolutePath());
             showToast(this, "Collection exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -2233,6 +2291,7 @@ public class MainFrame extends JFrame {
                     new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
             root.add("_metadata", metadata);
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: ApiBanker, Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: " + chooser.getSelectedFile().getAbsolutePath());
             showToast(this, "ApiBanker Collection exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -2582,14 +2641,14 @@ public class MainFrame extends JFrame {
 
                 // 7. Collection Runner
                 + "<h2 style='" + h2s + "'>7. &#128202; Collection Runner</h2>"
-                + "<p style='" + ps + "'>Run an entire Collection as a batch test suite with load simulation.</p>"
+                + "<p style='" + ps + "'>Run an entire Collection as a batch test suite with JMeter-compatible load simulation.</p>"
                 + "<div style='" + cs + "'>"
                 + "<ol style='" + lis + "'>"
                 + "<li>Right-click a Collection &rarr; <b>Open Runner</b>, or click the Runner node in the sidebar.</li>"
-                + "<li>Set <b>Iterations</b>, <b>Virtual Users (VUsers)</b>, and <b>Delay</b> between requests.</li>"
-                + "<li>Select an <b>Environment</b> to resolve variables.</li>"
-                + "<li>Click <b>Run</b>. Watch real-time scatter plots for response times and pass/fail counts.</li>"
-                + "<li>After completion, export results as <b>HTML Dashboard</b>, <b>CSV</b>, or <b>PDF</b>.</li>"
+                + "<li>Choose <b>Fixed Iterations</b> or <b>Fixed Duration</b> (Sec/Min/Hours/Days).</li>"
+                + "<li>Set <b>Virtual Users (VUsers)</b>, <b>Ramp-up (s)</b>, and <b>Delay</b> between requests.</li>"
+                + "<li>Select an <b>Environment</b> to resolve variables and click <b>Run</b>.</li>"
+                + "<li>Export native <b>.jmx</b> files via <b>Export JMeter</b>. Mappings: <i>VUsers &rarr; ThreadGroup.num_threads</i>, <i>Ramp-up &rarr; ThreadGroup.ramp_time</i>, and <i>Duration &rarr; ThreadGroup.scheduler</i>.</li>"
                 + "</ol></div>"
 
                 // 8. Tools
@@ -2925,7 +2984,7 @@ public class MainFrame extends JFrame {
             storage.getSettings().setWindowY(getY());
         }
         storage.saveSettings();
-
+        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_CLOSE", "System", "ApiBanker Version " + App.getVersion() + " closed.");
         System.exit(0);
     }
 
@@ -3156,6 +3215,7 @@ public class MainFrame extends JFrame {
 
     private boolean deleteCollectionRecursive(List<CollectionModel> list, CollectionModel target) {
         if (list.remove(target)) {
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("DELETE_COLLECTION", "User", "Deleted: [" + target.getName() + " / " + target.getId() + "]");
             return true;
         }
         for (CollectionModel col : list) {

@@ -29,6 +29,12 @@ public class ExportPanel extends JPanel {
     private final String exportType;
     private JTextField dirField;
 
+    /**
+     * Constructs a new ExportPanel to handle exporting of collections and environments.
+     *
+     * @param mainFrame  The parent MainFrame reference to access application state.
+     * @param exportType The format to export ("apibanker" or "postman").
+     */
     public ExportPanel(MainFrame mainFrame, String exportType) {
         this.mainFrame = mainFrame;
         this.exportType = exportType;
@@ -132,6 +138,14 @@ public class ExportPanel extends JPanel {
         add(footerPanel, BorderLayout.SOUTH);
     }
 
+    /**
+     * Creates a standardized selection panel for a list of exportable items.
+     *
+     * @param title      The title of the panel (e.g., "Collections").
+     * @param items      The list of models to display (CollectionModel or EnvironmentModel).
+     * @param checkboxes The internal list to populate with created JCheckBox instances.
+     * @return A constructed JPanel containing the select-all controls and item checkboxes.
+     */
     private JPanel createListPanel(String title, List<?> items, List<JCheckBox> checkboxes) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
@@ -178,6 +192,10 @@ public class ExportPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Executes the export operation for all selected collections and environments,
+     * writing them to the chosen directory in the specified format.
+     */
     private void performExport() {
         String dirPath = dirField.getText();
         if (dirPath == null || dirPath.trim().isEmpty()) {
@@ -250,6 +268,8 @@ public class ExportPanel extends JPanel {
                         }
                     }
                     exportedSomething = true;
+                    String format = "apibanker".equals(exportType) ? "ApiBanker" : "Postman";
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: " + format + ", Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: " + colFile.getAbsolutePath());
                 }
             }
 
@@ -287,6 +307,8 @@ public class ExportPanel extends JPanel {
                         }
                     }
                     exportedSomething = true;
+                    String format = "apibanker".equals(exportType) ? "ApiBanker" : "Postman";
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_ENVIRONMENT", "User", "Format: " + format + ", Source: [" + env.getName() + " / " + env.getId() + "] -> Exported to: " + envFile.getAbsolutePath());
                 }
             }
 

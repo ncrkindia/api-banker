@@ -219,6 +219,8 @@ public class EnvironmentManagerPanel extends JPanel {
         if (!envListModel.isEmpty()) {
             envList.setSelectedIndex(0);
         }
+        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("UNDO_ENVIRONMENT_ACTION", "User", "Restored previous environment state.");
+        MainFrame.showToast(this, "Undo successful");
     }
 
     private void autoSave() {
@@ -268,6 +270,8 @@ public class EnvironmentManagerPanel extends JPanel {
         pushUndoState();
         for (int i = indices.length - 1; i >= 0; i--) {
             int idx = indices[i];
+            EnvironmentModel deletedEnv = environments.get(idx);
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("DELETE_ENVIRONMENT", "User", "Deleted: [" + deletedEnv.getName() + " / " + deletedEnv.getId() + "]");
             environments.remove(idx);
             envListModel.remove(idx);
         }
@@ -303,6 +307,7 @@ public class EnvironmentManagerPanel extends JPanel {
             copy.setName(copy.getName() + " (Copy)");
             environments.add(copy);
             envListModel.addElement(copy.getName());
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("COPY_ENVIRONMENT", "User", "Source: [" + env.getName() + " / " + env.getId() + "] -> Copied to: [" + copy.getName() + " / " + copy.getId() + "]");
         }
         envList.setSelectedIndex(environments.size() - 1);
     }
@@ -460,8 +465,9 @@ public class EnvironmentManagerPanel extends JPanel {
     }
 
     public void refreshEnvironments(List<EnvironmentModel> newEnvs) {
+        List<EnvironmentModel> copy = new ArrayList<>(newEnvs);
         this.environments.clear();
-        this.environments.addAll(newEnvs);
+        this.environments.addAll(copy);
         envListModel.clear();
         for (EnvironmentModel env : environments) {
             envListModel.addElement(env.getName());

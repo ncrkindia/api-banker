@@ -232,6 +232,7 @@ public class EnvironmentManagerDialog extends JDialog {
             saveCurrentToModel(selectedEnvIndex);
         mainFrame.setEnvironments(environments);
         StorageManager.getInstance().saveEnvironments(environments);
+        mainFrame.refreshEnvironmentPanels();
         dispose();
     }
 
@@ -243,22 +244,69 @@ public class EnvironmentManagerDialog extends JDialog {
         try {
             String json = java.nio.file.Files.readString(chooser.getSelectedFile().toPath());
             com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
-            EnvironmentModel env = new EnvironmentModel();
-            env.setId(UUID.randomUUID().toString());
-            env.setName(obj.has("name") ? obj.get("name").getAsString() : "Imported");
-            List<KeyValueItem> vars = new ArrayList<>();
-            if (obj.has("values") && obj.get("values").isJsonArray()) {
-                for (com.google.gson.JsonElement el : obj.getAsJsonArray("values")) {
-                    com.google.gson.JsonObject v = el.getAsJsonObject();
-                    String key = v.has("key") ? v.get("key").getAsString() : "";
-                    String value = v.has("value") ? v.get("value").getAsString() : "";
-                    boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
-                    vars.add(new KeyValueItem(key, value, enabled));
+            
+            // Check if it's a Postman Data Export containing multiple environments
+            if (obj.has("environments") && obj.get("environments").isJsonArray()) {
+                for (com.google.gson.JsonElement envEl : obj.getAsJsonArray("environments")) {
+                    com.google.gson.JsonObject envObj = envEl.getAsJsonObject();
+                    EnvironmentModel env = new EnvironmentModel();
+                    env.setId(UUID.randomUUID().toString());
+                    env.setName(envObj.has("name") ? envObj.get("name").getAsString() : "Imported");
+                    
+                    List<KeyValueItem> vars = new ArrayList<>();
+                    if (envObj.has("values") && envObj.get("values").isJsonArray()) {
+                        for (com.google.gson.JsonElement el : envObj.getAsJsonArray("values")) {
+                            com.google.gson.JsonObject v = el.getAsJsonObject();
+                            String key = v.has("key") ? v.get("key").getAsString() : "";
+                            String value = v.has("value") ? v.get("value").getAsString() : "";
+                            boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
+                            vars.add(new KeyValueItem(key, value, enabled));
+                        }
+                    }
+                    env.setVariables(vars);
+                    environments.add(env);
+                    envListModel.addElement(env.getName());
                 }
+                
+                // Import global variables as well
+                if (obj.has("values") && obj.get("values").isJsonArray()) {
+                    EnvironmentModel globals = new EnvironmentModel();
+                    globals.setId(UUID.randomUUID().toString());
+                    globals.setName("Postman Globals");
+                    List<KeyValueItem> globalVars = new ArrayList<>();
+                    for (com.google.gson.JsonElement el : obj.getAsJsonArray("values")) {
+                        com.google.gson.JsonObject v = el.getAsJsonObject();
+                        String key = v.has("key") ? v.get("key").getAsString() : "";
+                        String value = v.has("value") ? v.get("value").getAsString() : "";
+                        boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
+                        globalVars.add(new KeyValueItem(key, value, enabled));
+                    }
+                    if (!globalVars.isEmpty()) {
+                        globals.setVariables(globalVars);
+                        environments.add(globals);
+                        envListModel.addElement(globals.getName());
+                    }
+                }
+            } else {
+                // Import as a single Environment
+                EnvironmentModel env = new EnvironmentModel();
+                env.setId(UUID.randomUUID().toString());
+                env.setName(obj.has("name") ? obj.get("name").getAsString() : "Imported");
+                List<KeyValueItem> vars = new ArrayList<>();
+                if (obj.has("values") && obj.get("values").isJsonArray()) {
+                    for (com.google.gson.JsonElement el : obj.getAsJsonArray("values")) {
+                        com.google.gson.JsonObject v = el.getAsJsonObject();
+                        String key = v.has("key") ? v.get("key").getAsString() : "";
+                        String value = v.has("value") ? v.get("value").getAsString() : "";
+                        boolean enabled = !v.has("enabled") || v.get("enabled").getAsBoolean();
+                        vars.add(new KeyValueItem(key, value, enabled));
+                    }
+                }
+                env.setVariables(vars);
+                environments.add(env);
+                envListModel.addElement(env.getName());
             }
-            env.setVariables(vars);
-            environments.add(env);
-            envListModel.addElement(env.getName());
+            
             envList.setSelectedIndex(environments.size() - 1);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Import failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

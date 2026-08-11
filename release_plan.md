@@ -1,17 +1,37 @@
-# ApiBanker Release Plan — v1.4.0-beta
+# ApiBanker Release Plan — v1.5.0-beta
 
-This document outlines the release plan for **ApiBanker (v1.4.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
+This document outlines the release plan for **ApiBanker (v1.5.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
 
 ---
 
 ## 1. Release Goals
 
-ApiBanker's transition to the `1.4.0-beta` pre-release phase aims to achieve the following:
+ApiBanker's transition to the `1.5.0-beta` pre-release phase aims to achieve the following:
 * **Brand Migration**: Safely migrate all legacy user configurations, folders, and preferences from `.japi` to `.apibanker` on first boot.
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
 * **Interoperability Check**: Ensure standard Postman Collection (v2.1) and Apache JMeter (.jmx) files import and export seamlessly.
 * **Stabilization**: Collect community feedback and log reports to fix interface scaling issues, visual bugs, or script engine runtime errors.
+
+---
+
+### v1.5.0-beta Release Summary
+
+This release introduces comprehensive tracking and accountability via Action Audit Logging.
+
+**Features & Enhancements:**
+- **Action Audit Logger**: Implemented a core singleton audit logger (`ActionAuditLogger`) capable of securely tracking critical application lifecycle and user actions.
+- **Auto-rotating Storage**: Audit logs are safely written to the user's workspace logs directory (`~/.apibanker/logs/`) with an automatic daily file rotation (e.g. `action_audit_2026-08-11.log`).
+- **File Cap Security**: Implemented a hard 10MB size limit per log file to prevent disk exhaustion, securely appending incremental indices if the cap is breached in a single day.
+- **Standardized Action Tracking**: The system now seamlessly tracks operations using standardized uppercase tokens:
+  - `APP_START`, `APP_CLOSE`
+  - `IMPORT_COLLECTION`, `IMPORT_ENVIRONMENT`, `IMPORT_OPENAPI`, `IMPORT_FAILED`
+  - `EXPORT_COLLECTION`, `EXPORT_ENVIRONMENT`, `EXPORT_REPORT`, `EXPORT_LOGS`
+  - `DELETE_COLLECTION`, `DELETE_ENVIRONMENT`
+  - `COPY_COLLECTION`, `COPY_ENVIRONMENT`
+  - `UNDO_COLLECTION_ACTION`, `UNDO_ENVIRONMENT_ACTION`
+- **Granular Toggle Control**: Integrated a master switch within `SettingsPanel` -> `enableActionAuditLog`, providing users with complete opt-out capability.
+- **Documentation Overhaul**: Generated detailed JavaDoc annotations for the logger and related panels (`ExportPanel`) to maintain rigorous code-level documentation.
 
 ---
 
@@ -95,7 +115,7 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v1.4.0-beta** release:
+Here is the current implementation status of features included in the **v1.5.0-beta** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -121,16 +141,16 @@ ApiBanker offers a professional, multi-tier distribution pipeline depending on u
 
 ### Option 1: Classic Portable Bundle (.zip / .tar.gz)
 The traditional portable archive containing a shaded fat JAR and cross-platform launcher scripts. Best for users who already have Java installed and prefer a portable folder.
-* **Target executable**: `apibanker-1.4.0-beta.jar`
+* **Target executable**: `apibanker-1.5.0-beta.jar`
 * **Launch scripts**: `scripts/apibanker.bat` (Windows), `scripts/apibanker.sh` (macOS/Linux).
 * **Generation Command**: `mvn clean package`
-* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.4.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.4.0-beta/apibanker.tar.gz)
+* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/apibanker.tar.gz)
 
 ### Option 2: Professional Native Installer (.msi)
 A complete standalone setup wizard for Windows. This format uses `jpackage` and the WiX toolset to bundle a custom, stripped-down JRE along with the application. Best for end-users who want a standard installation experience and do not have Java installed.
 * **Target executable**: `ApiBanker-installer.msi`
 * **Generation Command**: `mvn clean verify -DbuildNative`
-* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.4.0-beta/ApiBanker-installer.msi)
+* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/ApiBanker-installer.msi)
 
 
 ---
@@ -143,7 +163,7 @@ A complete standalone setup wizard for Windows. This format uses `jpackage` and 
 | **Rebranding Migration** | 2026-08-06 | Complete |
 | **Beta Release (v1.1.0-beta)** | 2026-08-10 | Complete |
 | **Beta Release (v1.2.0-beta)** | 2026-08-09 | Complete |
-| **Beta Release (v1.4.0-beta)** | 2026-08-09 | Active |
+| **Beta Release (v1.5.0-beta)** | 2026-08-09 | Active |
 | **RC1 Preparation** | 2026-08-25 | Pending |
 | **Stable v1.2.0** | 2026-09-01 | Pending |
 

@@ -258,12 +258,7 @@ public class StorageManager {
                 col.setId(java.util.UUID.randomUUID().toString());
             }
             String baseName = sanitizeFilename(col.getName());
-            String filename = baseName + ".json";
-            int count = 1;
-            while (activeFilenames.contains(filename)) {
-                filename = baseName + "_" + count + ".json";
-                count++;
-            }
+            String filename = baseName + "_" + sanitizeFilename(col.getId()) + ".json";
             activeFilenames.add(filename);
 
             File file = new File(folder, filename);
@@ -290,7 +285,8 @@ public class StorageManager {
                         }
                         File deletedDir = new File(settings.getDataDirectory(), "deleted");
                         if (!deletedDir.exists()) deletedDir.mkdirs();
-                        File destFile = new File(deletedDir, sanitizeFilename(name) + "_" + sanitizeFilename(id) + ".json");
+                        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date());
+                        File destFile = new File(deletedDir, timestamp + "_" + sanitizeFilename(name) + "_" + sanitizeFilename(id) + ".json");
                         java.nio.file.Files.move(file.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                     } catch (Exception ex) {
                         file.delete();
@@ -351,12 +347,7 @@ public class StorageManager {
                 env.setId(java.util.UUID.randomUUID().toString());
             }
             String baseName = sanitizeFilename(env.getName());
-            String filename = baseName + ".json";
-            int count = 1;
-            while (activeFilenames.contains(filename)) {
-                filename = baseName + "_" + count + ".json";
-                count++;
-            }
+            String filename = baseName + "_" + sanitizeFilename(env.getId()) + ".json";
             activeFilenames.add(filename);
 
             File file = new File(folder, filename);
@@ -383,7 +374,8 @@ public class StorageManager {
                         }
                         File deletedDir = new File(settings.getDataDirectory(), "deleted");
                         if (!deletedDir.exists()) deletedDir.mkdirs();
-                        File destFile = new File(deletedDir, sanitizeFilename(name) + "_" + sanitizeFilename(id) + ".json");
+                        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date());
+                        File destFile = new File(deletedDir, timestamp + "_" + sanitizeFilename(name) + "_" + sanitizeFilename(id) + ".json");
                         java.nio.file.Files.move(file.toPath(), destFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                     } catch (Exception ex) {
                         file.delete();

@@ -26,6 +26,7 @@ public class SettingsPanel extends JPanel {
     private JTextField logsDirField;
     private JComboBox<String> themeCombo;
     private JCheckBox loggingCheck;
+    private JCheckBox actionAuditCheck;
     private JComboBox<String> sslPolicyCombo;
     private JComboBox<String> redirectPolicyCombo;
 
@@ -137,9 +138,22 @@ public class SettingsPanel extends JPanel {
         loggingCheck.setSelected(storage.getSettings().isEnableLogging());
         contentPanel.add(loggingCheck, gbc);
 
-        // Global SSL row
         gbc.gridx = 0;
         gbc.gridy = 4;
+        gbc.weightx = 0;
+        JLabel actionAuditLabel = new JLabel("Enable Action Audit Log:");
+        actionAuditLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(actionAuditLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        actionAuditCheck = new JCheckBox();
+        actionAuditCheck.setSelected(storage.getSettings().isEnableActionAuditLog());
+        contentPanel.add(actionAuditCheck, gbc);
+
+        // Global SSL row
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         gbc.weightx = 0;
         JLabel sslLabel = new JLabel("SSL Verification Policy:");
         sslLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -168,7 +182,7 @@ public class SettingsPanel extends JPanel {
 
         // Global Redirect row
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.weightx = 0;
         JLabel redirectLabel = new JLabel("Auto Redirect Policy (302):");
         redirectLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -197,7 +211,7 @@ public class SettingsPanel extends JPanel {
 
         // Empty space filler
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -241,6 +255,7 @@ public class SettingsPanel extends JPanel {
         storage.updateLogsDirectory(logsDirField.getText().trim());
         storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
         storage.getSettings().setEnableLogging(loggingCheck.isSelected());
+        storage.getSettings().setEnableActionAuditLog(actionAuditCheck.isSelected());
         in.slpro.apibanker.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
 
         int sslIndex = sslPolicyCombo.getSelectedIndex();
@@ -264,6 +279,7 @@ public class SettingsPanel extends JPanel {
         if (!logsDirField.getText().trim().equals(s.getLogsDirectory())) return true;
         if (!themeCombo.getSelectedItem().toString().equals(s.getTheme())) return true;
         if (loggingCheck.isSelected() != s.isEnableLogging()) return true;
+        if (actionAuditCheck.isSelected() != s.isEnableActionAuditLog()) return true;
         
         int sslIndex = sslPolicyCombo.getSelectedIndex();
         String sslVal = "VERIFY";
