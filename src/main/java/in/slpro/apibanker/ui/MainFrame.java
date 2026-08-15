@@ -28,7 +28,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class MainFrame extends JFrame {
@@ -317,7 +317,7 @@ public class MainFrame extends JFrame {
 
         JMenu viewMenu = new JMenu("View");
         JMenuItem consoleItem = new JMenuItem("Console");
-        consoleItem.addActionListener(e -> new ConsoleDialog(this).setVisible(true));
+        consoleItem.addActionListener(e -> ConsoleDialog.showConsole(this));
         JMenuItem logConsoleItem = new JMenuItem("Log Console Tab");
         logConsoleItem.addActionListener(e -> openLogConsole());
         JMenuItem runnerLogsItem = new JMenuItem("Collection Runner Logs");
@@ -358,14 +358,14 @@ public class MainFrame extends JFrame {
 
         JMenu helpMenu = new JMenu("Help");
         JMenuItem userGuideItem = new JMenuItem("User Guide");
-        userGuideItem.addActionListener(e -> openDocumentationPanel());
+        userGuideItem.addActionListener(e -> openDocumentationPanel(null));
         helpMenu.add(userGuideItem);
         JMenuItem featuresItem = new JMenuItem("Features");
         featuresItem.addActionListener(e -> openFeaturesPanel());
         helpMenu.add(featuresItem);
         helpMenu.addSeparator();
-        JMenuItem aboutItem = new JMenuItem("About ApiBanker");
-        aboutItem.addActionListener(e -> showAbout());
+        JMenuItem aboutItem = new JMenuItem("About Us");
+        aboutItem.addActionListener(e -> openAboutUsPanel());
         helpMenu.add(aboutItem);
 
         bar.add(fileMenu);
@@ -931,99 +931,37 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel buildWelcomePanel() {
-        JPanel welcome = new JPanel(new BorderLayout());
-        welcome.setBackground(UIManager.getColor("Panel.background"));
+        String markdown = loadAboutUsMarkdown();
+        String html = renderAboutUsHtml(markdown);
 
-        JTextPane welcomePane = new JTextPane();
-        welcomePane.setContentType("text/html");
-        welcomePane.setEditable(false);
-        welcomePane.setBackground(UIManager.getColor("Panel.background"));
+        javax.swing.JEditorPane pane = new javax.swing.JEditorPane();
+        pane.setContentType("text/html");
+        pane.setEditable(false);
+        pane.setBackground(UIManager.getColor("Panel.background"));
+        pane.setText(html);
+        pane.setCaretPosition(0);
 
-        Color accentColor = UIManager.getColor("AccentColor");
-        if (accentColor == null)
-            accentColor = new Color(26, 115, 232);
-        String accentHex = String.format("#%02x%02x%02x", accentColor.getRed(), accentColor.getGreen(),
-                accentColor.getBlue());
-        String textHex = "#555555";
-        String cardBgHex = "#FFFFFF";
+        pane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                if (e.getURL() != null) {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
+                    } catch (Exception ex) {
+                        try {
+                            String desc = e.getDescription();
+                            if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
+                                java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+        });
 
-        boolean isDark = com.formdev.flatlaf.FlatLaf.isLafDark();
-        String borderColorHex = "#DDDDDD";
-        if (isDark) {
-            textHex = "#CCCCCC";
-            cardBgHex = "#2B2B2B";
-            borderColorHex = "#444444";
-        }
-
-        String html = "<html><body style='font-family:\"Segoe UI\",sans-serif; margin:30px; color:" + textHex + ";'>"
-                + "<div style='text-align:center; margin-bottom:30px;'>"
-                + "  <h1 style='color:" + accentHex + "; font-size:36px; margin:0;'>ApiBanker</h1>"
-                + "  <h2 style='font-weight:normal; font-size:18px; margin:5px 0 15px 0;'>The Ultimate Offline API Client & Collection Runner</h2>"
-                + "<table width='100%' cellpadding='10' cellspacing='10'>"
-                + "  <tr>"
-                + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#128640; Collection Runner</h3>"
-                + "      <p style='font-size:13px; line-height:1.5;'>Execute whole API suites concurrently with configurable virtual users and delay. Monitor real-time logs, view live analytics charts (response codes and latency percentiles), and export polished PDF or Excel summary reports.</p>"
-                + "    </td>"
-                + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#128272; Advanced Authentication</h3>"
-                + "      <p style='font-size:13px; line-height:1.5;'>Native support for OAuth 2.0, Bearer tokens, and Basic Auth. Authenticate at the root Collection or Folder level and recursively inherit security credentials down to all nested requests.</p>"
-                + "    </td>"
-                + "  </tr>"
-                + "  <tr>"
-                + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#128196; OpenAPI / Swagger Import</h3>"
-                + "      <p style='font-size:13px; line-height:1.5;'>Import any <b>OpenAPI 3.x</b> or <b>Swagger 2.x</b> spec (JSON or YAML) as a fully structured Collection. Selectively pick endpoints, configure the Base URL strategy (inline or <code>{{baseUrl}}</code> collection variable for multi-server specs), auto-detect security schemes, and auto-generate professional API documentation into the Collection README.</p>"
-                + "    </td>"
-                + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#9875; Rhino Scripting Engine</h3>"
-                + "      <p style='font-size:13px; line-height:1.5;'>Write custom JavaScript in Pre-request and Post-request tabs. Manage dynamic state with <code>apibanker.globals</code>, <code>apibanker.environment</code>, and <code>apibanker.collectionVariables</code> scopes, plus built-in code snippets.</p>"
-                + "    </td>"
-                + "  </tr>"
-                + "  <tr>"
-                + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#9889; Integrated Tool Suite</h3>"
-                + "      <p style='font-size:13px; line-height:1.5;'>Built-in JWT Decoder, Data Comparator, JSON Schema validation, Mock Data Generator, Postman v2.1 &amp; JMeter import-export, OpenAPI Swagger importer, Global Variables tab, and an offline local Mock Server. Distribute seamlessly using built-in Native Packaging (Windows .msi, GraalVM .exe, Linux .deb).</p>"
-                + "    </td>"
-                + "    <td width='50%' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#128274; Privacy &amp; Local Security</h3>"
-                + "      <ul style='font-size:13px; line-height:1.6; margin:0; padding-left:20px;'>"
-                + "        <li><b>Local-First:</b> No telemetry, tracking, or user registrations.</li>"
-                + "        <li><b>Auto Migration:</b> Zero-loss migration to <code>.apibanker</code> workspace.</li>"
-                + "        <li><b>Git-Friendly:</b> Human-readable JSON workspace files.</li>"
-                + "      </ul>"
-                + "    </td>"
-                + "  </tr>"
-                + "  <tr>"
-                + "    <td colspan='2' valign='top' style='background:" + cardBgHex
-                + "; border: 1px solid " + borderColorHex + "; border-radius:6px; padding:15px;'>"
-                + "      <h3 style='color:" + accentHex + "; margin-top:0;'>&#9000; Keyboard Shortcuts</h3>"
-                + "      <table style='font-size:13px; border-collapse:collapse;'>"
-                + "        <tr><td style='padding:3px 16px 3px 0;'><b>Ctrl + S</b></td><td style='padding:3px 30px 3px 0;'>Save Active Tab</td>"
-                + "            <td style='padding:3px 16px 3px 0;'><b>Ctrl + R</b></td><td style='padding:3px 30px 3px 0;'>Send / Run Request</td></tr>"
-                + "        <tr><td style='padding:3px 16px 3px 0;'><b>F2 / Del</b></td><td style='padding:3px 30px 3px 0;'>Rename / Delete Node</td>"
-                + "            <td style='padding:3px 16px 3px 0;'><b>Ctrl + C/V/D</b></td><td style='padding:3px 30px 3px 0;'>Copy / Paste / Duplicate</td></tr>"
-                + "        <tr><td style='padding:3px 16px 3px 0;'><b>Ctrl + = / -</b></td><td style='padding:3px 30px 3px 0;'>Zoom UI In / Out</td>"
-                + "            <td style='padding:3px 16px 3px 0;'><b>Ctrl + O</b></td><td style='padding:3px 30px 3px 0;'>Open Collection</td></tr>"
-                + "      </table>"
-                + "    </td>"
-                + "  </tr>"
-                + "</table>"
-                + "<div style='margin-top:30px; text-align:center; font-size:12px; color:#888;'>"
-                + "  © 2026 ApiBanker by SLPRO. All Rights Reserved."
-                + "</div>"
-                + "</body></html>";
-
-        welcomePane.setText(html);
-        welcomePane.setCaretPosition(0);
-        JScrollPane scroll = new JScrollPane(welcomePane);
+        JScrollPane scroll = new JScrollPane(pane);
         scroll.setBorder(null);
+        JPanel welcome = new JPanel(new BorderLayout());
         welcome.add(scroll, BorderLayout.CENTER);
         return welcome;
     }
@@ -2370,8 +2308,111 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
-    private void showAbout() {
-        openWelcomeTabAsTab();
+    private void openAboutUsPanel() {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if ("About Us".equals(workspaceTabs.getTitleAt(i))) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+
+        String markdown = loadAboutUsMarkdown();
+        String html = renderAboutUsHtml(markdown);
+
+        javax.swing.JEditorPane pane = new javax.swing.JEditorPane();
+        pane.setContentType("text/html");
+        pane.setEditable(false);
+        pane.setBackground(javax.swing.UIManager.getColor("Panel.background"));
+        pane.setText(html);
+        pane.setCaretPosition(0);
+
+        pane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                if (e.getURL() != null) {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
+                    } catch (Exception ex) {
+                        try {
+                            String desc = e.getDescription();
+                            if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
+                                java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+        });
+
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(pane);
+        scroll.setBorder(null);
+        javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
+        wrapper.add(scroll, java.awt.BorderLayout.CENTER);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("About Us", wrapper);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("About Us", idx, wrapper));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
+    private String loadAboutUsMarkdown() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/doc/AboutUs.md")) {
+            if (is != null) {
+                return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("doc/AboutUs.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("../doc/AboutUs.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        return "# About ApiBanker\n\nAbout Us document could not be loaded from doc/AboutUs.md.";
+    }
+
+    private String renderAboutUsHtml(String markdown) {
+        Color ac = javax.swing.UIManager.getColor("AccentColor");
+        if (ac == null)
+            ac = new java.awt.Color(26, 115, 232);
+        String a = String.format("#%02x%02x%02x", ac.getRed(), ac.getGreen(), ac.getBlue());
+        boolean dk = com.formdev.flatlaf.FlatLaf.isLafDark();
+        String bg = dk ? "#1e1e1e" : "#f8f9fa";
+        String fg = dk ? "#cccccc" : "#333333";
+        String cardBg = dk ? "#2b2b2b" : "#ffffff";
+        String cardBdr = dk ? "#3a3a3a" : "#e2e8f0";
+        String cardFg = dk ? "#bbbbbb" : "#4a5568";
+        String cbg = dk ? "#1a1a1a" : "#f0f4f8";
+        String linkColor = dk ? "#66b2ff" : "#0066cc";
+
+        org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().build();
+        org.commonmark.node.Node document = parser.parse(markdown);
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder().build();
+        String bodyHtml = renderer.render(document);
+
+        if (dk) {
+            bodyHtml = bodyHtml.replace("background-color: #ffffff;", "background-color: " + cardBg + ";")
+                               .replace("border: 1px solid #e2e8f0;", "border: 1px solid " + cardBdr + ";")
+                               .replace("color: #4a5568;", "color: " + cardFg + ";");
+        }
+
+        StringBuilder css = new StringBuilder();
+        css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
+           .append("; background-color: ").append(bg).append("; padding: 20px 30px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a).append("; font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 4px; }\n");
+        css.append("h3 { color: ").append(a).append("; font-size: 15px; margin-top: 0; margin-bottom: 8px; font-weight: bold; }\n");
+        css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
+        css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(cardBdr).append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+
+        return "<html><head><style>" + css.toString() + "</style></head><body>" + bodyHtml + "</body></html>";
     }
 
     /**
@@ -2385,79 +2426,38 @@ public class MainFrame extends JFrame {
                 return;
             }
         }
-        Color ac = javax.swing.UIManager.getColor("AccentColor");
-        if (ac == null)
-            ac = new java.awt.Color(26, 115, 232);
-        String aHex = String.format("#%02x%02x%02x", ac.getRed(), ac.getGreen(), ac.getBlue());
-        boolean dk = com.formdev.flatlaf.FlatLaf.isLafDark();
-        String fg = dk ? "#cccccc" : "#333333";
-        String bg = dk ? "#1e1e1e" : "#fafafa";
-        String cbg = dk ? "#2b2b2b" : "#f0f4f8";
-        String bdr = dk ? "#3a3a3a" : "#e0e0e0";
 
-        // Read README.md
-        String md = "";
-        try (java.io.InputStream is = MainFrame.class.getResourceAsStream("/README.md") != null 
-                ? MainFrame.class.getResourceAsStream("/README.md") 
-                : MainFrame.class.getClassLoader().getResourceAsStream("README.md")) {
-            if (is != null) {
-                md = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-            } else {
-                md = "# Features\n\nNo README.md found.";
-            }
-        } catch (Exception ignored) {
-            md = "# Features\n\nNo README.md found.";
-        }
-        if (md.isBlank())
-            md = "# Features\n\nNo README.md found.";
+        String markdown = loadFeaturesMarkdown();
+        String html = renderFeaturesHtml(markdown);
 
-        // Markdown -> HTML
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family:\"Segoe UI\",Arial,sans-serif;font-size:14px;margin:30px 40px;color:")
-                .append(fg).append(";background:").append(bg).append(";'>");
-        boolean inList = false;
-        for (String raw : md.split("\n")) {
-            String t = raw.trim();
-            boolean isBullet = t.startsWith("- ") || t.startsWith("* ");
-            if (!isBullet && inList) {
-                sb.append("</ul>");
-                inList = false;
-            }
-            if (t.startsWith("### ")) {
-                sb.append("<h3 style='color:").append(aHex).append(";margin:16px 0 4px;'>")
-                        .append(mdInline(t.substring(4), aHex, cbg)).append("</h3>");
-            } else if (t.startsWith("## ")) {
-                sb.append("<h2 style='color:").append(aHex).append(";border-bottom:2px solid ").append(aHex)
-                        .append(";padding-bottom:5px;margin-top:28px;'>").append(mdInline(t.substring(3), aHex, cbg))
-                        .append("</h2>");
-            } else if (t.startsWith("# ")) {
-                sb.append("<h1 style='color:").append(aHex).append(";font-size:24px;margin-bottom:4px;'>")
-                        .append(mdInline(t.substring(2), aHex, cbg)).append("</h1>");
-            } else if (t.startsWith("---")) {
-                sb.append("<hr style='border:none;border-top:1px solid ").append(bdr).append(";margin:14px 0;'>");
-            } else if (isBullet) {
-                if (!inList) {
-                    sb.append("<ul style='font-size:13px;line-height:1.8;margin:4px 0;padding-left:20px;'>");
-                    inList = true;
-                }
-                sb.append("<li>").append(mdInline(t.substring(2), aHex, cbg)).append("</li>");
-            } else if (t.isEmpty()) {
-                sb.append("<br>");
-            } else {
-                sb.append("<p style='font-size:13px;line-height:1.7;margin:4px 0;'>").append(mdInline(t, aHex, cbg))
-                        .append("</p>");
-            }
-        }
-        if (inList)
-            sb.append("</ul>");
-        sb.append("</body></html>");
-
-        javax.swing.JTextPane pane = new javax.swing.JTextPane();
+        javax.swing.JEditorPane pane = new javax.swing.JEditorPane();
         pane.setContentType("text/html");
         pane.setEditable(false);
         pane.setBackground(javax.swing.UIManager.getColor("Panel.background"));
-        pane.setText(sb.toString());
+        pane.setText(html);
         pane.setCaretPosition(0);
+
+        pane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                String desc = e.getDescription();
+                if (desc != null && desc.startsWith("#")) {
+                    String ref = desc.substring(1);
+                    pane.scrollToReference(ref);
+                } else if (e.getURL() != null) {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
+                    } catch (Exception ex) {
+                        try {
+                            if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
+                                java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+        });
+
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(pane);
         scroll.setBorder(null);
         javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
@@ -2468,298 +2468,393 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
-    private String mdInline(String text, String aHex, String cbg) {
-        text = text.replaceAll("\\*\\*(.+?)\\*\\*", "<b>$1</b>");
-        text = text.replaceAll("\\*(.+?)\\*", "<i>$1</i>");
-        text = text.replaceAll("`([^`]+)`",
-                "<code style='background:" + cbg + ";padding:1px 5px;border-radius:3px;font-size:12px;'>$1</code>");
-        text = text.replaceAll("\\[(.+?)\\]\\((.+?)\\)", "<a href='$2' style='color:" + aHex + ";'>$1</a>");
-        return text;
+    private String loadFeaturesMarkdown() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/doc/Features.md")) {
+            if (is != null) {
+                return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("doc/Features.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("../doc/Features.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        return "# ApiBanker Features\n\nFeatures document could not be loaded from doc/Features.md.";
     }
 
-    /**
-     * Opens the User Guide tab in the workspace.
-     */
-    private void openDocumentationPanel() {
-        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
-            if ("User Guide".equals(workspaceTabs.getTitleAt(i))) {
-                workspaceTabs.setSelectedIndex(i);
-                return;
-            }
-        }
+    private String renderFeaturesHtml(String markdown) {
         Color ac = javax.swing.UIManager.getColor("AccentColor");
         if (ac == null)
             ac = new java.awt.Color(26, 115, 232);
         String a = String.format("#%02x%02x%02x", ac.getRed(), ac.getGreen(), ac.getBlue());
         boolean dk = com.formdev.flatlaf.FlatLaf.isLafDark();
-        String bg = dk ? "#1e1e1e" : "#fafafa";
+        String bg = dk ? "#1e1e1e" : "#ffffff";
         String fg = dk ? "#cccccc" : "#333333";
-        String card = dk ? "#2b2b2b" : "#ffffff";
+        String card = dk ? "#2b2b2b" : "#f8f9fa";
         String bdr = dk ? "#3a3a3a" : "#e0e0e0";
         String cbg = dk ? "#1a1a1a" : "#f0f4f8";
-        String ver = in.slpro.apibanker.App.getVersion();
-        String html = buildDocHtml(a, bg, fg, card, bdr, cbg, ver);
-        javax.swing.JTextPane pane = new javax.swing.JTextPane();
-        pane.setContentType("text/html");
-        pane.setEditable(false);
-        pane.setBackground(javax.swing.UIManager.getColor("Panel.background"));
-        pane.setText(html);
-        pane.setCaretPosition(0);
-        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(pane);
-        scroll.setBorder(null);
-        javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
-        wrapper.add(scroll, java.awt.BorderLayout.CENTER);
-        int idx = workspaceTabs.getTabCount();
-        workspaceTabs.addTab("User Guide", wrapper);
-        workspaceTabs.setTabComponentAt(idx, buildTabHeader("User Guide", idx, wrapper));
-        workspaceTabs.setSelectedIndex(idx);
+        String linkColor = dk ? "#66b2ff" : "#0066cc";
+
+        java.util.List<org.commonmark.Extension> extensions = java.util.Arrays.asList(org.commonmark.ext.gfm.tables.TablesExtension.create());
+        org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().extensions(extensions).build();
+        org.commonmark.node.Node document = parser.parse(markdown);
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder().extensions(extensions).build();
+        String bodyHtml = renderer.render(document);
+
+        StringBuilder css = new StringBuilder();
+        css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
+           .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a).append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
+        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr).append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
+        css.append("h3 { color: ").append(a).append("; font-size: 14px; margin-top: 18px; margin-bottom: 6px; }\n");
+        css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
+        css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
+        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a).append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
+        css.append("table { border-collapse: collapse; width: 100%; margin: 12px 0; }\n");
+        css.append("th { background-color: ").append(cbg).append("; color: ").append(a).append("; font-weight: bold; border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
+        css.append("td { border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; }\n");
+        css.append("hr { border: none; border-top: 1px solid ").append(bdr).append("; margin: 25px 0; }\n");
+
+        return "<html><head><style>" + css.toString() + "</style></head><body>" + bodyHtml + "</body></html>";
     }
 
-    private String buildDocHtml(String a, String bg, String fg, String card, String bdr, String cbg, String ver) {
-        String sec = "font-family:'Segoe UI',Arial,sans-serif;color:" + fg + ";background:" + bg
-                + ";padding:30px 40px;";
-        String h1s = "color:" + a + ";font-size:28px;margin:0 0 4px 0;";
-        String h2s = "color:" + a + ";font-size:18px;border-bottom:2px solid " + a
-                + ";padding-bottom:6px;margin-top:36px;margin-bottom:12px;";
-        String h3s = "color:" + a + ";font-size:14px;margin:16px 0 4px 0;";
-        String ps = "font-size:13px;line-height:1.7;margin:4px 0 10px 0;";
-        String lis = "font-size:13px;line-height:1.8;margin:0;padding-left:20px;";
-        String cds = "background:" + cbg + ";border:1px solid " + bdr
-                + ";border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12px;";
-        String pre = "background:" + cbg + ";border:1px solid " + bdr
-                + ";border-radius:6px;padding:12px 16px;font-family:monospace;font-size:12px;margin:8px 0;";
-        String cs = "background:" + card + ";border:1px solid " + bdr
-                + ";border-radius:8px;padding:16px 20px;margin:10px 0;";
-        String tds = "border:1px solid " + bdr + ";padding:7px 12px;font-size:13px;";
-        String ths = tds + "background:" + cbg + ";font-weight:bold;color:" + a + ";";
+    /**
+     * Opens the User Guide tab in the workspace.
+     */
+    public void openDocumentationPanel(String anchorId) {
+        javax.swing.JEditorPane targetPane = null;
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if ("User Guide".equals(workspaceTabs.getTitleAt(i))) {
+                workspaceTabs.setSelectedIndex(i);
+                Component comp = workspaceTabs.getComponentAt(i);
+                if (comp instanceof javax.swing.JPanel wrapper) {
+                    if (wrapper.getComponentCount() > 0 && wrapper.getComponent(0) instanceof javax.swing.JScrollPane scroll) {
+                        if (scroll.getViewport().getView() instanceof javax.swing.JEditorPane editor) {
+                            targetPane = editor;
+                        }
+                    }
+                }
+                break;
+            }
+        }
 
-        return "<html><body style='" + sec + "'>"
+        if (targetPane == null) {
+            String markdown = loadUserGuideMarkdown();
+            String html = renderUserGuideHtml(markdown);
 
-        // Header
-                + "<div style='text-align:center;margin-bottom:24px;'>"
-                + "<h1 style='" + h1s + "'>&#128196; ApiBanker User Guide</h1>"
-                + "<div style='font-size:12px;color:#888;'>Version " + ver
-                + " &nbsp;|&nbsp; Offline-First API Client &nbsp;|&nbsp; From SL Pro</div>"
-                + "</div>"
-                + "<hr style='border:none;border-top:1px solid " + bdr + ";margin-bottom:28px;'>"
+            targetPane = new javax.swing.JEditorPane();
+            targetPane.setContentType("text/html");
+            targetPane.setEditable(false);
+            targetPane.setBackground(javax.swing.UIManager.getColor("Panel.background"));
+            targetPane.setText(html);
+            targetPane.setCaretPosition(0);
 
-                // TOC
-                + "<div style='" + cs + "'>"
-                + "<b style='color:" + a + ";'>Contents</b><br><br>"
-                + "<span style='font-size:13px;line-height:2;'>"
-                + "1. Making API Requests &nbsp;&nbsp; 2. Collections &amp; Folders &nbsp;&nbsp; 3. Environments &amp; Variables<br>"
-                + "4. Authentication &nbsp;&nbsp; 5. Scripting Engine &nbsp;&nbsp; 6. OpenAPI / Swagger Import<br>"
-                + "7. Collection Runner &nbsp;&nbsp; 8. Built-in Tools &nbsp;&nbsp; 9. Keyboard Shortcuts &nbsp;&nbsp; 10. Common Use Cases &nbsp;&nbsp; 11. UI &amp; Accessibility"
-                + "</span></div>"
+            javax.swing.JEditorPane finalPane = targetPane;
+            targetPane.addHyperlinkListener(e -> {
+                if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                    String desc = e.getDescription();
+                    if (desc != null && desc.startsWith("#")) {
+                        String ref = desc.substring(1);
+                        finalPane.scrollToReference(ref);
+                    } else if (e.getURL() != null) {
+                        try {
+                            java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
+                        } catch (Exception ex) {
+                            try {
+                                if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
+                                    java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
+                                }
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
+                }
+            });
 
-                // 1. Making API Requests
-                + "<h2 style='" + h2s + "'>1. &#128640; Making API Requests</h2>"
-                + "<p style='" + ps
-                + "'>The <b>Request Panel</b> is the core workspace. Open a new request from the sidebar or via <b>File &rarr; New Request</b>.</p>"
-                + "<div style='" + cs + "'>"
-                + "<h3 style='" + h3s + "'>Steps</h3>"
-                + "<ol style='" + lis + "'>"
-                + "<li>Select the HTTP method (GET, POST, PUT, PATCH, DELETE) from the dropdown.</li>"
-                + "<li>Enter the request URL. Use <code style='" + cds
-                + "'>{{variableName}}</code> for dynamic values.</li>"
-                + "<li>Add <b>Query Params</b>, <b>Headers</b>, or a <b>Body</b> via the tabs below the URL bar.</li>"
-                + "<li>Press <b>Send</b> or use <code style='" + cds + "'>Ctrl+R</code> to execute.</li>"
-                + "<li>View the response status, latency, size, headers, and formatted body in the Response panel.</li>"
-                + "</ol></div>"
-                + "<h3 style='" + h3s + "'>Body Types Supported</h3>"
-                + "<ul style='" + lis + "'>"
-                + "<li><b>raw JSON / XML / HTML / Text</b> &mdash; with syntax highlighting</li>"
-                + "<li><b>form-data</b> &mdash; key-value pairs and file uploads</li>"
-                + "<li><b>x-www-form-urlencoded</b> &mdash; URL-encoded key-value pairs</li>"
-                + "<li><b>GraphQL</b> &mdash; query + variables editor with schema introspection</li>"
-                + "</ul>"
+            javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(targetPane);
+            scroll.setBorder(null);
+            javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
+            
+            javax.swing.JPanel searchBar = buildDocSearchBar(targetPane);
+            wrapper.add(searchBar, java.awt.BorderLayout.NORTH);
+            wrapper.add(scroll, java.awt.BorderLayout.CENTER);
+            
+            targetPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F, java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "openSearch");
+            targetPane.getActionMap().put("openSearch", new javax.swing.AbstractAction() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    searchBar.setVisible(true);
+                    for (java.awt.Component c : searchBar.getComponents()) {
+                        if (c instanceof javax.swing.JTextField) {
+                            c.requestFocusInWindow();
+                            ((javax.swing.JTextField) c).selectAll();
+                            break;
+                        }
+                    }
+                }
+            });
 
-                // 2. Collections
-                + "<h2 style='" + h2s + "'>2. &#128193; Collections &amp; Folders</h2>"
-                + "<p style='" + ps
-                + "'>Collections group related requests. Folders allow nested organisation within a Collection.</p>"
-                + "<div style='" + cs + "'>"
-                + "<h3 style='" + h3s + "'>How to Organise</h3>"
-                + "<ul style='" + lis + "'>"
-                + "<li><b>Right-click</b> in the sidebar tree to add a Collection, Folder, or Request.</li>"
-                + "<li>Drag requests into folders, or use <b>Ctrl+D</b> to duplicate.</li>"
-                + "<li><b>F2</b> to rename; <b>Delete</b> to remove any selected node.</li>"
-                + "<li>Open the <b>Collection Details</b> panel to add a <b>README</b> (Markdown), set Auth, or manage Variables.</li>"
-                + "<li>Use <b>Export</b> to save the Collection as a Postman v2.1 JSON or JMeter .jmx file.</li>"
-                + "</ul></div>"
+            int idx = workspaceTabs.getTabCount();
+            workspaceTabs.addTab("User Guide", wrapper);
+            workspaceTabs.setTabComponentAt(idx, buildTabHeader("User Guide", idx, wrapper));
+            workspaceTabs.setSelectedIndex(idx);
+        }
 
-                // 3. Environments
-                + "<h2 style='" + h2s + "'>3. &#127758; Environments &amp; Variables</h2>"
-                + "<p style='" + ps
-                + "'>Variables let you swap base URLs, API keys, and tokens without editing each request manually.</p>"
-                + "<h3 style='" + h3s + "'>Variable Scopes (in priority order)</h3>"
-                + "<table width='100%' cellspacing='0' style='border-collapse:collapse;margin:8px 0;'>"
-                + "<tr><th style='" + ths + "'>Scope</th><th style='" + ths + "'>Where to Manage</th><th style='" + ths
-                + "'>Syntax</th></tr>"
-                + "<tr><td style='" + tds + "'>Global</td><td style='" + tds + "'>Global Variables tab</td><td style='"
-                + tds + "'><code style='" + cds + "'>{{var}}</code></td></tr>"
-                + "<tr><td style='" + tds + "'>Environment</td><td style='" + tds
-                + "'>Environment Manager (top-right dropdown)</td><td style='" + tds + "'><code style='" + cds
-                + "'>{{var}}</code></td></tr>"
-                + "<tr><td style='" + tds + "'>Collection</td><td style='" + tds
-                + "'>Collection Details &rarr; Variables tab</td><td style='" + tds + "'><code style='" + cds
-                + "'>{{var}}</code></td></tr>"
-                + "</table>"
-                + "<div style='" + cs
-                + "'><b>Tip:</b> Variables now resolve recursively! A collection variable can safely reference an environment or global variable for ultimate dynamic flexibility. Active environment variables override collection variables. Use <b>Ctrl+E</b> or the top-right dropdown to switch environments quickly.</div>"
+        if (anchorId != null) {
+            javax.swing.JEditorPane finalPane = targetPane;
+            SwingUtilities.invokeLater(() -> finalPane.scrollToReference(anchorId));
+        }
+    }
 
-                // 4. Auth
-                + "<h2 style='" + h2s + "'>4. &#128272; Authentication</h2>"
-                + "<p style='" + ps
-                + "'>Set auth at the <b>Collection level</b> and all child requests inherit it automatically.</p>"
-                + "<table width='100%' cellspacing='0' style='border-collapse:collapse;margin:8px 0;'>"
-                + "<tr><th style='" + ths + "'>Type</th><th style='" + ths + "'>How to Configure</th></tr>"
-                + "<tr><td style='" + tds + "'><b>Bearer Token</b></td><td style='" + tds
-                + "'>Paste the token in the Auth tab &rarr; Bearer field.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Basic Auth</b></td><td style='" + tds
-                + "'>Enter Username and Password; sent as Base64 header.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>API Key</b></td><td style='" + tds
-                + "'>Specify Key name, value, and location (header/query).</td></tr>"
-                + "<tr><td style='" + tds + "'><b>OAuth 2.0</b></td><td style='" + tds
-                + "'>Configure grant type, token URL, scopes. Click <b>Get Token</b>.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Inherit</b></td><td style='" + tds
-                + "'>Request uses parent Folder or Collection auth.</td></tr>"
-                + "</table>"
+    private JPanel buildDocSearchBar(javax.swing.JEditorPane editorPane) {
+        JPanel outerPanel = new JPanel(new java.awt.BorderLayout());
+        outerPanel.setBackground(UIManager.getColor("Panel.background"));
+        outerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Workspace.borderColor")));
 
-                // 5. Scripting
-                + "<h2 style='" + h2s + "'>5. &#128295; Scripting Engine (Rhino JS)</h2>"
-                + "<p style='" + ps
-                + "'>Write JavaScript in the <b>Pre-Request</b> and <b>Tests</b> tabs to automate and chain requests.</p>"
-                + "<h3 style='" + h3s + "'>Common Snippets</h3>"
-                + "<pre style='" + pre + "'>"
-                + "// Set an environment variable from a response field\n"
-                + "var token = JSON.parse(apibanker.response.body).access_token;\n"
-                + "apibanker.environment.set(\"token\", token);\n\n"
-                + "// Assert response status\n"
-                + "apibanker.test(\"Status is 200\", () => apibanker.response.status === 200);\n\n"
-                + "// Read a collection variable\n"
-                + "var base = apibanker.collectionVariables.get(\"baseUrl\");"
-                + "</pre>"
-                + "<div style='" + cs
-                + "'><b>Tip:</b> Click <b>Snippets</b> in the sidebar to insert pre-built script templates instantly.</div>"
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        leftPanel.setOpaque(false);
 
-                // 6. Swagger Import
-                + "<h2 style='" + h2s + "'>6. &#128196; OpenAPI / Swagger Import</h2>"
-                + "<p style='" + ps
-                + "'>Import any OpenAPI 3.x or Swagger 2.x specification (JSON or YAML) and instantly create a fully structured Collection.</p>"
-                + "<div style='" + cs + "'>"
-                + "<h3 style='" + h3s + "'>How to Import</h3>"
-                + "<ol style='" + lis + "'>"
-                + "<li>Go to <b>File &rarr; Import OpenAPI / Swagger Spec</b>.</li>"
-                + "<li>Click <b>Browse</b> and select your <code style='" + cds + "'>.json</code> or <code style='"
-                + cds + "'>.yaml</code> file.</li>"
-                + "<li>Click <b>Analyze Spec</b> &mdash; endpoints populate the table with colour-coded HTTP methods.</li>"
-                + "<li>Check/uncheck individual endpoints to import selectively. Use <b>Select All</b> / <b>Deselect All</b> for bulk actions.</li>"
-                + "<li>Choose <b>Base URL strategy</b>:<br>"
-                + "&nbsp;&nbsp;&bull; <b>Directly in Request URL</b> &mdash; full URL baked into each request.<br>"
-                + "&nbsp;&nbsp;&bull; <b>Collection Variable</b> &mdash; stores server(s) as <code style='" + cds
-                + "'>{{baseUrl}}</code>, <code style='" + cds + "'>{{baseUrl_1}}</code>, etc.</li>"
-                + "<li>Click <b>Import Selected</b>.</li>"
-                + "</ol></div>"
-                + "<h3 style='" + h3s + "'>What Gets Imported</h3>"
-                + "<ul style='" + lis + "'>"
-                + "<li>All selected endpoints as individual Requests with correct method and URL</li>"
-                + "<li>Security schemes mapped to Collection auth (Bearer, Basic, API Key, OAuth2)</li>"
-                + "<li>Server URLs as Collection Variables (falls back to <code style='" + cds
-                + "'>http://localhost</code> if none defined)</li>"
-                + "<li>Professional API documentation auto-generated in the Collection README covering servers, auth, per-endpoint parameters, and request bodies</li>"
-                + "</ul>"
+        JTextField searchField = new JTextField(20);
+        JButton prevBtn = new JButton("Prev");
+        JButton nextBtn = new JButton("Next");
+        JButton closeBtn = new JButton("X");
+        closeBtn.setMargin(new java.awt.Insets(2, 5, 2, 5));
+        closeBtn.setToolTipText("Close Search (Esc)");
+        
+        JCheckBox exactCheck = new JCheckBox("Exact Match");
+        JCheckBox fuzzyCheck = new JCheckBox("Fuzzy Search");
+        JLabel countLabel = new JLabel("0/0");
 
-                // 7. Collection Runner
-                + "<h2 style='" + h2s + "'>7. &#128202; Collection Runner</h2>"
-                + "<p style='" + ps + "'>Run an entire Collection as a batch test suite with JMeter-compatible load simulation.</p>"
-                + "<div style='" + cs + "'>"
-                + "<ol style='" + lis + "'>"
-                + "<li>Right-click a Collection &rarr; <b>Open Runner</b>, or click the Runner node in the sidebar.</li>"
-                + "<li>Choose <b>Fixed Iterations</b> or <b>Fixed Duration</b> (Sec/Min/Hours/Days).</li>"
-                + "<li>Set <b>Virtual Users (VUsers)</b>, <b>Ramp-up (s)</b>, and <b>Delay</b> between requests.</li>"
-                + "<li>Select an <b>Environment</b> to resolve variables and click <b>Run</b>.</li>"
-                + "<li>Export native <b>.jmx</b> files via <b>Export JMeter</b>. Mappings: <i>VUsers &rarr; ThreadGroup.num_threads</i>, <i>Ramp-up &rarr; ThreadGroup.ramp_time</i>, and <i>Duration &rarr; ThreadGroup.scheduler</i>.</li>"
-                + "</ol></div>"
+        exactCheck.setOpaque(false);
+        fuzzyCheck.setOpaque(false);
 
-                // 8. Tools
-                + "<h2 style='" + h2s + "'>8. &#9889; Built-in Tools</h2>"
-                + "<table width='100%' cellspacing='0' style='border-collapse:collapse;margin:8px 0;'>"
-                + "<tr><th style='" + ths + "'>Tool</th><th style='" + ths + "'>Location</th><th style='" + ths
-                + "'>Purpose</th></tr>"
-                + "<tr><td style='" + tds + "'><b>JWT Decoder</b></td><td style='" + tds
-                + "'>Sidebar or Tools menu</td><td style='" + tds
-                + "'>Paste a JWT to decode header, payload, and signature.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Data Comparator</b></td><td style='" + tds
-                + "'>Sidebar</td><td style='" + tds + "'>Diff two JSON or XML payloads side-by-side.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>JSON Formatter</b></td><td style='" + tds
-                + "'>Data Tools tab</td><td style='" + tds + "'>Prettify or minify JSON / validate schema.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Mock Data Generator</b></td><td style='" + tds
-                + "'>Data Tools tab</td><td style='" + tds + "'>Generate realistic test data in bulk.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Mock Server</b></td><td style='" + tds
-                + "'>Tools menu</td><td style='" + tds
-                + "'>Serve mock responses locally for frontend development.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Cookie Jar</b></td><td style='" + tds + "'>Tools menu</td><td style='"
-                + tds + "'>Manage and send cookies per domain.</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Log Console</b></td><td style='" + tds + "'>View menu</td><td style='"
-                + tds + "'>Full request/response log with filtering.</td></tr>"
-                + "</table>"
+        leftPanel.add(new JLabel("Search:"));
+        leftPanel.add(searchField);
+        leftPanel.add(prevBtn);
+        leftPanel.add(nextBtn);
+        leftPanel.add(exactCheck);
+        leftPanel.add(fuzzyCheck);
+        leftPanel.add(countLabel);
 
-                // 9. Shortcuts
-                + "<h2 style='" + h2s + "'>9. &#9000; Keyboard Shortcuts</h2>"
-                + "<table width='80%' cellspacing='0' style='border-collapse:collapse;margin:8px 0;'>"
-                + "<tr><th style='" + ths + "'>Shortcut</th><th style='" + ths + "'>Action</th></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + R</b></td><td style='" + tds
-                + "'>Send / Run active request</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + S</b></td><td style='" + tds + "'>Save active tab</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + O</b></td><td style='" + tds
-                + "'>Open a Collection from file</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + D</b></td><td style='" + tds
-                + "'>Duplicate selected node</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + C / V</b></td><td style='" + tds
-                + "'>Copy / Paste request node</td></tr>"
-                + "<tr><td style='" + tds + "'><b>F2</b></td><td style='" + tds + "'>Rename selected node</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Delete</b></td><td style='" + tds + "'>Delete selected node</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + = / &ndash;</b></td><td style='" + tds
-                + "'>Zoom UI in / out</td></tr>"
-                + "<tr><td style='" + tds + "'><b>Ctrl + Scroll</b></td><td style='" + tds
-                + "'>Zoom UI with mouse wheel</td></tr>"
-                + "</table>"
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        rightPanel.setOpaque(false);
+        rightPanel.add(closeBtn);
+        
+        outerPanel.add(leftPanel, java.awt.BorderLayout.CENTER);
+        outerPanel.add(rightPanel, java.awt.BorderLayout.EAST);
 
-                // 10. Use Cases
-                + "<h2 style='" + h2s + "'>10. &#128161; Common Use Cases</h2>"
-                + "<div style='" + cs + "'>"
-                + "<h3 style='" + h3s + "'>&#10003; Test a REST API from Swagger Docs</h3>"
-                + "<p style='" + ps
-                + "'>Import the Swagger JSON &rarr; endpoints become requests &rarr; set an Environment with your API key &rarr; run the Collection Runner for regression testing.</p>"
-                + "<h3 style='" + h3s + "'>&#10003; Chain Requests (Login &rarr; Use Token)</h3>"
-                + "<p style='" + ps + "'>In the <b>Tests</b> tab of your login request, extract the token:<br>"
-                + "<code style='" + cds
-                + "'>apibanker.environment.set(\"token\", JSON.parse(apibanker.response.body).token)</code><br>"
-                + "Then set Auth to <b>Bearer</b> with value <code style='" + cds
-                + "'>{{token}}</code> in subsequent requests or at the Collection level.</p>"
-                + "<h3 style='" + h3s + "'>&#10003; Load Test an Endpoint</h3>"
-                + "<p style='" + ps
-                + "'>Open the Collection Runner &rarr; set 100 iterations and 10 VUsers &rarr; monitor the live scatter plot &rarr; export a PDF report for sharing.</p>"
-                + "<h3 style='" + h3s + "'>&#10003; Mock a Backend for Frontend Dev</h3>"
-                + "<p style='" + ps
-                + "'>Open <b>Tools &rarr; Mock Server</b> &rarr; define routes and responses &rarr; point your frontend to <code style='"
-                + cds + "'>http://localhost:&lt;port&gt;</code>.</p>"
-                + "</div>"
+        List<int[]> matchRanges = new ArrayList<>();
+        int[] currentIndex = {-1};
+        
+        boolean isDark = com.formdev.flatlaf.FlatLaf.isLafDark();
+        Color hlColor = isDark ? new Color(100, 100, 0, 150) : new Color(255, 255, 0, 150);
+        Color currentHlColor = isDark ? new Color(150, 100, 0, 200) : new Color(255, 150, 0, 200);
 
-                // 11. UI & Accessibility
-                + "<h2 style='" + h2s + "'>11. &#127912; UI, Safety &amp; Accessibility</h2>"
-                + "<div style='" + cs + "'>"
-                + "<p style='" + ps + "'><b>Responsive Scaling:</b> ApiBanker features fully responsive, real-time UI scaling via <b>Ctrl+Scroll</b> or <b>Ctrl+=/-</b>. Action buttons dynamically recalculate their layout so labels like <i>Sending...</i> and <i>Cancel</i> never clip.</p>"
-                + "<p style='" + ps + "'><b>Stricter Editing Mode:</b> Enable this mode in Settings (<b>⚙</b>) to safeguard your workspace. Destructive operations (deletions, undo, paste) will force explicit confirmations to prevent accidental data loss.</p>"
-                + "<p style='" + ps + "'><b>Rich Diagnostics:</b> SSL validation and connection timeouts are deeply configurable. Hover over the SSL status in responses to view a richly formatted, color-coded certificate breakdown.</p>"
-                + "</div>"
+        javax.swing.text.Highlighter.HighlightPainter painter = new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(hlColor);
+        javax.swing.text.Highlighter.HighlightPainter currentPainter = new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(currentHlColor);
+        Object[] currentHighlightTag = {null};
 
-                // Footer
-                + "<div style='margin-top:40px;text-align:center;font-size:11px;color:#888;'>"
-                + "ApiBanker v" + ver + " &mdash; &copy; 2026 SLPRO. All Rights Reserved."
-                + "</div>"
-                + "</body></html>";
+        Runnable updateHighlight = () -> {
+            try {
+                if (currentHighlightTag[0] != null) {
+                    editorPane.getHighlighter().removeHighlight(currentHighlightTag[0]);
+                    currentHighlightTag[0] = null;
+                }
+                if (currentIndex[0] >= 0 && currentIndex[0] < matchRanges.size()) {
+                    int[] range = matchRanges.get(currentIndex[0]);
+                    currentHighlightTag[0] = editorPane.getHighlighter().addHighlight(range[0], range[1], currentPainter);
+                    
+                    editorPane.setCaretPosition(range[0]);
+                    countLabel.setText((currentIndex[0] + 1) + " / " + matchRanges.size());
+                } else {
+                    countLabel.setText("0 / " + matchRanges.size());
+                }
+            } catch (Exception ex) {}
+        };
+
+        Runnable doSearch = () -> {
+            editorPane.getHighlighter().removeAllHighlights();
+            matchRanges.clear();
+            currentIndex[0] = -1;
+            currentHighlightTag[0] = null;
+
+            String q = searchField.getText();
+            if (q.isEmpty()) {
+                countLabel.setText("0/0");
+                return;
+            }
+
+            boolean exact = exactCheck.isSelected();
+            boolean fuzzy = fuzzyCheck.isSelected();
+
+            try {
+                javax.swing.text.Document doc = editorPane.getDocument();
+                String text = doc.getText(0, doc.getLength());
+
+                if (fuzzy) {
+                    StringBuilder regex = new StringBuilder();
+                    for (char c : q.toCharArray()) {
+                        if (Character.isWhitespace(c)) {
+                            regex.append("\\s+");
+                        } else {
+                            regex.append(java.util.regex.Pattern.quote(String.valueOf(c))).append(".*?");
+                        }
+                    }
+                    int flags = exact ? 0 : java.util.regex.Pattern.CASE_INSENSITIVE;
+                    java.util.regex.Pattern p = java.util.regex.Pattern.compile(regex.toString(), flags);
+                    java.util.regex.Matcher m = p.matcher(text);
+                    while (m.find()) {
+                        if (m.end() - m.start() <= q.length() * 3 + 15) { 
+                            matchRanges.add(new int[]{m.start(), m.end()});
+                            editorPane.getHighlighter().addHighlight(m.start(), m.end(), painter);
+                        }
+                    }
+                } else {
+                    String targetText = exact ? text : text.toLowerCase();
+                    String queryText = exact ? q : q.toLowerCase();
+                    int idx = 0;
+                    while ((idx = targetText.indexOf(queryText, idx)) >= 0) {
+                        matchRanges.add(new int[]{idx, idx + q.length()});
+                        editorPane.getHighlighter().addHighlight(idx, idx + q.length(), painter);
+                        idx += q.length();
+                    }
+                }
+
+                if (!matchRanges.isEmpty()) {
+                    currentIndex[0] = 0;
+                }
+                updateHighlight.run();
+            } catch (Exception ex) {}
+        };
+
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { doSearch.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { doSearch.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { doSearch.run(); }
+        });
+        
+        searchField.addActionListener(e -> {
+            if (matchRanges.isEmpty()) return;
+            currentIndex[0] = (currentIndex[0] + 1) % matchRanges.size();
+            updateHighlight.run();
+        });
+
+        exactCheck.addActionListener(e -> doSearch.run());
+        fuzzyCheck.addActionListener(e -> doSearch.run());
+
+        nextBtn.addActionListener(e -> {
+            if (matchRanges.isEmpty()) return;
+            currentIndex[0] = (currentIndex[0] + 1) % matchRanges.size();
+            updateHighlight.run();
+        });
+
+        prevBtn.addActionListener(e -> {
+            if (matchRanges.isEmpty()) return;
+            currentIndex[0] = (currentIndex[0] - 1 + matchRanges.size()) % matchRanges.size();
+            updateHighlight.run();
+        });
+
+        closeBtn.addActionListener(e -> {
+            outerPanel.setVisible(false);
+            searchField.setText("");
+            editorPane.getHighlighter().removeAllHighlights();
+            editorPane.requestFocusInWindow();
+        });
+
+        searchField.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "closeSearch");
+        searchField.getActionMap().put("closeSearch", new javax.swing.AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                closeBtn.doClick();
+            }
+        });
+
+        outerPanel.setVisible(false);
+        return outerPanel;
+    }
+
+    public JButton createInfoBadge(String anchorId, String tooltip) {
+        JButton badge = new JButton("?");
+        badge.putClientProperty("JButton.buttonType", "help");
+        badge.setToolTipText("Help: " + tooltip);
+        badge.setFocusPainted(false);
+        badge.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        badge.addActionListener(e -> openDocumentationPanel(anchorId));
+        return badge;
+    }
+
+    private String loadUserGuideMarkdown() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/doc/UserGuide.md")) {
+            if (is != null) {
+                return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("doc/UserGuide.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("../doc/UserGuide.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        return "# ApiBanker User Guide\n\nUser guide document could not be loaded from doc/UserGuide.md.";
+    }
+
+    private String renderUserGuideHtml(String markdown) {
+        Color ac = javax.swing.UIManager.getColor("AccentColor");
+        if (ac == null)
+            ac = new java.awt.Color(26, 115, 232);
+        String a = String.format("#%02x%02x%02x", ac.getRed(), ac.getGreen(), ac.getBlue());
+        boolean dk = com.formdev.flatlaf.FlatLaf.isLafDark();
+        String bg = dk ? "#1e1e1e" : "#ffffff";
+        String fg = dk ? "#cccccc" : "#333333";
+        String card = dk ? "#2b2b2b" : "#f8f9fa";
+        String bdr = dk ? "#3a3a3a" : "#e0e0e0";
+        String cbg = dk ? "#1a1a1a" : "#f0f4f8";
+        String linkColor = dk ? "#66b2ff" : "#0066cc";
+
+        java.util.List<org.commonmark.Extension> extensions = java.util.Arrays.asList(org.commonmark.ext.gfm.tables.TablesExtension.create());
+        org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().extensions(extensions).build();
+        org.commonmark.node.Node document = parser.parse(markdown);
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder().extensions(extensions).build();
+        String bodyHtml = renderer.render(document);
+
+        StringBuilder css = new StringBuilder();
+        css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
+           .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a).append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
+        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr).append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
+        css.append("h3 { color: ").append(a).append("; font-size: 14px; margin-top: 18px; margin-bottom: 6px; }\n");
+        css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
+        css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
+        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a).append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
+        css.append("table { border-collapse: collapse; width: 100%; margin: 12px 0; }\n");
+        css.append("th { background-color: ").append(cbg).append("; color: ").append(a).append("; font-weight: bold; border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
+        css.append("td { border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; }\n");
+        css.append("hr { border: none; border-top: 1px solid ").append(bdr).append("; margin: 25px 0; }\n");
+
+        return "<html><head><style>" + css.toString() + "</style></head><body>" + bodyHtml + "</body></html>";
     }
 
     private void applyTheme() {
@@ -3164,7 +3259,6 @@ public class MainFrame extends JFrame {
 
     private static class TabHeaderPanel extends JPanel {
         String title;
-        Runnable renameAction;
 
         TabHeaderPanel(String title) {
             super(new FlowLayout(FlowLayout.LEFT, 4, 0));

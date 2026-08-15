@@ -52,7 +52,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class CollectionRunnerPanel extends JPanel {
@@ -225,6 +225,12 @@ public class CollectionRunnerPanel extends JPanel {
         modePanel.add(fixedDurationRadio);
         gbc.gridx = 1; gbc.gridwidth = 3;
         configPanel.add(modePanel, gbc);
+
+        JPanel badgePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        badgePanel.setOpaque(false);
+        badgePanel.add(mainFrame.createInfoBadge("sec-runner", "View Collection Runner Guide"));
+        gbc.gridx = 4; gbc.gridwidth = 2;
+        configPanel.add(badgePanel, gbc);
 
         // Row 1: Iterations & Duration
         gbc.gridy = 1; gbc.gridwidth = 1;

@@ -67,6 +67,7 @@ public class MockServerLogsPanel extends JPanel {
         });
         btnPanel.add(filterBtn);
         btnPanel.add(clearFiltersBtn);
+        btnPanel.add(mainFrame.createInfoBadge("sec-console-logs", "View Logs Guide"));
         topPanel.add(btnPanel, gbc);
 
         gbc.gridx = 5;

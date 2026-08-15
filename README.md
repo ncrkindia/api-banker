@@ -1,68 +1,172 @@
 # ApiBanker - The Offline-First API Toolkit (v1.5.0-beta)
 
-**ApiBanker** (formerly JAPI) is a lightweight, high-performance, and **completely offline** desktop API client built with Java 21 and Swing. Designed as a privacy-focused and modern alternative to cloud-dependent API testing tools, ApiBanker lets developers design, run, test, and manage REST/GraphQL/WebSocket requests locally on their machines without any registration, telemetry, or external network dependencies.
+## 🚀 Getting Started
 
-## ✨ Features & Capabilities
+### 📋 Prerequisites
+To build and run ApiBanker from source, you will need the following tools installed on your system:
 
-ApiBanker brings enterprise-grade API tools to your local environment without the bloat.
-
-### 🌐 Core Request Engine
-- **Full Protocol Support**: Seamlessly build REST, GraphQL, and live WebSocket connections.
-- **Advanced Authentication**: First-class support for OAuth 2.0 (with automatic token extraction), Bearer tokens, API Keys, and Basic Auth.
-- **Auth Inheritance**: Define Authentication at the Collection or Folder level, and watch it recursively inherit down to all nested requests.
-- **Connection Timeouts**: Hierarchical timeout configurations (Global > Collection > Request) with support for forced overrides and granular endpoint-level control.
-- **Dynamic Body Formats**: Build Payloads in raw JSON, XML, HTML, `x-www-form-urlencoded`, `form-data` (with file upload support), or native GraphQL (with Schema Introspection).
-
-### ⚡ Scripting & Automation
-- **JavaScript Engine**: Write Pre-Request and Test scripts using Rhino JS.
-- **Dynamic Variables**: Manage State via `apibanker.globals`, `apibanker.environment`, and `apibanker.collectionVariables`. When using `{{variableName}}` syntax, the resolution precedence is: **Environment > Collection > Global**. 
-- **Chaining**: Extract data from responses and pass it into subsequent requests effortlessly.
-- **Snippets**: Automatically insert scripts using the built-in UI Code Snippets sidebar.
-
-### 🎨 UI & Accessibility
-- **High-DPI / Zoom Responsive**: Real-time scalable fonts and responsive UI layout that gracefully adapts to high-resolution displays and accessibility zooms without text clipping.
-- **Dynamic Execution Flow**: Action buttons adapt seamlessly during execution states (e.g. `Sending...` / `Cancel`) without breaking visual layout.
-- **Stricter Editing Mode**: Optional workspace safeguard to prevent accidental deletions, duplications, and destructive undo operations.
-- **SSL Certificate Diagnostics**: Rich, colour-coded hover popups detailing complete SSL chains, validation status, and expiration dates.
-
-### 📊 Performance & Load Testing
-- **Collection Runner**: Execute batch API requests with either **Fixed Iterations** or **Fixed Duration** (Sec/Min/Hours/Days) limiters. 
-- **Concurrency Control**: Adjust **Virtual Users (VUsers)** and **Ramp-up** timers for realistic load simulation.
-- **Real-Time Scatter Plots**: Monitor live metrics (Pass/Fail, Response Times, APDEX) drawn on a live UI chart.
-- **Reporting**: Export massive execution runs instantly to HTML Dashboards, CSV, or PDF formats.
-
-### 🔄 Data & Interoperability
-- **Postman v2.1 Support**: Native, lossless Import and Export to standard Postman Collections and Environments. 
-- **JMeter Support**: Export your ApiBanker Collections directly to Apache JMeter `.jmx` files. Load settings mapping directly over: **VUsers** $\rightarrow$ `ThreadGroup.num_threads`, **Ramp-up** $\rightarrow$ `ThreadGroup.ramp_time`, and **Duration** $\rightarrow$ `ThreadGroup.scheduler` & `duration`.
-- **OpenAPI / Swagger Import**: Import any OpenAPI 3.x or Swagger 2.x specification (JSON or YAML) directly as a fully structured Collection. Selectively pick which endpoints to import, choose how the Base URL is stored (inline in request URL or as a `{{baseUrl}}` Collection Variable), and automatically generate professional API documentation in the Collection's README from the spec's servers, security schemes, endpoint summaries, parameters, and request bodies.
-- **Data Generator Tools**: Generate thousands of rows of realistic Mock JSON Data for testing endpoints or validate existing responses against JSON Schema Drafts and XML XSDs.
-
-### 🔒 100% Offline & Local Storage
-- **File-System First**: All your workspaces, environments, and history logs are serialized into clean `.json` files inside `~/.apibanker`. 
-- **Action Audit Logging**: Keeps a meticulous, auto-rotating daily audit log of critical app operations (saved as `action_audit_<YYYY-MM-DD>.log` limited to 10MB). Toggleable in settings. Tracks comprehensive source, status, and destination metadata for the following standard actions:
-  - `APP_START` / `APP_CLOSE`
-  - `IMPORT_COLLECTION` / `IMPORT_ENVIRONMENT` / `IMPORT_OPENAPI` / `IMPORT_FAILED`
-  - `EXPORT_COLLECTION` / `EXPORT_ENVIRONMENT` / `EXPORT_REPORT` / `EXPORT_LOGS`
-  - `DELETE_COLLECTION` / `DELETE_ENVIRONMENT`
-  - `COPY_COLLECTION` / `COPY_ENVIRONMENT`
-- **No Cloud Required**: No accounts, no data syncing to external servers, and absolutely no telemetry.
+1. **Java Development Kit (JDK) 21** (or higher).
+   * Note: If you intend to build the *Standalone Native Executable*, you **MUST** install **GraalVM JDK 21+**.
+2. **Apache Maven** (for building from source).
+3. **WiX Toolset v3** (Required ONLY for Windows users building the `.msi` native installer via `jpackage`).
+4. **C++ Build Tools** (Required ONLY for building the `.exe` via GraalVM Native Image).
+   * *Windows*: Visual Studio C++ Build Tools.
+   * *Linux*: `gcc` and `glibc-devel`.
+   * *macOS*: Xcode Command Line Tools.
 
 ---
 
+## 🛠️ Building & Packaging Options
 
-## 📦 Installation & Distribution
+ApiBanker supports three different distribution formats. Choose the one that fits your needs.
 
-ApiBanker is distributed in three distinct formats depending on your needs. Download the latest version from our [Releases Page](https://github.com/ncrkindia/api-banker/releases).
+> **Recommended:** Use the provided `build.bat` (Windows) or `build.sh` (Linux/macOS) scripts at the project root for a guided, flag-driven build experience.
 
-1. **Classic Portable Bundle (`.zip` / `.tar.gz`)**
-   - **Description**: A highly portable archive containing the main executable JAR and simple `.bat`/`.sh` launcher scripts.
-   - **Best For**: Users who already have Java 21+ installed and want to run the app directly from any folder or USB drive.
-   - **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/apibanker.zip)
+---
 
-2. **Professional Native Installer (`.msi`)**
-   - **Description**: A full standalone Windows installation wizard that bundles a stripped-down JRE along with the application.
-   - **Best For**: End-users who want a standard setup experience (installing to `Program Files`, creating shortcuts) and do NOT have Java installed.
-   - **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/ApiBanker-installer-1.0.msi)
+### ⚡ Quick Build (Recommended)
+
+The `build.bat` / `build.sh` scripts at the project root perform a **complete, two-phase build** in one command:
+1. **Phase 1** — Runs `mvn clean package` to produce the executable JAR and portable ZIP bundle.
+2. **Phase 2** — Calls `scripts/build-installers.bat` (or `.sh`) to produce the platform-native installer (`.msi` on Windows, `.deb`/`.rpm` on Linux, `.dmg`/`.pkg` on macOS).
+
+#### Windows
+
+```bat
+:: Full build: JAR + ZIP + .msi installer
+build.bat
+
+:: Full build, run with tests
+build.bat --with-tests
+
+:: Full build, use mvn install
+build.bat --install
+```
+
+#### Linux / macOS
+
+```bash
+# Make executable on first use
+chmod +x build.sh
+
+# Full build: JAR + ZIP + platform native installer
+./build.sh
+
+# Full build, run with tests
+./build.sh --with-tests
+```
+
+**Output location:** `target/artifacts/`
+
+> **Note:** Building the `.msi` installer on Windows requires **WiX Toolset v3** and **jpackage** (JDK 14+) in your PATH.
+
+### 1. Standard Portable JAR / ZIP (Manual Maven)
+This is the standard, cross-platform Java package. It compiles the source code into a standalone `.jar` file.
+
+**Command:**
+```bash
+mvn clean package
+```
+**Output:**
+* `target/apibanker-1.5.0-beta.jar` (Executable Fat JAR)
+* `target/artifacts/apibanker.zip` & `target/artifacts/apibanker.tar.gz` (Portable distributions with launch scripts)
+
+---
+
+### 2. Professional Native Installers (MSI / PKG / DEB)
+This builds a complete standalone setup wizard tailored to your operating system. It uses `jpackage` to bundle a custom, stripped-down JRE along with the application.
+
+**Command (using build script — recommended):**
+```bash
+build.bat --native       # Windows
+./build.sh --native      # Linux / macOS
+```
+
+**Command (manual Maven):**
+```bash
+# Windows
+mvn clean package -P native-installer-windows
+
+# Linux
+mvn clean package -P native-installer-linux
+
+# macOS
+mvn clean package -P native-installer-mac
+```
+
+**Output:**
+* `target/artifacts/ApiBanker-installer.msi` (Windows)
+* `target/artifacts/apibanker.deb` (Linux)
+* `target/artifacts/ApiBanker.pkg` (macOS)
+
+---
+
+### 3. Standalone Native Executable (GraalVM AOT)
+This compiles the Java bytecode directly to native machine code for lightning-fast startup times with zero external dependencies.
+
+**Command (using build script — recommended):**
+```bash
+build.bat --graal        # Windows
+./build.sh --graal       # Linux / macOS
+```
+
+**Command (manual Maven):**
+```bash
+mvn clean package -P graalvm-native-image
+```
+**Output:**
+* `target/artifacts/ApiBanker.exe` (or `ApiBanker` on Unix)
+
+---
+
+## 💻 Running Locally during Development
+
+To instantly launch the application directly from your IDE or terminal without packaging:
+
+```bash
+mvn compile exec:java -Dexec.mainClass="in.slpro.apibanker.App"
+```
+
+Alternatively, run the compiled JAR directly:
+```bash
+java -jar target/apibanker-1.5.0-beta.jar
+```
+
+---
+
+## 📂 Project Structure
+
+```text
+apibanker/
+├── build.bat                      # Windows build script (all profiles)
+├── build.sh                       # Linux/macOS build script (all profiles)
+├── pom.xml                        # Project dependencies (Gson, FlatLaf, RSyntaxTextArea)
+├── doc/                           # Comprehensive documentation (UserGuide.md, Features.md, AboutUs.md, release_plan.md, init.md, PROJECT_STATUS.md)
+├── scripts/
+│   ├── apibanker.bat              # Windows launcher script (bundled in ZIP)
+│   ├── apibanker.sh               # Linux/macOS launcher script (bundled in ZIP)
+│   ├── build-installers.bat       # Legacy standalone Windows jpackage script
+│   ├── build-installers.sh        # Legacy standalone Linux/macOS jpackage script
+│   ├── release.sh                 # Git release/tag helper (auto-reads version from pom.xml)
+│   └── diff.sh                    # Git diff helper between a version tag and develop (with reusable AI release prompt)
+├── src/main/java/in/slpro/apibanker/
+│   ├── App.java                   # Main entry point and initialization
+│   ├── http/                      # Request dispatching, auth, Rhino script engine, JMX parsing
+│   ├── model/                     # Data structures (RequestModel, CollectionModel, Settings)
+│   ├── storage/                   # JSON persistence, auto-migrations, and environment state
+│   └── ui/                        # Swing components, custom syntax highlighters, Collection Runner
+├── src/main/resources/            # Application Icons, Fonts, properties, and Native Image configs
+└── src/assembly/                  # Distribution script bundle configurations
+```
+
+---
+
+## 📜 Version History
+
+* **v1.5.0-beta (Current)** — Added GitHub actions workflows (`maven.yml` and `crda.yml`) for automated builds and security scanning. Updated internal dependencies to resolve potential vulnerabilities.
+* **v1.2.0-beta** — Workspace data integrity release. Adds global unsaved changes guard (Settings, MockServer), disambiguates duplicate request names in Collection Runner metrics exports, overhauls Environment & Variable UI with auto-managing tables, and consolidates all utility scripts under `scripts/`.
+* **v1.1.0-beta** - First official release under the ApiBanker rebranding. Includes massive UI/UX improvements, advanced clipboard protection, OpenAPI/Swagger Import with auto-generated Collection README documentation, complete JavaDoc coverage, and Native Executable support.
+* *(Legacy: v1.0.0 to v1.4.0 under JAPI)*.
 
 ---
 

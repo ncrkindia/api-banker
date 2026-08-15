@@ -1,12 +1,12 @@
-# ApiBanker Release Plan — v1.5.0-beta
+# ApiBanker Release Plan — v1.6.0-beta
 
-This document outlines the release plan for **ApiBanker (v1.5.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
+This document outlines the release plan for **ApiBanker (v1.6.0-beta)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
 
 ---
 
 ## 1. Release Goals
 
-ApiBanker's transition to the `1.5.0-beta` pre-release phase aims to achieve the following:
+ApiBanker's transition to the `1.6.0-beta` pre-release phase aims to achieve the following:
 * **Brand Migration**: Safely migrate all legacy user configurations, folders, and preferences from `.japi` to `.apibanker` on first boot.
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
@@ -15,15 +15,30 @@ ApiBanker's transition to the `1.5.0-beta` pre-release phase aims to achieve the
 
 ---
 
-### v1.5.0-beta Release Summary
+### v1.6.0-beta Release Summary
 
-This release introduces comprehensive tracking and accountability via Action Audit Logging.
+This release focuses on documentation accessibility and script automation enhancements.
 
 **Features & Enhancements:**
 - **Stricter Editing Safeguards**: Added a new mode (`Settings > Mode Stricter Editing`) that forces explicit user confirmation on destructive operations like deleting collections, requests, or environments, and undo/paste actions.
 - **Hierarchical Connection Timeouts**: Implemented a cascading timeout architecture allowing timeouts to be defined globally (Default, Custom Optional, Custom Forced), at the Collection/Folder level, or natively at the Request level. Timeouts are resolved dynamically at runtime and applied to the HTTP client natively.
 - **SSL Diagnostic Popups**: Overhauled the SSL validation response UI to display richly formatted, word-wrapped, and color-coded certificate details (Issuer, Subject, Validations status).
 - **Recursive Variable Resolution**: Variable interpolation now fully supports recursive referencing across Environment, Collection, and Global scopes natively inside the request builder and Rhino JS scripts.
+- **User Guide Contextual Search**: Introduced an embedded, responsive search bar inside the User Guide panel. It supports live highlighting, Exact Match, and regex-backed Fuzzy Search.
+- **Search UI/UX Refinement**: Optimized search bar layout using `BorderLayout` to cleanly separate search controls and the dismiss button, supporting `Ctrl+F` activation and `Esc` dismissal.
+- **Diff Automation Checklist**: Expanded `scripts/diff.sh` to explicitly include checks for all Java and resource file modifications during the release tagging process.
+- **Shortcut Parity**: Synchronized and updated documentation text to correctly reflect the "Open Environment Manager" shortcut context.
+
+**Fixes:**
+- **UI Button Truncation**: Fixed an issue where the Request execution action button (e.g. `Send`, `Cancel`, `Sending...`) text was truncated when scaled up on high-DPI displays or user zoom by dynamically recalculating preferred dimensions.
+
+---
+
+### v1.5.0-beta Release Summary
+
+This release introduces comprehensive tracking and accountability via Action Audit Logging.
+
+**Features & Enhancements:**
 - **Action Audit Logger**: Implemented a core singleton audit logger (`ActionAuditLogger`) capable of securely tracking critical application lifecycle and user actions.
 - **Auto-rotating Storage**: Audit logs are safely written to the user's workspace logs directory (`~/.apibanker/logs/`) with an automatic daily file rotation (e.g. `action_audit_2026-08-11.log`).
 - **File Cap Security**: Implemented a hard 10MB size limit per log file to prevent disk exhaustion, securely appending incremental indices if the cap is breached in a single day.
@@ -37,8 +52,7 @@ This release introduces comprehensive tracking and accountability via Action Aud
 - **Granular Toggle Control**: Integrated a master switch within `SettingsPanel` -> `enableActionAuditLog`, providing users with complete opt-out capability.
 - **Documentation Overhaul**: Generated detailed JavaDoc annotations for the logger and related panels (`ExportPanel`) to maintain rigorous code-level documentation.
 
-**Fixes:**
-- **UI Button Truncation**: Fixed an issue where the Request execution action button (e.g. `Send`, `Cancel`, `Sending...`) text was truncated when scaled up on high-DPI displays or user zoom by dynamically recalculating preferred dimensions.
+
 
 ---
 
@@ -122,7 +136,7 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v1.5.0-beta** release:
+Here is the current implementation status of features included in the **v1.6.0-beta** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -148,16 +162,22 @@ ApiBanker offers a professional, multi-tier distribution pipeline depending on u
 
 ### Option 1: Classic Portable Bundle (.zip / .tar.gz)
 The traditional portable archive containing a shaded fat JAR and cross-platform launcher scripts. Best for users who already have Java installed and prefer a portable folder.
-* **Target executable**: `apibanker-1.5.0-beta.jar`
+* **Target executable**: `apibanker-1.6.0-beta.jar`
 * **Launch scripts**: `scripts/apibanker.bat` (Windows), `scripts/apibanker.sh` (macOS/Linux).
 * **Generation Command**: `mvn clean package`
-* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/apibanker.tar.gz)
+* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/apibanker.tar.gz)
 
 ### Option 2: Professional Native Installer (.msi)
 A complete standalone setup wizard for Windows. This format uses `jpackage` and the WiX toolset to bundle a custom, stripped-down JRE along with the application. Best for end-users who want a standard installation experience and do not have Java installed.
 * **Target executable**: `ApiBanker-installer.msi`
 * **Generation Command**: `mvn clean verify -DbuildNative`
-* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.5.0-beta/ApiBanker-installer.msi)
+* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/ApiBanker-1.6.0.202608.msi)
+
+### Option 3: Portable JRE-Bundled ZIP (Windows x64)
+A self-contained portable archive that includes a stripped-down JRE 21 runtime alongside the application. No Java installation required — simply extract and run. Best for users who want portability without a system-level installer.
+* **Target archive**: `ApiBanker-1.6.0-beta-jre21-winX64.zip`
+* **Generation Command**: `scripts\build-installers.bat` (auto-generates after MSI build)
+* **Download**: [ApiBanker-1.6.0-beta-jre21-winX64.zip](https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/ApiBanker-1.6.0-beta-jre21-winX64.zip)
 
 
 ---
@@ -170,7 +190,8 @@ A complete standalone setup wizard for Windows. This format uses `jpackage` and 
 | **Rebranding Migration** | 2026-08-06 | Complete |
 | **Beta Release (v1.1.0-beta)** | 2026-08-10 | Complete |
 | **Beta Release (v1.2.0-beta)** | 2026-08-09 | Complete |
-| **Beta Release (v1.5.0-beta)** | 2026-08-09 | Active |
+| **Beta Release (v1.5.0-beta)** | 2026-08-09 | Complete |
+| **Beta Release (v1.6.0-beta)** | 2026-08-15 | Active |
 | **RC1 Preparation** | 2026-08-25 | Pending |
 | **Stable v1.2.0** | 2026-09-01 | Pending |
 

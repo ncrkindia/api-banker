@@ -21,7 +21,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class CollectionRunnerLogsPanel extends JPanel {
@@ -78,6 +78,7 @@ public class CollectionRunnerLogsPanel extends JPanel {
         });
         btnPanel.add(filterBtn);
         btnPanel.add(clearFiltersBtn);
+        btnPanel.add(mainFrame.createInfoBadge("sec-console-logs", "View Logs Guide"));
         topPanel.add(btnPanel, gbc);
 
         gbc.gridx = 5;

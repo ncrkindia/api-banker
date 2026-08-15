@@ -19,7 +19,11 @@ import java.awt.event.WindowEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.datatransfer.StringSelection;
+import java.io.File;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -32,10 +36,25 @@ import java.util.Map;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
-public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener {
+public class ConsoleDialog extends JFrame implements ConsoleLogger.LogListener {
+    private static ConsoleDialog instance = null;
+
+    public static synchronized void showConsole(JFrame owner) {
+        if (instance != null && instance.isDisplayable()) {
+            if (instance.getState() == Frame.ICONIFIED) {
+                instance.setState(Frame.NORMAL);
+            }
+            instance.toFront();
+            instance.requestFocus();
+        } else {
+            instance = new ConsoleDialog(owner);
+            instance.setVisible(true);
+        }
+    }
+
     private final JPanel logPanel;
     private final JScrollPane scrollPane;
     private final JTextField searchField;
@@ -65,7 +84,11 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
     private final Color colorErrorText;
 
     public ConsoleDialog(JFrame owner) {
-        super(owner, "ApiBanker Console", false);
+        super("ApiBanker Console");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        if (owner != null) {
+            setIconImage(owner.getIconImage());
+        }
 
         // --- Theme & Font Settings ---
         this.isDark = com.formdev.flatlaf.FlatLaf.isLafDark();
@@ -133,6 +156,15 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
             @Override
             public void windowClosing(WindowEvent e) {
                 saveLayout();
+            }
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+                synchronized (ConsoleDialog.class) {
+                    if (instance == ConsoleDialog.this) {
+                        instance = null;
+                    }
+                }
             }
         });
         addComponentListener(new ComponentAdapter() {
@@ -211,8 +243,19 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
         autoScrollCheck.setOpaque(false);
         toolbarPanel.add(autoScrollCheck, gbc);
 
-        // Clear Button
+        // Download Logs Button
         gbc.gridx = 4;
+        gbc.weightx = 0;
+        JButton downloadBtn = new JButton("Download Logs");
+        downloadBtn.setFont(uiFontBold);
+        Color accent = UIManager.getColor("AccentColor");
+        downloadBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
+        downloadBtn.setForeground(Color.WHITE);
+        downloadBtn.addActionListener(e -> downloadFilteredLogs());
+        toolbarPanel.add(downloadBtn, gbc);
+
+        // Clear Button
+        gbc.gridx = 5;
         gbc.weightx = 0;
         JButton clearBtn = new JButton("Clear Console");
         clearBtn.setFont(uiFontBold);
@@ -223,6 +266,12 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
             filterLogs();
         });
         toolbarPanel.add(clearBtn, gbc);
+
+        if (owner instanceof MainFrame mainFrame) {
+            gbc.gridx = 6;
+            gbc.weightx = 0;
+            toolbarPanel.add(mainFrame.createInfoBadge("sec-console-logs", "View Console Guide"), gbc);
+        }
 
         // --- CENTER CONSOLE AREA ---
         logPanel = new JPanel();
@@ -726,9 +775,105 @@ public class ConsoleDialog extends JDialog implements ConsoleLogger.LogListener 
         });
     }
 
+    private void downloadFilteredLogs() {
+        String search = searchField.getText().toLowerCase().trim();
+        String filterLevel = (String) levelCombo.getSelectedItem();
+        List<LogEntry> matchingEntries = new ArrayList<>();
+
+        for (LogEntry entry : ConsoleLogger.getInstance().getEntries()) {
+            if ("Logs/Info".equals(filterLevel)) {
+                if (entry.getUrl() != null || entry.getLevel() == LogEntry.Level.ERROR)
+                    continue;
+            } else if ("Errors".equals(filterLevel)) {
+                if (entry.getLevel() != LogEntry.Level.ERROR)
+                    continue;
+            } else if ("Network Requests".equals(filterLevel)) {
+                if (entry.getUrl() == null)
+                    continue;
+            }
+
+            if (!search.isEmpty()) {
+                boolean matchMsg = entry.getMessage() != null && entry.getMessage().toLowerCase().contains(search);
+                boolean matchUrl = entry.getUrl() != null && entry.getUrl().toLowerCase().contains(search);
+                boolean matchMethod = entry.getMethod() != null && entry.getMethod().toLowerCase().contains(search);
+                boolean matchSource = entry.getSource() != null && entry.getSource().toLowerCase().contains(search);
+                if (!matchMsg && !matchUrl && !matchMethod && !matchSource)
+                    continue;
+            }
+            matchingEntries.add(entry);
+        }
+
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date());
+        String suggestedName = "apibanker-live-log-" + timestamp + ".log";
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Download Filtered Live Logs");
+        fileChooser.setSelectedFile(new File(suggestedName));
+
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File dest = fileChooser.getSelectedFile();
+            try (PrintWriter pw = new PrintWriter(dest, StandardCharsets.UTF_8)) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+                pw.println("================================================================================");
+                pw.println(" ApiBanker Live Log Export - " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                pw.println(" Active Filter: Level=[" + filterLevel + "], Search=[" + (search.isEmpty() ? "None" : search) + "]");
+                pw.println(" Total Log Entries: " + matchingEntries.size());
+                pw.println("================================================================================\n");
+
+                for (LogEntry entry : matchingEntries) {
+                    String timeStr = sdf.format(new Date(entry.getTimestamp()));
+                    pw.println("[" + timeStr + "] [" + (entry.getSource() != null ? entry.getSource() : "System") + "] "
+                            + (entry.getLevel() == LogEntry.Level.ERROR ? "[ERROR] " : "[INFO] ")
+                            + (entry.getMethod() != null ? entry.getMethod() + " " : "")
+                            + (entry.getUrl() != null ? entry.getUrl() : ""));
+
+                    if (entry.getStatusCode() != 0 || entry.getDurationMs() > 0) {
+                        pw.println("Status: " + (entry.getStatusCode() == 0 ? "Network Error" : entry.getStatusCode())
+                                + " | Latency: " + entry.getDurationMs() + " ms"
+                                + " | Response Size: " + entry.getResponseSize() + " bytes");
+                    }
+
+                    if (entry.getRequestHeaders() != null && !entry.getRequestHeaders().isEmpty()) {
+                        pw.println("--- Request Headers ---");
+                        pw.println(formatHeaders(entry.getRequestHeaders()));
+                    }
+                    if (entry.getRequestBody() != null && !entry.getRequestBody().isBlank()) {
+                        pw.println("--- Request Body ---");
+                        pw.println(entry.getRequestBody());
+                    }
+                    if (entry.getResponseHeaders() != null && !entry.getResponseHeaders().isEmpty()) {
+                        pw.println("--- Response Headers ---");
+                        pw.println(formatHeaders(entry.getResponseHeaders()));
+                    }
+                    if (entry.getResponseBody() != null && !entry.getResponseBody().isBlank()) {
+                        pw.println("--- Response Body ---");
+                        pw.println(entry.getResponseBody());
+                    }
+                    if (entry.getMessage() != null && !entry.getMessage().isBlank()) {
+                        pw.println("--- Message / Trace ---");
+                        pw.println(entry.getMessage());
+                    }
+                    pw.println("--------------------------------------------------------------------------------\n");
+                }
+                JOptionPane.showMessageDialog(this,
+                        "Successfully exported " + matchingEntries.size() + " log entries to:\n" + dest.getAbsolutePath(),
+                        "Download Live Logs", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Error saving log file: " + ex.getMessage(),
+                        "Export Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     @Override
     public void dispose() {
         ConsoleLogger.getInstance().removeListener(this);
+        synchronized (ConsoleDialog.class) {
+            if (instance == this) {
+                instance = null;
+            }
+        }
         super.dispose();
     }
 }

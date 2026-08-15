@@ -15,7 +15,7 @@ import java.awt.*;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class SettingsPanel extends JPanel {
@@ -45,9 +45,11 @@ public class SettingsPanel extends JPanel {
         // Header Panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         headerPanel.setOpaque(false);
-        JLabel titleLabel = new JLabel("⚙ Settings");
+        JLabel titleLabel = new JLabel("Settings ");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         headerPanel.add(titleLabel);
+        headerPanel.add(Box.createHorizontalStrut(10));
+        headerPanel.add(mainFrame.createInfoBadge("sec-settings", "View Settings Guide"));
         add(headerPanel, BorderLayout.NORTH);
 
         // Content Panel (GridBagLayout)
@@ -253,22 +255,25 @@ public class SettingsPanel extends JPanel {
             timeoutPolicyCombo.setSelectedIndex(0);
         }
         timeoutPanel.add(timeoutPolicyCombo);
-        
+
         JLabel secondsLabel = new JLabel("Seconds:");
         timeoutPanel.add(secondsLabel);
         timeoutValueField = new JTextField(String.valueOf(storage.getSettings().getGlobalTimeoutValue()), 5);
         timeoutValueField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         timeoutValueField.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent e) {
-                if (!Character.isDigit(e.getKeyChar())) e.consume();
+                if (!Character.isDigit(e.getKeyChar()))
+                    e.consume();
             }
         });
         timeoutValueField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusLost(java.awt.event.FocusEvent e) {
                 try {
                     int val = Integer.parseInt(timeoutValueField.getText().trim());
-                    if (val < 1) timeoutValueField.setText("1");
-                    if (val > 1200) timeoutValueField.setText("1200");
+                    if (val < 1)
+                        timeoutValueField.setText("1");
+                    if (val > 1200)
+                        timeoutValueField.setText("1200");
                 } catch (NumberFormatException ex) {
                     timeoutValueField.setText("120");
                 }
@@ -284,7 +289,7 @@ public class SettingsPanel extends JPanel {
         boolean initialCustom = timeoutPolicyCombo.getSelectedIndex() > 0;
         timeoutValueField.setVisible(initialCustom);
         secondsLabel.setVisible(initialCustom);
-        
+
         contentPanel.add(timeoutPanel, gbc);
 
         // UI Mode row
@@ -324,11 +329,12 @@ public class SettingsPanel extends JPanel {
 
         btnsPanel.add(saveBtn);
         add(btnsPanel, BorderLayout.SOUTH);
-        
+
         // Add Ctrl+S shortcut
         InputMap im = getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
         ActionMap am = getActionMap();
-        im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_DOWN_MASK), "saveSettings");
+        im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_DOWN_MASK),
+                "saveSettings");
         am.put("saveSettings", new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -336,7 +342,7 @@ public class SettingsPanel extends JPanel {
             }
         });
     }
-    
+
     public void saveSettings() {
         String newDir = dirField.getText().trim();
         boolean dirChanged = !newDir.equals(storage.getSettings().getDataDirectory());
@@ -387,7 +393,7 @@ public class SettingsPanel extends JPanel {
             timeoutVal = "CUSTOM_FORCED";
         }
         storage.getSettings().setGlobalTimeoutSetting(timeoutVal);
-        
+
         try {
             int tVal = Integer.parseInt(timeoutValueField.getText().trim());
             storage.getSettings().setGlobalTimeoutValue(tVal);
@@ -398,17 +404,24 @@ public class SettingsPanel extends JPanel {
         storage.saveSettings();
         MainFrame.showToast(this, "Settings saved. Restart ApiBanker to apply theme changes.");
     }
-    
+
     public boolean hasUnsavedChanges() {
         var s = storage.getSettings();
-        if (!dirField.getText().trim().equals(s.getDataDirectory())) return true;
-        if (!logsDirField.getText().trim().equals(s.getLogsDirectory())) return true;
-        if (!themeCombo.getSelectedItem().toString().equals(s.getTheme())) return true;
-        if (!uiModeCombo.getSelectedItem().toString().equals(s.getUiMode())) return true;
-        if (loggingCheck.isSelected() != s.isEnableLogging()) return true;
-        if (actionAuditCheck.isSelected() != s.isEnableActionAuditLog()) return true;
-        if (stricterEditingCheck.isSelected() != s.isStricterEditing()) return true;
-        
+        if (!dirField.getText().trim().equals(s.getDataDirectory()))
+            return true;
+        if (!logsDirField.getText().trim().equals(s.getLogsDirectory()))
+            return true;
+        if (!themeCombo.getSelectedItem().toString().equals(s.getTheme()))
+            return true;
+        if (!uiModeCombo.getSelectedItem().toString().equals(s.getUiMode()))
+            return true;
+        if (loggingCheck.isSelected() != s.isEnableLogging())
+            return true;
+        if (actionAuditCheck.isSelected() != s.isEnableActionAuditLog())
+            return true;
+        if (stricterEditingCheck.isSelected() != s.isStricterEditing())
+            return true;
+
         int sslIndex = sslPolicyCombo.getSelectedIndex();
         String sslVal = "VERIFY";
         if (sslIndex == 1) {
@@ -418,8 +431,9 @@ public class SettingsPanel extends JPanel {
         } else if (sslIndex == 3) {
             sslVal = "NO_VERIFY_FORCED";
         }
-        if (!sslVal.equals(s.getGlobalSslSetting())) return true;
-        
+        if (!sslVal.equals(s.getGlobalSslSetting()))
+            return true;
+
         int redirectIndex = redirectPolicyCombo.getSelectedIndex();
         String redirectVal = "YES";
         if (redirectIndex == 1) {
@@ -429,7 +443,8 @@ public class SettingsPanel extends JPanel {
         } else if (redirectIndex == 3) {
             redirectVal = "NO_FORCED";
         }
-        if (!redirectVal.equals(s.getGlobalRedirectSetting())) return true;
+        if (!redirectVal.equals(s.getGlobalRedirectSetting()))
+            return true;
 
         int timeoutIndex = timeoutPolicyCombo.getSelectedIndex();
         String timeoutVal = "DEFAULT";
@@ -438,13 +453,16 @@ public class SettingsPanel extends JPanel {
         } else if (timeoutIndex == 2) {
             timeoutVal = "CUSTOM_FORCED";
         }
-        if (!timeoutVal.equals(s.getGlobalTimeoutSetting())) return true;
-        
+        if (!timeoutVal.equals(s.getGlobalTimeoutSetting()))
+            return true;
+
         try {
             int tVal = Integer.parseInt(timeoutValueField.getText().trim());
-            if (tVal != s.getGlobalTimeoutValue()) return true;
+            if (tVal != s.getGlobalTimeoutValue())
+                return true;
         } catch (NumberFormatException e) {
-            if (s.getGlobalTimeoutValue() != 120) return true;
+            if (s.getGlobalTimeoutValue() != 120)
+                return true;
         }
 
         return false;
@@ -454,5 +472,3 @@ public class SettingsPanel extends JPanel {
         FontScaleHelper.scaleFonts(this, size);
     }
 }
-
-

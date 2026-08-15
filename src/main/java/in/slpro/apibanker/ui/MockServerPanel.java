@@ -29,7 +29,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class MockServerPanel extends JPanel {
@@ -138,6 +138,8 @@ public class MockServerPanel extends JPanel {
         startStopBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         startStopBtn.addActionListener(e -> toggleServer());
         leftTopPanel.add(startStopBtn);
+        
+        leftTopPanel.add(mainFrame.createInfoBadge("sec-mock-server", "View Mock Server Guide"));
 
         statusLabel = new JLabel("Status: Stopped");
         statusLabel.setForeground(Color.RED);
@@ -959,8 +961,6 @@ public class MockServerPanel extends JPanel {
             matchKeyField.setText(activeResponse.matchKey);
             matchValueField.setText(activeResponse.matchValue);
             mockBodyArea.setText(activeResponse.body);
-
-            boolean cTypeFound = false, dateFound = false, serverFound = false, connFound = false;
 
             isUpdatingHeaders = true;
             headersModel.setRowCount(0);

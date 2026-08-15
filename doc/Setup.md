@@ -1,4 +1,4 @@
-# ApiBanker - The Offline-First API Toolkit (v1.5.0-beta)
+# ApiBanker - The Offline-First API Toolkit (v1.6.0-beta)
 
 ## 🚀 Getting Started
 
@@ -68,7 +68,7 @@ This is the standard, cross-platform Java package. It compiles the source code i
 mvn clean package
 ```
 **Output:**
-* `target/apibanker-1.5.0-beta.jar` (Executable Fat JAR)
+* `target/apibanker-1.6.0-beta.jar` (Executable Fat JAR)
 * `target/artifacts/apibanker.zip` & `target/artifacts/apibanker.tar.gz` (Portable distributions with launch scripts)
 
 ---
@@ -129,7 +129,7 @@ mvn compile exec:java -Dexec.mainClass="in.slpro.apibanker.App"
 
 Alternatively, run the compiled JAR directly:
 ```bash
-java -jar target/apibanker-1.5.0-beta.jar
+java -jar target/apibanker-1.6.0-beta.jar
 ```
 
 ---
@@ -141,13 +141,14 @@ apibanker/
 ├── build.bat                      # Windows build script (all profiles)
 ├── build.sh                       # Linux/macOS build script (all profiles)
 ├── pom.xml                        # Project dependencies (Gson, FlatLaf, RSyntaxTextArea)
+├── doc/                           # Comprehensive documentation (UserGuide.md, Features.md, AboutUs.md, release_plan.md, init.md, PROJECT_STATUS.md)
 ├── scripts/
 │   ├── apibanker.bat              # Windows launcher script (bundled in ZIP)
 │   ├── apibanker.sh               # Linux/macOS launcher script (bundled in ZIP)
 │   ├── build-installers.bat       # Legacy standalone Windows jpackage script
 │   ├── build-installers.sh        # Legacy standalone Linux/macOS jpackage script
 │   ├── release.sh                 # Git release/tag helper (auto-reads version from pom.xml)
-│   └── diff.sh                    # Git diff helper between a version tag and develop
+│   └── diff.sh                    # Git diff helper between a version tag and develop (with reusable AI release prompt)
 ├── src/main/java/in/slpro/apibanker/
 │   ├── App.java                   # Main entry point and initialization
 │   ├── http/                      # Request dispatching, auth, Rhino script engine, JMX parsing
@@ -162,7 +163,8 @@ apibanker/
 
 ## 📜 Version History
 
-* **v1.5.0-beta (Current)** — Added GitHub actions workflows (`maven.yml` and `crda.yml`) for automated builds and security scanning. Updated internal dependencies to resolve potential vulnerabilities.
+* **v1.6.0-beta (Current)** — Added embeddable Contextual Search to the User Guide with Fuzzy and Exact matching. UI Layout enhancements and updated diff automation script.
+* **v1.5.0-beta** — Added GitHub actions workflows (`maven.yml` and `crda.yml`) for automated builds and security scanning. Updated internal dependencies to resolve potential vulnerabilities.
 * **v1.2.0-beta** — Workspace data integrity release. Adds global unsaved changes guard (Settings, MockServer), disambiguates duplicate request names in Collection Runner metrics exports, overhauls Environment & Variable UI with auto-managing tables, and consolidates all utility scripts under `scripts/`.
 * **v1.1.0-beta** - First official release under the ApiBanker rebranding. Includes massive UI/UX improvements, advanced clipboard protection, OpenAPI/Swagger Import with auto-generated Collection README documentation, complete JavaDoc coverage, and Native Executable support.
 * *(Legacy: v1.0.0 to v1.4.0 under JAPI)*.

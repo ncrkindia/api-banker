@@ -20,7 +20,7 @@ import java.util.Base64;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class JwtDecoderPanel extends JPanel {
@@ -54,7 +54,12 @@ public class JwtDecoderPanel extends JPanel {
         decodeBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         decodeBtn.setForeground(Color.WHITE);
         decodeBtn.addActionListener(e -> decode());
-        inputPanel.add(decodeBtn, BorderLayout.EAST);
+        
+        JPanel eastPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        eastPanel.setOpaque(false);
+        eastPanel.add(mainFrame.createInfoBadge("sec-tools-suite", "View JWT Guide"));
+        eastPanel.add(decodeBtn);
+        inputPanel.add(eastPanel, BorderLayout.EAST);
 
         add(inputPanel, BorderLayout.NORTH);
 

@@ -25,7 +25,7 @@ import java.util.UUID;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class EnvironmentManagerPanel extends JPanel {
@@ -57,10 +57,15 @@ public class EnvironmentManagerPanel extends JPanel {
         leftHeader.setLayout(new BoxLayout(leftHeader, BoxLayout.Y_AXIS));
         leftHeader.setBackground(UIManager.getColor("Panel.background"));
         leftHeader.setBorder(new EmptyBorder(8, 10, 8, 10));
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(UIManager.getColor("Panel.background"));
+        titlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JLabel titleLabel = new JLabel("Environments");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        leftHeader.add(titleLabel);
+        titlePanel.add(titleLabel);
+        titlePanel.add(Box.createHorizontalStrut(5));
+        titlePanel.add(mainFrame.createInfoBadge("sec-env-manager", "View Environment Manager Guide"));
+        leftHeader.add(titlePanel);
         leftHeader.add(Box.createVerticalStrut(4));
 
         JPanel leftBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));

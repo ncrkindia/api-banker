@@ -29,7 +29,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class SidebarPanel extends JPanel {
@@ -96,6 +96,8 @@ public class SidebarPanel extends JPanel {
 
         toolbar.add(newCollBtn);
         toolbar.add(newReqBtn);
+        toolbar.add(Box.createHorizontalGlue());
+        toolbar.add(mainFrame.createInfoBadge("sec-tree", "View Collections Guide"));
         panel.add(toolbar, BorderLayout.NORTH);
 
         // Tree

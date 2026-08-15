@@ -26,7 +26,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener {
@@ -105,6 +105,7 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
         });
         btnPanel.add(filterBtn);
         btnPanel.add(clearFiltersBtn);
+        btnPanel.add(mainFrame.createInfoBadge("sec-console-logs", "View Logs Guide"));
         gbc.gridwidth = 2;
         topPanel.add(btnPanel, gbc);
 
@@ -324,8 +325,10 @@ public class LogConsolePanel extends JPanel implements ConsoleLogger.LogListener
     }
 
     private void exportLogs(String format) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
+        String ext = "txt".equals(format) ? "log" : format;
         JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new File("apibanker_logs." + format));
+        chooser.setSelectedFile(new File("apibanker-live-log-" + timestamp + "." + ext));
         int ret = chooser.showSaveDialog(this);
         if (ret == JFileChooser.APPROVE_OPTION) {
             File dest = chooser.getSelectedFile();

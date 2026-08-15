@@ -7,7 +7,7 @@
     <groupId>in.slpro</groupId>
     <artifactId>apibanker</artifactId>
     <name>ApiBanker</name>
-    <version>1.5.0-beta</version>
+    <version>1.6.0-beta</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -79,6 +79,11 @@
             <artifactId>commonmark</artifactId>
             <version>0.21.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+            <version>0.21.0</version>
+        </dependency>
 
         <!-- Swagger Parser for OpenAPI / Swagger YAML & JSON parsing -->
         <dependency>
@@ -98,6 +103,9 @@
                 <directory>.</directory>
                 <includes>
                     <include>README.md</include>
+                    <include>doc/UserGuide.md</include>
+                    <include>doc/Features.md</include>
+                    <include>doc/AboutUs.md</include>
                 </includes>
             </resource>
         </resources>

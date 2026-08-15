@@ -12,6 +12,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +32,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class RequestPanel extends JPanel {
@@ -54,6 +55,10 @@ public class RequestPanel extends JPanel {
     private DefaultTableModel headersModel;
     private DefaultTableModel formDataModel;
     private DefaultTableModel urlencodedModel;
+    private JTable paramsTable;
+    private JTable headersTable;
+    private JTable formDataTable;
+    private JTable urlencodedTable;
     private HighlightRSyntaxTextArea bodyArea;
     private HighlightRSyntaxTextArea graphqlQueryArea;
     private HighlightRSyntaxTextArea graphqlVarsArea;
@@ -204,6 +209,7 @@ public class RequestPanel extends JPanel {
         saveBtn = new JButton("Save");
         saveBtn.setPreferredSize(new Dimension(70, 32));
         saveBtn.addActionListener(e -> save());
+        rightBtns.add(mainFrame.createInfoBadge("sec-requests", "View Request Guide"));
         rightBtns.add(saveBtn);
         rightBtns.add(sendBtn);
 
@@ -230,14 +236,14 @@ public class RequestPanel extends JPanel {
                 isSyncing = false;
             }
         });
-        JTable paramsTable = buildKVTable(paramsModel);
+        paramsTable = buildKVTable(paramsModel);
         JPanel paramsPanel = buildKVPanel(paramsTable, paramsModel);
         requestTabs.addTab("Params", paramsPanel);
 
         // Headers tab
         headersModel = buildKVModel();
         headersModel.addTableModelListener(e -> triggerVariableRepaint());
-        JTable headersTable = buildKVTable(headersModel);
+        headersTable = buildKVTable(headersModel);
         JPanel headersPanel = buildKVPanel(headersTable, headersModel);
         requestTabs.addTab("Headers", headersPanel);
 
@@ -268,12 +274,14 @@ public class RequestPanel extends JPanel {
 
         formDataModel = buildFormDataModel();
         formDataModel.addTableModelListener(e -> triggerVariableRepaint());
-        JPanel formDataPanel = buildKVPanel(buildFormDataTable(formDataModel), formDataModel);
+        formDataTable = buildFormDataTable(formDataModel);
+        JPanel formDataPanel = buildKVPanel(formDataTable, formDataModel);
         bodyCards.add(formDataPanel, "form-data");
 
         urlencodedModel = buildKVModel();
         urlencodedModel.addTableModelListener(e -> triggerVariableRepaint());
-        JPanel urlencodedPanel = buildKVPanel(buildKVTable(urlencodedModel), urlencodedModel);
+        urlencodedTable = buildKVTable(urlencodedModel);
+        JPanel urlencodedPanel = buildKVPanel(urlencodedTable, urlencodedModel);
         bodyCards.add(urlencodedPanel, "x-www-form-urlencoded");
 
         // GraphQL Panel
@@ -983,13 +991,31 @@ public class RequestPanel extends JPanel {
             panel = new JPanel(new BorderLayout(2, 0));
             panel.setOpaque(false);
             text = new JTextField();
+            text.addActionListener(e -> fireEditingStopped());
+
             btn = new JButton("...");
             btn.setPreferredSize(new Dimension(24, 18));
             btn.setFocusable(false);
             btn.addActionListener(e -> {
                 JFileChooser chooser = new JFileChooser();
+                String existing = text.getText();
+                if (existing == null || existing.isBlank()) {
+                    existing = currentVal;
+                }
+                if (existing != null && !existing.isBlank()) {
+                    String cleanPath = existing.trim();
+                    if (cleanPath.startsWith("\"") && cleanPath.endsWith("\"") && cleanPath.length() > 1) {
+                        cleanPath = cleanPath.substring(1, cleanPath.length() - 1).trim();
+                    }
+                    File f = new File(cleanPath);
+                    if (f.exists()) {
+                        chooser.setSelectedFile(f);
+                    }
+                }
                 if (chooser.showOpenDialog(panel) == JFileChooser.APPROVE_OPTION) {
-                    text.setText(chooser.getSelectedFile().getAbsolutePath());
+                    String selectedPath = chooser.getSelectedFile().getAbsolutePath();
+                    text.setText(selectedPath);
+                    currentVal = selectedPath;
                     fireEditingStopped();
                 }
             });
@@ -1004,6 +1030,7 @@ public class RequestPanel extends JPanel {
             currentVal = value != null ? value.toString() : "";
             text.setText(currentVal);
             if ("file".equalsIgnoreCase(type)) {
+                SwingUtilities.invokeLater(() -> text.requestFocusInWindow());
                 return panel;
             } else {
                 return text;
@@ -1012,7 +1039,7 @@ public class RequestPanel extends JPanel {
 
         @Override
         public Object getCellEditorValue() {
-            return text.getText();
+            return text.getText() != null ? text.getText().trim() : "";
         }
     }
 
@@ -1393,7 +1420,15 @@ public class RequestPanel extends JPanel {
         this.originalModelJson = new com.google.gson.Gson().toJson(requestModel);
     }
 
+    private void stopAllTableEditors() {
+        if (paramsTable != null && paramsTable.isEditing()) paramsTable.getCellEditor().stopCellEditing();
+        if (headersTable != null && headersTable.isEditing()) headersTable.getCellEditor().stopCellEditing();
+        if (formDataTable != null && formDataTable.isEditing()) formDataTable.getCellEditor().stopCellEditing();
+        if (urlencodedTable != null && urlencodedTable.isEditing()) urlencodedTable.getCellEditor().stopCellEditing();
+    }
+
     private void collectModel() {
+        stopAllTableEditors();
         requestModel.setMethod((String) methodCombo.getSelectedItem());
         requestModel.setUrl(urlField.getText().trim());
         requestModel.setBodyType((String) bodyTypeCombo.getSelectedItem());
@@ -1594,6 +1629,7 @@ public class RequestPanel extends JPanel {
     }
 
     public RequestModel collectToNewModel() {
+        stopAllTableEditors();
         RequestModel m = new RequestModel();
         m.setId(requestModel.getId());
         m.setName(requestModel.getName());

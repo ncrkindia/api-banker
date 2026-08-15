@@ -20,7 +20,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class GlobalVariablesPanel extends JPanel {
@@ -32,10 +32,15 @@ public class GlobalVariablesPanel extends JPanel {
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setBackground(UIManager.getColor("Panel.background"));
 
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(UIManager.getColor("Panel.background"));
+        titlePanel.setBorder(new EmptyBorder(0, 0, 10, 0));
         JLabel titleLabel = new JLabel("Global Variables");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        titleLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
-        add(titleLabel, BorderLayout.NORTH);
+        titlePanel.add(titleLabel);
+        titlePanel.add(Box.createHorizontalStrut(8));
+        titlePanel.add(mainFrame.createInfoBadge("sec-global-vars", "View Global Variable Manager Guide"));
+        add(titlePanel, BorderLayout.NORTH);
 
         globalsTableModel = new DefaultTableModel(new String[] { "", "Variable", "Value" }, 0) {
             @Override

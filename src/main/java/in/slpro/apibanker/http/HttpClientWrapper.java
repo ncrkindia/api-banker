@@ -47,7 +47,7 @@ import java.nio.file.Files;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.0.0-beta
+ * @version 1.6.0-beta
  * @since 1.0.0
  */
 public class HttpClientWrapper {
@@ -684,23 +684,43 @@ public class HttpClientWrapper {
             bos.write(newline);
 
             if ("file".equalsIgnoreCase(type)) {
-                String filePath = resolveVariables(item.getValue() != null ? item.getValue() : "", requestModel,
-                        environment);
-                File file = new File(filePath);
-                String fileName = file.getName();
-                bos.write(String.format("Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"", key, fileName)
+                String rawPath = item.getValue() != null ? item.getValue() : "";
+                String filePath = resolveVariables(rawPath, requestModel, environment);
+                if (filePath != null) {
+                    filePath = filePath.trim();
+                    if (filePath.startsWith("\"") && filePath.endsWith("\"") && filePath.length() > 1) {
+                        filePath = filePath.substring(1, filePath.length() - 1).trim();
+                    }
+                }
+
+                File file = (filePath != null && !filePath.isBlank()) ? new File(filePath) : null;
+                String fileName = (file != null) ? file.getName() : "";
+                String safeFileName = fileName.replace("\"", "\\\"");
+
+                bos.write(String.format("Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"", key, safeFileName)
                         .getBytes(StandardCharsets.UTF_8));
                 bos.write(newline);
-                String contentType = Files.probeContentType(file.toPath());
-                if (contentType == null) {
+
+                String contentType = null;
+                if (file != null && file.exists()) {
+                    try {
+                        contentType = Files.probeContentType(file.toPath());
+                    } catch (Exception ignored) {
+                    }
+                }
+                if (contentType == null || contentType.isBlank()) {
                     contentType = "application/octet-stream";
                 }
                 bos.write(String.format("Content-Type: %s", contentType).getBytes(StandardCharsets.UTF_8));
                 bos.write(newline);
                 bos.write(newline);
 
-                if (file.exists() && file.isFile()) {
-                    bos.write(Files.readAllBytes(file.toPath()));
+                if (file != null && file.exists() && file.isFile()) {
+                    try {
+                        bos.write(Files.readAllBytes(file.toPath()));
+                    } catch (Exception ex) {
+                        // Log or ignore unreadable file bytes without breaking the rest of the request
+                    }
                 }
             } else {
                 String val = resolveVariables(item.getValue() != null ? item.getValue() : "", requestModel,
