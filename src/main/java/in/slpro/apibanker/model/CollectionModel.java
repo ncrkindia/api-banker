@@ -27,6 +27,8 @@ public class CollectionModel {
     private List<CollectionModel> folders = new ArrayList<>();
     private String sslSetting = "INHERIT"; // INHERIT, VERIFY, NO_VERIFY
     private String redirectSetting = "INHERIT"; // INHERIT, YES, NO
+    private String timeoutSetting = "INHERIT"; // INHERIT, CUSTOM
+    private int timeoutValue = 120; // 1-1200
 
     // Collection level configurations
     private String readme = "";
@@ -128,6 +130,28 @@ public class CollectionModel {
 
     public void setRedirectSetting(String redirectSetting) {
         this.redirectSetting = redirectSetting;
+    }
+
+    public String getTimeoutSetting() {
+        if (timeoutSetting == null || timeoutSetting.isBlank()) {
+            timeoutSetting = "INHERIT";
+        }
+        return timeoutSetting;
+    }
+
+    public void setTimeoutSetting(String timeoutSetting) {
+        this.timeoutSetting = timeoutSetting;
+    }
+
+    public int getTimeoutValue() {
+        if (timeoutValue < 1 || timeoutValue > 1200) {
+            timeoutValue = 120;
+        }
+        return timeoutValue;
+    }
+
+    public void setTimeoutValue(int timeoutValue) {
+        this.timeoutValue = timeoutValue;
     }
 
     /**

@@ -165,6 +165,10 @@ public class MainFrame extends JFrame {
 
     public void undoCollectionTree() {
         if (!collectionUndoStack.isEmpty()) {
+            if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
+                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to undo the last action?", "Confirm Undo", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) return;
+            }
             String state = collectionUndoStack.pop();
             try {
                 com.google.gson.Gson gson = new com.google.gson.Gson();
@@ -210,6 +214,14 @@ public class MainFrame extends JFrame {
         // Workspace
         workspaceTabs = new JTabbedPane();
         workspaceTabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        workspaceTabs.addChangeListener(e -> {
+            Component selected = workspaceTabs.getSelectedComponent();
+            if (selected instanceof GlobalVariablesPanel) {
+                ((GlobalVariablesPanel) selected).loadModel();
+            } else if (selected instanceof EnvironmentManagerPanel) {
+                ((EnvironmentManagerPanel) selected).refreshEnvironments(environments);
+            }
+        });
 
         workspaceCardLayout = new CardLayout();
         workspacePanel = new JPanel(workspaceCardLayout);
@@ -556,6 +568,12 @@ public class MainFrame extends JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete collection '" + col.getName() + "'?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        } else {
+            showToast(this, "Deleted collection '" + col.getName() + "'");
+        }
         pushCollectionStateForUndo();
         closeTabsForCollectionRecursive(col);
         deleteCollectionRecursive(collections, col);
@@ -611,6 +629,12 @@ public class MainFrame extends JFrame {
     }
 
     public void deleteRequest(RequestModel req) {
+        if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete request '" + req.getName() + "'?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        } else {
+            showToast(this, "Deleted request '" + req.getName() + "'");
+        }
         pushCollectionStateForUndo();
         for (CollectionModel col : collections) {
             if (deleteRequestRecursive(col, req)) {
@@ -631,6 +655,12 @@ public class MainFrame extends JFrame {
 
     public void deleteMultiple(List<Object> items) {
         if (items == null || items.isEmpty()) return;
+        if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + items.size() + " item(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        } else {
+            showToast(this, "Deleted " + items.size() + " item(s)");
+        }
         pushCollectionStateForUndo();
         boolean changed = false;
         for (Object item : items) {
@@ -1529,6 +1559,7 @@ public class MainFrame extends JFrame {
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             if (workspaceTabs.getComponentAt(i) instanceof GlobalVariablesPanel) {
                 workspaceTabs.setSelectedIndex(i);
+                ((GlobalVariablesPanel) workspaceTabs.getComponentAt(i)).loadModel();
                 return;
             }
         }
@@ -2518,7 +2549,7 @@ public class MainFrame extends JFrame {
                 + "<span style='font-size:13px;line-height:2;'>"
                 + "1. Making API Requests &nbsp;&nbsp; 2. Collections &amp; Folders &nbsp;&nbsp; 3. Environments &amp; Variables<br>"
                 + "4. Authentication &nbsp;&nbsp; 5. Scripting Engine &nbsp;&nbsp; 6. OpenAPI / Swagger Import<br>"
-                + "7. Collection Runner &nbsp;&nbsp; 8. Built-in Tools &nbsp;&nbsp; 9. Keyboard Shortcuts &nbsp;&nbsp; 10. Common Use Cases"
+                + "7. Collection Runner &nbsp;&nbsp; 8. Built-in Tools &nbsp;&nbsp; 9. Keyboard Shortcuts &nbsp;&nbsp; 10. Common Use Cases &nbsp;&nbsp; 11. UI &amp; Accessibility"
                 + "</span></div>"
 
                 // 1. Making API Requests
@@ -2575,7 +2606,7 @@ public class MainFrame extends JFrame {
                 + "'>{{var}}</code></td></tr>"
                 + "</table>"
                 + "<div style='" + cs
-                + "'><b>Tip:</b> Active environment variables override collection variables. Use <b>Ctrl+E</b> or the top-right dropdown to switch environments quickly.</div>"
+                + "'><b>Tip:</b> Variables now resolve recursively! A collection variable can safely reference an environment or global variable for ultimate dynamic flexibility. Active environment variables override collection variables. Use <b>Ctrl+E</b> or the top-right dropdown to switch environments quickly.</div>"
 
                 // 4. Auth
                 + "<h2 style='" + h2s + "'>4. &#128272; Authentication</h2>"
@@ -2714,6 +2745,14 @@ public class MainFrame extends JFrame {
                 + "<p style='" + ps
                 + "'>Open <b>Tools &rarr; Mock Server</b> &rarr; define routes and responses &rarr; point your frontend to <code style='"
                 + cds + "'>http://localhost:&lt;port&gt;</code>.</p>"
+                + "</div>"
+
+                // 11. UI & Accessibility
+                + "<h2 style='" + h2s + "'>11. &#127912; UI, Safety &amp; Accessibility</h2>"
+                + "<div style='" + cs + "'>"
+                + "<p style='" + ps + "'><b>Responsive Scaling:</b> ApiBanker features fully responsive, real-time UI scaling via <b>Ctrl+Scroll</b> or <b>Ctrl+=/-</b>. Action buttons dynamically recalculate their layout so labels like <i>Sending...</i> and <i>Cancel</i> never clip.</p>"
+                + "<p style='" + ps + "'><b>Stricter Editing Mode:</b> Enable this mode in Settings (<b>⚙</b>) to safeguard your workspace. Destructive operations (deletions, undo, paste) will force explicit confirmations to prevent accidental data loss.</p>"
+                + "<p style='" + ps + "'><b>Rich Diagnostics:</b> SSL validation and connection timeouts are deeply configurable. Hover over the SSL status in responses to view a richly formatted, color-coded certificate breakdown.</p>"
                 + "</div>"
 
                 // Footer
@@ -3402,5 +3441,53 @@ public class MainFrame extends JFrame {
             return false;
         }
         return !"NO".equalsIgnoreCase(globalSetting);
+    }
+
+    public int resolveTimeout(RequestModel req) {
+        if (req == null) {
+            return 120;
+        }
+        String globalSetting = storage.getSettings().getGlobalTimeoutSetting();
+        if ("CUSTOM_FORCED".equalsIgnoreCase(globalSetting)) {
+            return storage.getSettings().getGlobalTimeoutValue();
+        }
+
+        String reqSetting = req.getTimeoutSetting();
+        if ("CUSTOM".equalsIgnoreCase(reqSetting)) {
+            return req.getTimeoutValue();
+        }
+
+        CollectionModel parent = getParentCollection(req);
+        while (parent != null) {
+            String parentSetting = parent.getTimeoutSetting();
+            if ("CUSTOM".equalsIgnoreCase(parentSetting)) {
+                return parent.getTimeoutValue();
+            }
+            parent = findCollectionParent(parent);
+        }
+
+        if ("CUSTOM_OPTIONAL".equalsIgnoreCase(globalSetting)) {
+            return storage.getSettings().getGlobalTimeoutValue();
+        }
+        return 120;
+    }
+
+    public static int resolveTimeoutStatic(RequestModel req) {
+        MainFrame frame = getInstance();
+        if (frame != null) {
+            return frame.resolveTimeout(req);
+        }
+        String globalSetting = StorageManager.getInstance().getSettings().getGlobalTimeoutSetting();
+        if ("CUSTOM_FORCED".equalsIgnoreCase(globalSetting)) {
+            return StorageManager.getInstance().getSettings().getGlobalTimeoutValue();
+        }
+        String reqSetting = req.getTimeoutSetting();
+        if ("CUSTOM".equalsIgnoreCase(reqSetting)) {
+            return req.getTimeoutValue();
+        }
+        if ("CUSTOM_OPTIONAL".equalsIgnoreCase(globalSetting)) {
+            return StorageManager.getInstance().getSettings().getGlobalTimeoutValue();
+        }
+        return 120;
     }
 }

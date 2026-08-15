@@ -20,6 +20,10 @@ ApiBanker's transition to the `1.5.0-beta` pre-release phase aims to achieve the
 This release introduces comprehensive tracking and accountability via Action Audit Logging.
 
 **Features & Enhancements:**
+- **Stricter Editing Safeguards**: Added a new mode (`Settings > Mode Stricter Editing`) that forces explicit user confirmation on destructive operations like deleting collections, requests, or environments, and undo/paste actions.
+- **Hierarchical Connection Timeouts**: Implemented a cascading timeout architecture allowing timeouts to be defined globally (Default, Custom Optional, Custom Forced), at the Collection/Folder level, or natively at the Request level. Timeouts are resolved dynamically at runtime and applied to the HTTP client natively.
+- **SSL Diagnostic Popups**: Overhauled the SSL validation response UI to display richly formatted, word-wrapped, and color-coded certificate details (Issuer, Subject, Validations status).
+- **Recursive Variable Resolution**: Variable interpolation now fully supports recursive referencing across Environment, Collection, and Global scopes natively inside the request builder and Rhino JS scripts.
 - **Action Audit Logger**: Implemented a core singleton audit logger (`ActionAuditLogger`) capable of securely tracking critical application lifecycle and user actions.
 - **Auto-rotating Storage**: Audit logs are safely written to the user's workspace logs directory (`~/.apibanker/logs/`) with an automatic daily file rotation (e.g. `action_audit_2026-08-11.log`).
 - **File Cap Security**: Implemented a hard 10MB size limit per log file to prevent disk exhaustion, securely appending incremental indices if the cap is breached in a single day.
@@ -32,6 +36,9 @@ This release introduces comprehensive tracking and accountability via Action Aud
   - `UNDO_COLLECTION_ACTION`, `UNDO_ENVIRONMENT_ACTION`
 - **Granular Toggle Control**: Integrated a master switch within `SettingsPanel` -> `enableActionAuditLog`, providing users with complete opt-out capability.
 - **Documentation Overhaul**: Generated detailed JavaDoc annotations for the logger and related panels (`ExportPanel`) to maintain rigorous code-level documentation.
+
+**Fixes:**
+- **UI Button Truncation**: Fixed an issue where the Request execution action button (e.g. `Send`, `Cancel`, `Sending...`) text was truncated when scaled up on high-DPI displays or user zoom by dynamically recalculating preferred dimensions.
 
 ---
 

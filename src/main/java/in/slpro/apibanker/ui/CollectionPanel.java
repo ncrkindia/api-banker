@@ -87,6 +87,8 @@ public class CollectionPanel extends JPanel {
     private RSyntaxTextArea postScriptArea;
     private JComboBox<String> sslVerifyCombo;
     private JComboBox<String> redirectVerifyCombo;
+    private JComboBox<String> timeoutVerifyCombo;
+    private JTextField timeoutValueField;
 
     public CollectionPanel(MainFrame mainFrame, CollectionModel collectionModel) {
         this.mainFrame = mainFrame;
@@ -596,7 +598,7 @@ public class CollectionPanel extends JPanel {
         tabbedPane.addTab("Tests", buildScriptTab(postScriptArea, true));
 
         // 6. Settings Tab
-        JPanel settingsTabPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        JPanel settingsTabPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         settingsTabPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         settingsTabPanel.setBackground(UIManager.getColor("Panel.background"));
 
@@ -613,6 +615,44 @@ public class CollectionPanel extends JPanel {
         redirectVerifyCombo.setToolTipText(
                 "Select redirect behavior for this collection/folder. 'Inherit' resolves to parent collection/folder setting recursively, or global setting.");
         settingsTabPanel.add(redirectVerifyCombo);
+
+        settingsTabPanel.add(new JLabel("Connection Timeout:"));
+        JPanel timeoutPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        timeoutPanel.setOpaque(false);
+        timeoutVerifyCombo = new JComboBox<>(new String[] { "Inherit", "Custom" });
+        timeoutVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeoutVerifyCombo.setToolTipText("Select timeout behavior for this collection/folder.");
+        timeoutPanel.add(timeoutVerifyCombo);
+        
+        timeoutPanel.add(Box.createHorizontalStrut(5));
+        timeoutValueField = new JTextField("120", 5);
+        timeoutValueField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeoutValueField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar())) e.consume();
+            }
+        });
+        timeoutValueField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent e) {
+                try {
+                    int val = Integer.parseInt(timeoutValueField.getText().trim());
+                    if (val < 1) timeoutValueField.setText("1");
+                    if (val > 1200) timeoutValueField.setText("1200");
+                } catch (NumberFormatException ex) {
+                    timeoutValueField.setText("120");
+                }
+            }
+        });
+        timeoutPanel.add(timeoutValueField);
+        JLabel timeoutSecsLabel = new JLabel(" s");
+        timeoutPanel.add(timeoutSecsLabel);
+        settingsTabPanel.add(timeoutPanel);
+
+        timeoutVerifyCombo.addActionListener(e -> {
+            boolean isCustom = timeoutVerifyCombo.getSelectedIndex() == 1;
+            timeoutValueField.setVisible(isCustom);
+            timeoutSecsLabel.setVisible(isCustom);
+        });
 
         JPanel settingsOuter = new JPanel(new BorderLayout());
         settingsOuter.setBackground(UIManager.getColor("Panel.background"));
@@ -973,6 +1013,15 @@ public class CollectionPanel extends JPanel {
         } else {
             redirectVerifyCombo.setSelectedIndex(2);
         }
+
+        String timeoutSetting = collectionModel.getTimeoutSetting();
+        if ("CUSTOM".equalsIgnoreCase(timeoutSetting)) {
+            timeoutVerifyCombo.setSelectedIndex(1);
+        } else {
+            timeoutVerifyCombo.setSelectedIndex(0);
+        }
+        timeoutValueField.setText(String.valueOf(collectionModel.getTimeoutValue()));
+
         this.originalModelJson = new com.google.gson.Gson().toJson(collectToNewModel());
     }
 
@@ -1031,6 +1080,18 @@ public class CollectionPanel extends JPanel {
             collectionModel.setRedirectSetting("NO");
         } else {
             collectionModel.setRedirectSetting("YES");
+        }
+
+        if (timeoutVerifyCombo.getSelectedIndex() == 1) {
+            collectionModel.setTimeoutSetting("CUSTOM");
+        } else {
+            collectionModel.setTimeoutSetting("INHERIT");
+        }
+        try {
+            int tVal = Integer.parseInt(timeoutValueField.getText().trim());
+            collectionModel.setTimeoutValue(tVal);
+        } catch (NumberFormatException e) {
+            collectionModel.setTimeoutValue(120);
         }
 
         mainFrame.saveCollections();
@@ -1101,6 +1162,19 @@ public class CollectionPanel extends JPanel {
         } else {
             m.setRedirectSetting("YES");
         }
+
+        if (timeoutVerifyCombo.getSelectedIndex() == 1) {
+            m.setTimeoutSetting("CUSTOM");
+        } else {
+            m.setTimeoutSetting("INHERIT");
+        }
+        try {
+            int tVal = Integer.parseInt(timeoutValueField.getText().trim());
+            m.setTimeoutValue(tVal);
+        } catch (NumberFormatException e) {
+            m.setTimeoutValue(120);
+        }
+
         return m;
     }
 

@@ -19,7 +19,7 @@ import java.awt.*;
  * </p>
  * 
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.3.0-beta
+ * @version 1.5.0-beta
  * @since 1.0.0
  */
 public class App {
@@ -68,7 +68,8 @@ public class App {
             }
 
             frame.setVisible(true);
-            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_START", "System", "ApiBanker Version " + getVersion() + " launched.");
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_START", "System",
+                    "ApiBanker Version " + getVersion() + " launched.");
         });
     }
 

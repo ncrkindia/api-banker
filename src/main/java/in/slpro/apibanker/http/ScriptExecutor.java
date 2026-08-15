@@ -175,7 +175,8 @@ public class ScriptExecutor {
                 if (environment.getVariables() != null) {
                     for (KeyValueItem kv : environment.getVariables()) {
                         if (kv.isEnabled() && key.equals(kv.getKey())) {
-                            return kv.getValue();
+                            String rawVal = kv.getValue() != null ? kv.getValue() : "";
+                            return in.slpro.apibanker.model.VariableHelper.resolveVariables(rawVal, request, environment);
                         }
                     }
                 }
@@ -242,7 +243,8 @@ public class ScriptExecutor {
                 if (globalVars != null) {
                     for (KeyValueItem kv : globalVars) {
                         if (kv.isEnabled() && key.equals(kv.getKey())) {
-                            return kv.getValue();
+                            String rawVal = kv.getValue() != null ? kv.getValue() : "";
+                            return in.slpro.apibanker.model.VariableHelper.resolveVariables(rawVal, request, environment);
                         }
                     }
                 }
@@ -306,7 +308,8 @@ public class ScriptExecutor {
                 if (parentCol != null && parentCol.getVariables() != null) {
                     for (KeyValueItem kv : parentCol.getVariables()) {
                         if (kv.isEnabled() && key.equals(kv.getKey())) {
-                            return kv.getValue();
+                            String rawVal = kv.getValue() != null ? kv.getValue() : "";
+                            return in.slpro.apibanker.model.VariableHelper.resolveVariables(rawVal, request, environment);
                         }
                     }
                 }
@@ -380,7 +383,10 @@ public class ScriptExecutor {
                     return Undefined.instance;
                 String key = Context.toString(args[0]);
                 String val = transientVars.get(key);
-                return val != null ? val : Undefined.instance;
+                if (val != null) {
+                    return in.slpro.apibanker.model.VariableHelper.resolveVariables(val, request, environment);
+                }
+                return Undefined.instance;
             }
         });
         varsObj.put("set", varsObj, new BaseFunction() {

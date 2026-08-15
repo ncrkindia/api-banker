@@ -27,8 +27,11 @@ public class SettingsPanel extends JPanel {
     private JComboBox<String> themeCombo;
     private JCheckBox loggingCheck;
     private JCheckBox actionAuditCheck;
+    private JCheckBox stricterEditingCheck;
     private JComboBox<String> sslPolicyCombo;
     private JComboBox<String> redirectPolicyCombo;
+    private JComboBox<String> timeoutPolicyCombo;
+    private JTextField timeoutValueField;
 
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -151,9 +154,22 @@ public class SettingsPanel extends JPanel {
         actionAuditCheck.setSelected(storage.getSettings().isEnableActionAuditLog());
         contentPanel.add(actionAuditCheck, gbc);
 
-        // Global SSL row
         gbc.gridx = 0;
         gbc.gridy = 5;
+        gbc.weightx = 0;
+        JLabel stricterEditingLabel = new JLabel("Mode Stricter Editing:");
+        stricterEditingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(stricterEditingLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        stricterEditingCheck = new JCheckBox();
+        stricterEditingCheck.setSelected(storage.getSettings().isStricterEditing());
+        contentPanel.add(stricterEditingCheck, gbc);
+
+        // Global SSL row
+        gbc.gridx = 0;
+        gbc.gridy = 6;
         gbc.weightx = 0;
         JLabel sslLabel = new JLabel("SSL Verification Policy:");
         sslLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -182,7 +198,7 @@ public class SettingsPanel extends JPanel {
 
         // Global Redirect row
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         gbc.weightx = 0;
         JLabel redirectLabel = new JLabel("Auto Redirect Policy (302):");
         redirectLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -209,9 +225,70 @@ public class SettingsPanel extends JPanel {
         }
         contentPanel.add(redirectPolicyCombo, gbc);
 
+        // Global Timeout row
+        gbc.gridx = 0;
+        gbc.gridy = 8;
+        gbc.weightx = 0;
+        JLabel timeoutLabel = new JLabel("Connection Timeout Policy:");
+        timeoutLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(timeoutLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JPanel timeoutPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        timeoutPanel.setOpaque(false);
+        timeoutPolicyCombo = new JComboBox<>(new String[] {
+                "Default (120s)",
+                "Custom (Optional)",
+                "Custom (FORCED)"
+        });
+        timeoutPolicyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        String currentTimeout = storage.getSettings().getGlobalTimeoutSetting();
+        if ("CUSTOM_OPTIONAL".equalsIgnoreCase(currentTimeout)) {
+            timeoutPolicyCombo.setSelectedIndex(1);
+        } else if ("CUSTOM_FORCED".equalsIgnoreCase(currentTimeout)) {
+            timeoutPolicyCombo.setSelectedIndex(2);
+        } else {
+            timeoutPolicyCombo.setSelectedIndex(0);
+        }
+        timeoutPanel.add(timeoutPolicyCombo);
+        
+        JLabel secondsLabel = new JLabel("Seconds:");
+        timeoutPanel.add(secondsLabel);
+        timeoutValueField = new JTextField(String.valueOf(storage.getSettings().getGlobalTimeoutValue()), 5);
+        timeoutValueField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeoutValueField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar())) e.consume();
+            }
+        });
+        timeoutValueField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent e) {
+                try {
+                    int val = Integer.parseInt(timeoutValueField.getText().trim());
+                    if (val < 1) timeoutValueField.setText("1");
+                    if (val > 1200) timeoutValueField.setText("1200");
+                } catch (NumberFormatException ex) {
+                    timeoutValueField.setText("120");
+                }
+            }
+        });
+        timeoutPanel.add(timeoutValueField);
+
+        timeoutPolicyCombo.addActionListener(e -> {
+            boolean isCustom = timeoutPolicyCombo.getSelectedIndex() > 0;
+            timeoutValueField.setVisible(isCustom);
+            secondsLabel.setVisible(isCustom);
+        });
+        boolean initialCustom = timeoutPolicyCombo.getSelectedIndex() > 0;
+        timeoutValueField.setVisible(initialCustom);
+        secondsLabel.setVisible(initialCustom);
+        
+        contentPanel.add(timeoutPanel, gbc);
+
         // Empty space filler
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 9;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -256,6 +333,7 @@ public class SettingsPanel extends JPanel {
         storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
         storage.getSettings().setEnableLogging(loggingCheck.isSelected());
         storage.getSettings().setEnableActionAuditLog(actionAuditCheck.isSelected());
+        storage.getSettings().setStricterEditing(stricterEditingCheck.isSelected());
         in.slpro.apibanker.logger.ConsoleLogger.getInstance().setEnableLogging(loggingCheck.isSelected());
 
         int sslIndex = sslPolicyCombo.getSelectedIndex();
@@ -269,6 +347,33 @@ public class SettingsPanel extends JPanel {
         }
         storage.getSettings().setGlobalSslSetting(sslVal);
 
+        int redirectIndex = redirectPolicyCombo.getSelectedIndex();
+        String redirectVal = "YES";
+        if (redirectIndex == 1) {
+            redirectVal = "NO";
+        } else if (redirectIndex == 2) {
+            redirectVal = "YES_FORCED";
+        } else if (redirectIndex == 3) {
+            redirectVal = "NO_FORCED";
+        }
+        storage.getSettings().setGlobalRedirectSetting(redirectVal);
+
+        int timeoutIndex = timeoutPolicyCombo.getSelectedIndex();
+        String timeoutVal = "DEFAULT";
+        if (timeoutIndex == 1) {
+            timeoutVal = "CUSTOM_OPTIONAL";
+        } else if (timeoutIndex == 2) {
+            timeoutVal = "CUSTOM_FORCED";
+        }
+        storage.getSettings().setGlobalTimeoutSetting(timeoutVal);
+        
+        try {
+            int tVal = Integer.parseInt(timeoutValueField.getText().trim());
+            storage.getSettings().setGlobalTimeoutValue(tVal);
+        } catch (NumberFormatException e) {
+            storage.getSettings().setGlobalTimeoutValue(120);
+        }
+
         storage.saveSettings();
         MainFrame.showToast(this, "Settings saved. Restart ApiBanker to apply theme changes.");
     }
@@ -280,6 +385,7 @@ public class SettingsPanel extends JPanel {
         if (!themeCombo.getSelectedItem().toString().equals(s.getTheme())) return true;
         if (loggingCheck.isSelected() != s.isEnableLogging()) return true;
         if (actionAuditCheck.isSelected() != s.isEnableActionAuditLog()) return true;
+        if (stricterEditingCheck.isSelected() != s.isStricterEditing()) return true;
         
         int sslIndex = sslPolicyCombo.getSelectedIndex();
         String sslVal = "VERIFY";
@@ -292,6 +398,33 @@ public class SettingsPanel extends JPanel {
         }
         if (!sslVal.equals(s.getGlobalSslSetting())) return true;
         
+        int redirectIndex = redirectPolicyCombo.getSelectedIndex();
+        String redirectVal = "YES";
+        if (redirectIndex == 1) {
+            redirectVal = "NO";
+        } else if (redirectIndex == 2) {
+            redirectVal = "YES_FORCED";
+        } else if (redirectIndex == 3) {
+            redirectVal = "NO_FORCED";
+        }
+        if (!redirectVal.equals(s.getGlobalRedirectSetting())) return true;
+
+        int timeoutIndex = timeoutPolicyCombo.getSelectedIndex();
+        String timeoutVal = "DEFAULT";
+        if (timeoutIndex == 1) {
+            timeoutVal = "CUSTOM_OPTIONAL";
+        } else if (timeoutIndex == 2) {
+            timeoutVal = "CUSTOM_FORCED";
+        }
+        if (!timeoutVal.equals(s.getGlobalTimeoutSetting())) return true;
+        
+        try {
+            int tVal = Integer.parseInt(timeoutValueField.getText().trim());
+            if (tVal != s.getGlobalTimeoutValue()) return true;
+        } catch (NumberFormatException e) {
+            if (s.getGlobalTimeoutValue() != 120) return true;
+        }
+
         return false;
     }
 

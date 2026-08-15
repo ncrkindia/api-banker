@@ -10,6 +10,7 @@ ApiBanker brings enterprise-grade API tools to your local environment without th
 - **Full Protocol Support**: Seamlessly build REST, GraphQL, and live WebSocket connections.
 - **Advanced Authentication**: First-class support for OAuth 2.0 (with automatic token extraction), Bearer tokens, API Keys, and Basic Auth.
 - **Auth Inheritance**: Define Authentication at the Collection or Folder level, and watch it recursively inherit down to all nested requests.
+- **Connection Timeouts**: Hierarchical timeout configurations (Global > Collection > Request) with support for forced overrides and granular endpoint-level control.
 - **Dynamic Body Formats**: Build Payloads in raw JSON, XML, HTML, `x-www-form-urlencoded`, `form-data` (with file upload support), or native GraphQL (with Schema Introspection).
 
 ### ⚡ Scripting & Automation
@@ -17,6 +18,12 @@ ApiBanker brings enterprise-grade API tools to your local environment without th
 - **Dynamic Variables**: Manage State via `apibanker.globals`, `apibanker.environment`, and `apibanker.collectionVariables`. When using `{{variableName}}` syntax, the resolution precedence is: **Environment > Collection > Global**. 
 - **Chaining**: Extract data from responses and pass it into subsequent requests effortlessly.
 - **Snippets**: Automatically insert scripts using the built-in UI Code Snippets sidebar.
+
+### 🎨 UI & Accessibility
+- **High-DPI / Zoom Responsive**: Real-time scalable fonts and responsive UI layout that gracefully adapts to high-resolution displays and accessibility zooms without text clipping.
+- **Dynamic Execution Flow**: Action buttons adapt seamlessly during execution states (e.g. `Sending...` / `Cancel`) without breaking visual layout.
+- **Stricter Editing Mode**: Optional workspace safeguard to prevent accidental deletions, duplications, and destructive undo operations.
+- **SSL Certificate Diagnostics**: Rich, colour-coded hover popups detailing complete SSL chains, validation status, and expiration dates.
 
 ### 📊 Performance & Load Testing
 - **Collection Runner**: Execute batch API requests with either **Fixed Iterations** or **Fixed Duration** (Sec/Min/Hours/Days) limiters. 

@@ -8,8 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 import in.slpro.apibanker.logger.ConsoleLogger;
 import in.slpro.apibanker.model.CollectionModel;
@@ -52,7 +51,6 @@ import java.nio.file.Files;
  * @since 1.0.0
  */
 public class HttpClientWrapper {
-    private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
     private final ScriptExecutor scriptExecutor = new ScriptExecutor();
 
     private boolean silentMode = false;
@@ -91,45 +89,7 @@ public class HttpClientWrapper {
      * @return The interpolated string with fully resolved variables.
      */
     private String resolveVariables(String input, RequestModel requestModel, EnvironmentModel environment) {
-        if (input == null)
-            return input;
-        CollectionModel collection = MainFrame.findParentCollection(requestModel);
-        Matcher matcher = VAR_PATTERN.matcher(input);
-        StringBuffer sb = new StringBuffer();
-        while (matcher.find()) {
-            String varName = matcher.group(1).trim();
-            String value = null;
-            if (environment != null && environment.getVariables() != null) {
-                value = environment.getVariables().stream()
-                        .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
-                        .map(KeyValueItem::getValue)
-                        .findFirst()
-                        .orElse(null);
-            }
-            if (value == null && collection != null && collection.getVariables() != null) {
-                value = collection.getVariables().stream()
-                        .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
-                        .map(KeyValueItem::getValue)
-                        .findFirst()
-                        .orElse(null);
-            }
-            if (value == null) {
-                java.util.List<KeyValueItem> globals = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getGlobalVariables();
-                if (globals != null) {
-                    value = globals.stream()
-                        .filter(kv -> kv.isEnabled() && varName.equals(kv.getKey()))
-                        .map(KeyValueItem::getValue)
-                        .findFirst()
-                        .orElse(null);
-                }
-            }
-            if (value == null) {
-                value = matcher.group(0);
-            }
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(value));
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
+        return in.slpro.apibanker.model.VariableHelper.resolveVariables(input, requestModel, environment);
     }
 
     /**
@@ -267,10 +227,12 @@ public class HttpClientWrapper {
             }
             resolvedUrl = urlBuilder.toString();
 
+            int timeoutSeconds = in.slpro.apibanker.ui.MainFrame.resolveTimeoutStatic(requestModel);
+
             // 3. Build request
             HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(resolvedUrl))
-                    .timeout(Duration.ofSeconds(30));
+                    .timeout(Duration.ofSeconds(timeoutSeconds));
 
             // 4. Add headers
             String method = requestModel.getMethod();
@@ -487,7 +449,7 @@ public class HttpClientWrapper {
             boolean followRedirects = in.slpro.apibanker.ui.MainFrame.resolveRedirectSettingStatic(requestModel);
 
             long requestStartTime = System.currentTimeMillis();
-            HttpResponse<String> httpResponse = getClient(verifySsl, followRedirects).send(reqBuilder.build(),
+            HttpResponse<String> httpResponse = getClient(verifySsl, followRedirects, timeoutSeconds).send(reqBuilder.build(),
                     HttpResponse.BodyHandlers.ofString());
             long networkTimeMs = System.currentTimeMillis() - requestStartTime;
 
@@ -546,25 +508,37 @@ public class HttpClientWrapper {
                     java.security.cert.Certificate[] certs = httpResponse.sslSession().get().getPeerCertificates();
                     if (certs.length > 0 && certs[0] instanceof java.security.cert.X509Certificate) {
                         java.security.cert.X509Certificate cert = (java.security.cert.X509Certificate) certs[0];
-                        StringBuilder sb = new StringBuilder(
-                                "<html><b style='font-size:11px'>SSL Certificate Details:</b><br><br>");
-                        sb.append("<b>Subject:</b> ").append(cert.getSubjectX500Principal().getName()).append("<br>");
-                        sb.append("<b>Issuer:</b> ").append(cert.getIssuerX500Principal().getName()).append("<br>");
-                        sb.append("<b>Valid From:</b> ").append(cert.getNotBefore()).append("<br>");
-                        sb.append("<b>Valid Until:</b> ").append(cert.getNotAfter()).append("<br>");
-
+                        
                         boolean dateValid = true;
                         try {
                             cert.checkValidity();
                         } catch (Exception e) {
                             dateValid = false;
                         }
-                        sb.append("<b>Status:</b> ").append(
-                                dateValid ? (verifySsl ? "Verified & Valid" : "Valid (Unverified)") : "Expired/Invalid")
-                                .append("</html>");
+
+                        String subject = cert.getSubjectX500Principal().getName();
+                        String issuer = cert.getIssuerX500Principal().getName();
+
+                        String color = dateValid ? "green" : "red";
+                        String highlightedSubject = subject.replaceAll("(CN=)([^,]+)", "$1<font color='" + color + "'><b>$2</b></font>");
+                        String highlightedIssuer = issuer.replaceAll("(CN=)([^,]+)", "$1<font color='" + color + "'><b>$2</b></font>");
+
+                        highlightedSubject = highlightedSubject.replace(",", ",<br>&nbsp;&nbsp;");
+                        highlightedIssuer = highlightedIssuer.replace(",", ",<br>&nbsp;&nbsp;");
+
+                        StringBuilder sb = new StringBuilder(
+                                "<html><div style='width:350px;'><b style='font-size:11px'>SSL Certificate Details:</b><br><br>");
+                        sb.append("<b>Subject:</b><br>&nbsp;&nbsp;").append(highlightedSubject).append("<br><br>");
+                        sb.append("<b>Issuer:</b><br>&nbsp;&nbsp;").append(highlightedIssuer).append("<br><br>");
+                        sb.append("<b>Valid From:</b> ").append(cert.getNotBefore()).append("<br>");
+                        sb.append("<b>Valid Until:</b> ").append(cert.getNotAfter()).append("<br><br>");
+
+                        String sslStatusText = dateValid ? (verifySsl ? "Verified & Valid" : "Valid (Unverified)") : "Expired/Invalid";
+                        sb.append("<b>Status:</b> <font color='").append(color).append("'><b>").append(sslStatusText).append("</b></font>")
+                                .append("</div></html>");
 
                         response.setSslDetails(sb.toString());
-                        response.setSslValid(verifySsl && dateValid);
+                        response.setSslValid(dateValid);
                     }
                 } catch (Exception e) {
                     // Ignore SSL extraction errors
@@ -757,9 +731,9 @@ public class HttpClientWrapper {
      *                        3xx redirects.
      * @return The configured HttpClient instance ready to send requests.
      */
-    private HttpClient getClient(boolean sslVerification, boolean followRedirects) {
+    private HttpClient getClient(boolean sslVerification, boolean followRedirects, int timeoutSeconds) {
         HttpClient.Builder builder = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(timeoutSeconds))
                 .followRedirects(followRedirects ? HttpClient.Redirect.NORMAL : HttpClient.Redirect.NEVER);
         if (!sslVerification) {
             System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");

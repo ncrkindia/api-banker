@@ -1253,11 +1253,16 @@ public class MockServerPanel extends JPanel {
         
         String currentJson = gson.toJson(config);
         String savedJson = model.getBodyRawContent();
-        if (savedJson == null) savedJson = "";
-        if (savedJson.isEmpty()) {
+        if (savedJson == null || savedJson.isBlank()) {
             return !currentJson.equals("{\"port\":8085,\"rules\":[]}");
         }
-        return !currentJson.equals(savedJson);
+        try {
+            MockServerConfig savedConfig = gson.fromJson(savedJson, MockServerConfig.class);
+            String normalizedSavedJson = gson.toJson(savedConfig);
+            return !currentJson.equals(normalizedSavedJson);
+        } catch (Exception e) {
+            return !currentJson.equals(savedJson);
+        }
     }
 
     public void updateFontSize(int size) {

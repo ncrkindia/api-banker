@@ -91,7 +91,8 @@ public class VariableHelper {
         if (activeEnv != null && activeEnv.getVariables() != null) {
             for (KeyValueItem kv : activeEnv.getVariables()) {
                 if (kv.isEnabled() && varName.equals(kv.getKey())) {
-                    return new VariableResolution(varName, "Environment (" + activeEnv.getName() + ")", kv.getValue(),
+                    String resolvedVal = in.slpro.apibanker.model.VariableHelper.resolveVariables(kv.getValue(), collection, activeEnv);
+                    return new VariableResolution(varName, "Environment (" + activeEnv.getName() + ")", resolvedVal,
                             true, "env");
                 }
             }
@@ -101,7 +102,8 @@ public class VariableHelper {
         if (collection != null && collection.getVariables() != null) {
             for (KeyValueItem kv : collection.getVariables()) {
                 if (kv.isEnabled() && varName.equals(kv.getKey())) {
-                    return new VariableResolution(varName, "Collection (" + collection.getName() + ")", kv.getValue(),
+                    String resolvedVal = in.slpro.apibanker.model.VariableHelper.resolveVariables(kv.getValue(), collection, activeEnv);
+                    return new VariableResolution(varName, "Collection (" + collection.getName() + ")", resolvedVal,
                             true, "collection");
                 }
             }
@@ -112,7 +114,8 @@ public class VariableHelper {
         if (globals != null) {
             for (KeyValueItem kv : globals) {
                 if (kv.isEnabled() && varName.equals(kv.getKey())) {
-                    return new VariableResolution(varName, "Global", kv.getValue(), true, "global");
+                    String resolvedVal = in.slpro.apibanker.model.VariableHelper.resolveVariables(kv.getValue(), collection, activeEnv);
+                    return new VariableResolution(varName, "Global", resolvedVal, true, "global");
                 }
             }
         }

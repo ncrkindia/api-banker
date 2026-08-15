@@ -46,6 +46,7 @@ public class RequestPanel extends JPanel {
     private JButton sendBtn;
     private JButton saveBtn;
     private CodeSnippetPanel codeSnippetPanel;
+    private SwingWorker<HttpClientWrapper.ExecutionResult, Void> currentWorker;
 
     // Request tabs
     private JTabbedPane requestTabs;
@@ -68,6 +69,8 @@ public class RequestPanel extends JPanel {
     private RSyntaxTextArea postScriptArea;
     private JComboBox<String> sslVerifyCombo;
     private JComboBox<String> redirectVerifyCombo;
+    private JComboBox<String> timeoutVerifyCombo;
+    private JTextField timeoutValueField;
 
     // Auth fields
     private HighlightTextField bearerTokenField;
@@ -586,7 +589,7 @@ public class RequestPanel extends JPanel {
         requestTabs.addTab("Tests", buildScriptTab(postScriptArea, true));
 
         // Settings tab
-        JPanel settingsTabPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        JPanel settingsTabPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         settingsTabPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         settingsTabPanel.setBackground(UIManager.getColor("Panel.background"));
 
@@ -603,6 +606,47 @@ public class RequestPanel extends JPanel {
         redirectVerifyCombo.setToolTipText(
                 "Select redirect behavior. 'Inherit' will resolve to Collection/Folder setting recursively.");
         settingsTabPanel.add(redirectVerifyCombo);
+
+        settingsTabPanel.add(new JLabel("Connection Timeout:"));
+        JPanel timeoutPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        timeoutPanel.setOpaque(false);
+        timeoutVerifyCombo = new JComboBox<>(new String[] { "Inherit", "Custom" });
+        timeoutVerifyCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeoutVerifyCombo.setToolTipText(
+                "Select timeout behavior. 'Inherit' resolves to Collection/Folder setting recursively.");
+        timeoutPanel.add(timeoutVerifyCombo);
+        timeoutPanel.add(Box.createHorizontalStrut(5));
+        timeoutValueField = new JTextField("120", 5);
+        timeoutValueField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeoutValueField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()))
+                    e.consume();
+            }
+        });
+        timeoutValueField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent e) {
+                try {
+                    int val = Integer.parseInt(timeoutValueField.getText().trim());
+                    if (val < 1)
+                        timeoutValueField.setText("1");
+                    if (val > 1200)
+                        timeoutValueField.setText("1200");
+                } catch (NumberFormatException ex) {
+                    timeoutValueField.setText("120");
+                }
+            }
+        });
+        timeoutPanel.add(timeoutValueField);
+        JLabel timeoutSecsLabel = new JLabel(" s");
+        timeoutPanel.add(timeoutSecsLabel);
+        settingsTabPanel.add(timeoutPanel);
+
+        timeoutVerifyCombo.addActionListener(e -> {
+            boolean isCustom = timeoutVerifyCombo.getSelectedIndex() == 1;
+            timeoutValueField.setVisible(isCustom);
+            timeoutSecsLabel.setVisible(isCustom);
+        });
 
         JPanel settingsOuter = new JPanel(new BorderLayout());
         settingsOuter.setBackground(UIManager.getColor("Panel.background"));
@@ -1331,6 +1375,14 @@ public class RequestPanel extends JPanel {
                 redirectVerifyCombo.setSelectedIndex(2);
             }
 
+            String timeoutSetting = requestModel.getTimeoutSetting();
+            if ("CUSTOM".equalsIgnoreCase(timeoutSetting)) {
+                timeoutVerifyCombo.setSelectedIndex(1);
+            } else {
+                timeoutVerifyCombo.setSelectedIndex(0);
+            }
+            timeoutValueField.setText(String.valueOf(requestModel.getTimeoutValue()));
+
             addEmptyRow(paramsModel);
             addEmptyRow(headersModel);
             addEmptyRow(formDataModel);
@@ -1394,6 +1446,18 @@ public class RequestPanel extends JPanel {
             requestModel.setRedirectSetting("YES");
         }
 
+        if (timeoutVerifyCombo.getSelectedIndex() == 1) {
+            requestModel.setTimeoutSetting("CUSTOM");
+        } else {
+            requestModel.setTimeoutSetting("INHERIT");
+        }
+        try {
+            int tVal = Integer.parseInt(timeoutValueField.getText().trim());
+            requestModel.setTimeoutValue(tVal);
+        } catch (NumberFormatException e) {
+            requestModel.setTimeoutValue(120);
+        }
+
         requestModel.setParams(extractKV(paramsModel, false));
         requestModel.setHeaders(extractKV(headersModel, true));
         requestModel.setFormData(extractFormData(formDataModel));
@@ -1445,16 +1509,38 @@ public class RequestPanel extends JPanel {
         return list;
     }
 
+
     private void sendRequest() {
+        if (currentWorker != null && !currentWorker.isDone()) {
+            currentWorker.cancel(true);
+            currentWorker = null;
+            setSendButtonText("Send");
+            Color accent = UIManager.getColor("AccentColor");
+            sendBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
+            sendBtn.setEnabled(true);
+            return;
+        }
+
         collectModel();
         sendBtn.setEnabled(false);
-        sendBtn.setText("Sending...");
+        setSendButtonText("Sending...");
+
+        Timer timer = new Timer(500, e -> {
+            if (currentWorker != null && !currentWorker.isDone()) {
+                sendBtn.setEnabled(true);
+                setSendButtonText("Cancel");
+                sendBtn.setBackground(new Color(231, 76, 60)); // Red
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
+
         responsePanel.reset();
 
         RequestModel snapshot = requestModel;
         EnvironmentModel env = mainFrame.getActiveEnvironment();
 
-        SwingWorker<HttpClientWrapper.ExecutionResult, Void> worker = new SwingWorker<>() {
+        currentWorker = new SwingWorker<>() {
             @Override
             protected HttpClientWrapper.ExecutionResult doInBackground() {
                 HttpClientWrapper client = new HttpClientWrapper();
@@ -1464,6 +1550,12 @@ public class RequestPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    if (isCancelled()) {
+                        ResponseModel rm = new ResponseModel(0, "Cancelled", 0, 0, "Request cancelled by user.",
+                                new java.util.HashMap<>());
+                        responsePanel.showResponse(rm);
+                        return;
+                    }
                     HttpClientWrapper.ExecutionResult execResult = get();
                     ResponseModel response = execResult.getResponse();
                     responsePanel.showResponse(response);
@@ -1473,16 +1565,25 @@ public class RequestPanel extends JPanel {
                     snapshot.setResponseStatus(response.getStatusCode());
                     snapshot.setActualUrl(response.getActualUrl());
                     mainFrame.addRequestToHistory(snapshot);
+                } catch (java.util.concurrent.CancellationException e) {
+                    ResponseModel rm = new ResponseModel(0, "Cancelled", 0, 0, "Request cancelled by user.",
+                            new java.util.HashMap<>());
+                    responsePanel.showResponse(rm);
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(RequestPanel.this,
                             "Request failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 } finally {
-                    sendBtn.setEnabled(true);
-                    sendBtn.setText("Send");
+                    if (currentWorker == this) {
+                        currentWorker = null;
+                        sendBtn.setEnabled(true);
+                        sendBtn.setText("Send");
+                        Color accent = UIManager.getColor("AccentColor");
+                        sendBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
+                    }
                 }
             }
         };
-        worker.execute();
+        currentWorker.execute();
     }
 
     public void save() {
@@ -1555,6 +1656,18 @@ public class RequestPanel extends JPanel {
             m.setRedirectSetting("NO");
         } else {
             m.setRedirectSetting("YES");
+        }
+
+        if (timeoutVerifyCombo.getSelectedIndex() == 1) {
+            m.setTimeoutSetting("CUSTOM");
+        } else {
+            m.setTimeoutSetting("INHERIT");
+        }
+        try {
+            int tVal = Integer.parseInt(timeoutValueField.getText().trim());
+            m.setTimeoutValue(tVal);
+        } catch (NumberFormatException e) {
+            m.setTimeoutValue(120);
         }
 
         m.setParams(extractKV(paramsModel, false));
@@ -1725,10 +1838,21 @@ public class RequestPanel extends JPanel {
 
         sendBtn.setEnabled(false);
         sendBtn.setText("Introspecting...");
+
+        Timer timer = new Timer(500, e -> {
+            if (currentWorker != null && !currentWorker.isDone()) {
+                sendBtn.setEnabled(true);
+                sendBtn.setText("Cancel");
+                sendBtn.setBackground(new Color(231, 76, 60)); // Red
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
+
         responsePanel.reset();
 
         EnvironmentModel env = mainFrame.getActiveEnvironment();
-        SwingWorker<HttpClientWrapper.ExecutionResult, Void> worker = new SwingWorker<>() {
+        currentWorker = new SwingWorker<>() {
             @Override
             protected HttpClientWrapper.ExecutionResult doInBackground() {
                 HttpClientWrapper client = new HttpClientWrapper();
@@ -1738,20 +1862,35 @@ public class RequestPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    if (isCancelled()) {
+                        ResponseModel rm = new ResponseModel(0, "Cancelled", 0, 0, "Introspection cancelled by user.",
+                                new java.util.HashMap<>());
+                        responsePanel.showResponse(rm);
+                        return;
+                    }
                     HttpClientWrapper.ExecutionResult execResult = get();
                     ResponseModel response = execResult.getResponse();
                     responsePanel.showResponse(response);
                     MainFrame.showToast(RequestPanel.this, "GraphQL Introspection Schema loaded.");
+                } catch (java.util.concurrent.CancellationException e) {
+                    ResponseModel rm = new ResponseModel(0, "Cancelled", 0, 0, "Introspection cancelled by user.",
+                            new java.util.HashMap<>());
+                    responsePanel.showResponse(rm);
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(RequestPanel.this,
                             "Introspection failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 } finally {
-                    sendBtn.setEnabled(true);
-                    sendBtn.setText("Send");
+                    if (currentWorker == this) {
+                        currentWorker = null;
+                        sendBtn.setEnabled(true);
+                        sendBtn.setText("Send");
+                        Color accent = UIManager.getColor("AccentColor");
+                        sendBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
+                    }
                 }
             }
         };
-        worker.execute();
+        currentWorker.execute();
     }
 
     public void setRequestModel(RequestModel model) {
@@ -1916,6 +2055,24 @@ public class RequestPanel extends JPanel {
             case "DELETE" -> new Color(192, 57, 43);
             default -> UIManager.getColor("Label.foreground");
         };
+    }
+
+    /**
+     * Dynamically updates the text of the send button and recalculates its preferred width.
+     * This ensures that the button scales gracefully when text changes (e.g. from "Send" to "Sending..." or "Cancel"),
+     * preventing text truncation especially when the UI is zoomed in.
+     *
+     * @param text The new text to display on the button.
+     */
+    private void setSendButtonText(String text) {
+        if (sendBtn != null) {
+            sendBtn.setText(text);
+            sendBtn.setPreferredSize(null);
+            int height = Math.max(32, sendBtn.getFont().getSize() + 16);
+            sendBtn.setPreferredSize(new Dimension(sendBtn.getPreferredSize().width + 16, height));
+            sendBtn.revalidate();
+            sendBtn.repaint();
+        }
     }
 
     public void triggerVariableRepaint() {

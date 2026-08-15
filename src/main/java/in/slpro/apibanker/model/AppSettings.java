@@ -20,12 +20,15 @@ public class AppSettings {
     private int fontSize = 16;
     private String globalSslSetting = "VERIFY"; // VERIFY, NO_VERIFY, VERIFY_FORCED, NO_VERIFY_FORCED
     private String globalRedirectSetting = "YES"; // YES, NO, YES_FORCED, NO_FORCED
+    private String globalTimeoutSetting = "DEFAULT"; // DEFAULT, CUSTOM_OPTIONAL, CUSTOM_FORCED
+    private int globalTimeoutValue = 120; // 1-1200
     private int windowWidth = 1300;
     private int windowHeight = 800;
     private int windowX = -1;
     private int windowY = -1;
     private boolean windowMaximized = true;
     private boolean enableActionAuditLog = true;
+    private boolean stricterEditing = false;
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
     private java.util.List<String> expandedTreeNodes = new java.util.ArrayList<>();
@@ -103,6 +106,14 @@ public class AppSettings {
         this.enableActionAuditLog = enableActionAuditLog;
     }
 
+    public boolean isStricterEditing() {
+        return stricterEditing;
+    }
+
+    public void setStricterEditing(boolean stricterEditing) {
+        this.stricterEditing = stricterEditing;
+    }
+
     public String getGlobalSslSetting() {
         if (globalSslSetting == null || globalSslSetting.isBlank()) {
             globalSslSetting = "VERIFY";
@@ -123,6 +134,28 @@ public class AppSettings {
 
     public void setGlobalRedirectSetting(String globalRedirectSetting) {
         this.globalRedirectSetting = globalRedirectSetting;
+    }
+
+    public String getGlobalTimeoutSetting() {
+        if (globalTimeoutSetting == null || globalTimeoutSetting.isBlank()) {
+            globalTimeoutSetting = "DEFAULT";
+        }
+        return globalTimeoutSetting;
+    }
+
+    public void setGlobalTimeoutSetting(String globalTimeoutSetting) {
+        this.globalTimeoutSetting = globalTimeoutSetting;
+    }
+
+    public int getGlobalTimeoutValue() {
+        if (globalTimeoutValue < 1 || globalTimeoutValue > 1200) {
+            globalTimeoutValue = 120;
+        }
+        return globalTimeoutValue;
+    }
+
+    public void setGlobalTimeoutValue(int globalTimeoutValue) {
+        this.globalTimeoutValue = globalTimeoutValue;
     }
 
     public int getWindowWidth() {

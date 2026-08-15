@@ -516,10 +516,7 @@ public class SidebarPanel extends JPanel {
             JMenuItem delete = new JMenuItem("Delete Collection");
             delete.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
             delete.addActionListener(e -> {
-                int confirm = JOptionPane.showConfirmDialog(this, "Delete collection \"" + col.getName() + "\"?",
-                        "Confirm", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    TreePath[] paths = collectionsTree.getSelectionPaths();
+                TreePath[] paths = collectionsTree.getSelectionPaths();
                     if (paths != null && paths.length > 0) {
                         List<Object> toDelete = new ArrayList<>();
                         for (TreePath p : paths) {
@@ -530,7 +527,6 @@ public class SidebarPanel extends JPanel {
                     } else {
                         mainFrame.deleteCollection(col);
                     }
-                }
             });
 
             JMenuItem copy = new JMenuItem("Copy");
@@ -950,6 +946,13 @@ public class SidebarPanel extends JPanel {
     private void handlePaste(DefaultMutableTreeNode targetNode) {
         if (clipboardNodes.isEmpty())
             return;
+            
+        if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to paste/duplicate " + clipboardNodes.size() + " item(s)?", "Confirm Paste", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        } else {
+            MainFrame.showToast(this, "Pasted/Duplicated " + clipboardNodes.size() + " item(s)");
+        }
         
         mainFrame.pushCollectionStateForUndo();
         boolean changed = false;

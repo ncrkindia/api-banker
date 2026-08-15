@@ -164,6 +164,14 @@ public class EnvironmentManagerDialog extends JDialog {
         int idx = envList.getSelectedIndex();
         if (idx < 0)
             return;
+        
+        if (StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete environment '" + environments.get(idx).getName() + "'?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        } else {
+            MainFrame.showToast(this, "Deleted environment '" + environments.get(idx).getName() + "'");
+        }
+
         environments.remove(idx);
         envListModel.remove(idx);
         selectedEnvIndex = -1;
