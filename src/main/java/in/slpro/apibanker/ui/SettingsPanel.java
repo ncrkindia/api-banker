@@ -25,6 +25,7 @@ public class SettingsPanel extends JPanel {
     private JTextField dirField;
     private JTextField logsDirField;
     private JComboBox<String> themeCombo;
+    private JComboBox<String> uiModeCombo;
     private JCheckBox loggingCheck;
     private JCheckBox actionAuditCheck;
     private JCheckBox stricterEditingCheck;
@@ -286,9 +287,24 @@ public class SettingsPanel extends JPanel {
         
         contentPanel.add(timeoutPanel, gbc);
 
-        // Empty space filler
+        // UI Mode row
         gbc.gridx = 0;
         gbc.gridy = 9;
+        gbc.weightx = 0;
+        JLabel uiModeLabel = new JLabel("UI Rendering Mode:");
+        uiModeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        contentPanel.add(uiModeLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        uiModeCombo = new JComboBox<>(new String[] { "Classic", "Modern" });
+        uiModeCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        uiModeCombo.setSelectedItem(storage.getSettings().getUiMode());
+        contentPanel.add(uiModeCombo, gbc);
+
+        // Empty space filler
+        gbc.gridx = 0;
+        gbc.gridy = 10;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -306,15 +322,19 @@ public class SettingsPanel extends JPanel {
         saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         saveBtn.addActionListener(e -> saveSettings());
 
-        JButton cancelBtn = new JButton("Close Tab");
-        cancelBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cancelBtn.addActionListener(e -> {
-            mainFrame.closeTab(this);
-        });
-
-        btnsPanel.add(cancelBtn);
         btnsPanel.add(saveBtn);
         add(btnsPanel, BorderLayout.SOUTH);
+        
+        // Add Ctrl+S shortcut
+        InputMap im = getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap am = getActionMap();
+        im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_DOWN_MASK), "saveSettings");
+        am.put("saveSettings", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                saveSettings();
+            }
+        });
     }
     
     public void saveSettings() {
@@ -331,6 +351,7 @@ public class SettingsPanel extends JPanel {
 
         storage.updateLogsDirectory(logsDirField.getText().trim());
         storage.getSettings().setTheme((String) themeCombo.getSelectedItem());
+        storage.getSettings().setUiMode((String) uiModeCombo.getSelectedItem());
         storage.getSettings().setEnableLogging(loggingCheck.isSelected());
         storage.getSettings().setEnableActionAuditLog(actionAuditCheck.isSelected());
         storage.getSettings().setStricterEditing(stricterEditingCheck.isSelected());
@@ -383,6 +404,7 @@ public class SettingsPanel extends JPanel {
         if (!dirField.getText().trim().equals(s.getDataDirectory())) return true;
         if (!logsDirField.getText().trim().equals(s.getLogsDirectory())) return true;
         if (!themeCombo.getSelectedItem().toString().equals(s.getTheme())) return true;
+        if (!uiModeCombo.getSelectedItem().toString().equals(s.getUiMode())) return true;
         if (loggingCheck.isSelected() != s.isEnableLogging()) return true;
         if (actionAuditCheck.isSelected() != s.isEnableActionAuditLog()) return true;
         if (stricterEditingCheck.isSelected() != s.isStricterEditing()) return true;

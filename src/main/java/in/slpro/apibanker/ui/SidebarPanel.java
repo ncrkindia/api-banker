@@ -948,7 +948,7 @@ public class SidebarPanel extends JPanel {
             return;
             
         if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
-            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to paste/duplicate " + clipboardNodes.size() + " item(s)?", "Confirm Paste", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), "Are you sure you want to paste/duplicate " + clipboardNodes.size() + " item(s)?", "Confirm Paste", JOptionPane.YES_NO_OPTION);
             if (confirm != JOptionPane.YES_OPTION) return;
         } else {
             MainFrame.showToast(this, "Pasted/Duplicated " + clipboardNodes.size() + " item(s)");

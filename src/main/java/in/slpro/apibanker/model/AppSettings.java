@@ -29,6 +29,7 @@ public class AppSettings {
     private boolean windowMaximized = true;
     private boolean enableActionAuditLog = true;
     private boolean stricterEditing = false;
+    private String uiMode = "Classic"; // Classic, Modern
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
     private java.util.List<String> expandedTreeNodes = new java.util.ArrayList<>();
@@ -112,6 +113,17 @@ public class AppSettings {
 
     public void setStricterEditing(boolean stricterEditing) {
         this.stricterEditing = stricterEditing;
+    }
+
+    public String getUiMode() {
+        if (uiMode == null || uiMode.isBlank()) {
+            uiMode = "Classic";
+        }
+        return uiMode;
+    }
+
+    public void setUiMode(String uiMode) {
+        this.uiMode = uiMode;
     }
 
     public String getGlobalSslSetting() {

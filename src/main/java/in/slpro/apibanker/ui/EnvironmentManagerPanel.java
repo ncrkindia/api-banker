@@ -53,15 +53,18 @@ public class EnvironmentManagerPanel extends JPanel {
                         : new Color(220, 220, 220)));
         leftPanel.setBackground(UIManager.getColor("Panel.background"));
 
-        JPanel leftHeader = new JPanel(new BorderLayout());
+        JPanel leftHeader = new JPanel();
+        leftHeader.setLayout(new BoxLayout(leftHeader, BoxLayout.Y_AXIS));
         leftHeader.setBackground(UIManager.getColor("Panel.background"));
         leftHeader.setBorder(new EmptyBorder(8, 10, 8, 10));
         JLabel titleLabel = new JLabel("Environments");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        leftHeader.add(titleLabel, BorderLayout.CENTER);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leftHeader.add(titleLabel);
+        leftHeader.add(Box.createVerticalStrut(4));
 
         JPanel leftBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
-        leftBtns.setOpaque(false);
+        leftBtns.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton addEnvBtn = new JButton("+");
         addEnvBtn.setToolTipText("Add Environment");
         addEnvBtn.addActionListener(e -> addEnvironment());
@@ -70,7 +73,7 @@ public class EnvironmentManagerPanel extends JPanel {
         delEnvBtn.addActionListener(e -> deleteEnvironment());
         leftBtns.add(addEnvBtn);
         leftBtns.add(delEnvBtn);
-        leftHeader.add(leftBtns, BorderLayout.EAST);
+        leftHeader.add(leftBtns);
         leftPanel.add(leftHeader, BorderLayout.NORTH);
 
         envListModel = new DefaultListModel<>();
@@ -207,6 +210,14 @@ public class EnvironmentManagerPanel extends JPanel {
 
     private void undo() {
         if (undoStack.isEmpty()) return;
+        
+        if (StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), 
+                    "Are you sure you want to undo the last environment change?", 
+                    "Confirm Undo", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        }
+        
         List<EnvironmentModel> prev = undoStack.pop();
         environments.clear();
         environments.addAll(prev);
@@ -267,6 +278,14 @@ public class EnvironmentManagerPanel extends JPanel {
     private void deleteSelected() {
         int[] indices = envList.getSelectedIndices();
         if (indices.length == 0) return;
+        
+        if (StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), 
+                    "Are you sure you want to delete the selected " + indices.length + " environment(s)?", 
+                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        }
+        
         pushUndoState();
         for (int i = indices.length - 1; i >= 0; i--) {
             int idx = indices[i];
@@ -299,6 +318,14 @@ public class EnvironmentManagerPanel extends JPanel {
 
     private void pasteEnvironments() {
         if (clipboardEnvironments.isEmpty()) return;
+        
+        if (StorageManager.getInstance().getSettings().isStricterEditing()) {
+            int confirm = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), 
+                    "Are you sure you want to paste/duplicate " + clipboardEnvironments.size() + " environment(s)?", 
+                    "Confirm Paste", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+        }
+        
         pushUndoState();
         com.google.gson.Gson gson = new com.google.gson.Gson();
         for (EnvironmentModel env : clipboardEnvironments) {
