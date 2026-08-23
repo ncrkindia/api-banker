@@ -106,6 +106,7 @@
                     <include>docs/UserGuide.md</include>
                     <include>docs/Features.md</include>
                     <include>docs/AboutUs.md</include>
+                    <include>docs/LICENSE.md</include>
                 </includes>
             </resource>
         </resources>

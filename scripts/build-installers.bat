@@ -88,6 +88,7 @@ jpackage --type msi ^
     --dest target\artifacts ^
     --name ApiBanker ^
     --app-version %APP_VERSION_MSI% ^
+    --icon src\main\resources\icon.ico ^
     --description "ApiBanker - Offline-First API Toolkit" ^
     --vendor "NCRK" ^
     --win-shortcut ^
