@@ -378,6 +378,7 @@ public class HttpClientWrapper {
                         items = requestModel.getFormData();
                     }
                     if (items != null) {
+                        for (KeyValueItem item : items) {
                             if (!item.isEnabled())
                                 continue;
                             if (formSb.length() > 0)
