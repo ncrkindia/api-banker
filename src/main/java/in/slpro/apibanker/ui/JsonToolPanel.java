@@ -18,7 +18,7 @@ import java.awt.*;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.6.0-beta
+ * @version 2.0.0
  * @since 1.0.0
  */
 public class JsonToolPanel extends JPanel {
@@ -85,7 +85,7 @@ public class JsonToolPanel extends JPanel {
 
     private void format() {
         try {
-            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
             com.google.gson.JsonElement elem = com.google.gson.JsonParser.parseString(inputArea.getText());
             outputArea.setText(gson.toJson(elem));
         } catch (Exception e) {

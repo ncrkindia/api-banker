@@ -308,7 +308,7 @@ Run local HTTP mock servers to test client applications against simulated API en
 ApiBanker includes an advanced, multi-layered logging system designed for full operational visibility.
 
 ### 9.1 Standalone Persistent Console Window
-- **Independent Top-Level Window**: Open via **Tools → Live Console**. Operates as an independent window that can be minimized, maximized, and placed on separate displays.
+- **Independent Top-Level Window**: Open via **Tools → Live Console** or by pressing `Ctrl+Alt+C`. Operates as an independent window that can be minimized, maximized, and placed on separate displays.
 - **Single-Instance Focus**: Only one Console window exists at a time. Re-opening brings the active console window to focus.
 - **Live Level Filtering**: Filter log entries by level (`INFO`, `WARN`, `ERROR`, `DEBUG`) or search string.
 - **Dynamic Zoom Sync**: The console bidirectionally synchronizes its zoom level (using `Ctrl+`, `Ctrl-`) with the main workspace.

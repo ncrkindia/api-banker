@@ -30,7 +30,7 @@ import java.util.Map;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.6.0-beta
+ * @version 2.0.0
  * @since 1.0.0
  */
 public class ResponsePanel extends JPanel {
@@ -369,7 +369,7 @@ public class ResponsePanel extends JPanel {
         if (contentType.contains("json")) {
             bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
             try {
-                com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+                com.google.gson.Gson gson = new com.google.gson.GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
                 com.google.gson.JsonElement el = com.google.gson.JsonParser.parseString(body);
                 bodyArea.setText(gson.toJson(el));
             } catch (Exception e) {

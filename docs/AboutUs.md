@@ -3,7 +3,7 @@
   <p style="font-size: 15px; color: #555; margin-top: 0; font-weight: 500;">The Ultimate Offline API Client &amp; Collection Runner</p>
   
   <p style="margin-top: 6px;">
-  <h3 style="margin-top: 0; margin-bottom: 8px; color: #1a73e8; font-size: 15px; font-weight: 700;">Version 1.6.0-beta</h3>
+  <h3 style="margin-top: 0; margin-bottom: 8px; color: #1a73e8; font-size: 15px; font-weight: 700;">Version 2.0.0</h3>
 
 <table width="100%" cellspacing="12" cellpadding="0" style="border-collapse: separate; border-spacing: 12px; border: none; margin: 0;">
   <tr>

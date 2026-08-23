@@ -36,7 +36,7 @@ import java.util.Map;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.6.0-beta
+ * @version 2.0.0
  * @since 1.0.0
  */
 public class ConsoleDialog extends JFrame implements ConsoleLogger.LogListener {
@@ -740,7 +740,7 @@ public class ConsoleDialog extends JFrame implements ConsoleLogger.LogListener {
             return json;
         try {
             com.google.gson.JsonElement je = com.google.gson.JsonParser.parseString(json);
-            return new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(je);
+            return new com.google.gson.GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create().toJson(je);
         } catch (Exception e) {
             return json; // Fallback to raw if not valid json
         }

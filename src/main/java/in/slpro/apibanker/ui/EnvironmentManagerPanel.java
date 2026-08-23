@@ -25,7 +25,7 @@ import java.util.UUID;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.6.0-beta
+ * @version 2.0.0
  * @since 1.0.0
  */
 public class EnvironmentManagerPanel extends JPanel {

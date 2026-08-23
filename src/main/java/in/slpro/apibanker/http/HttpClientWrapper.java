@@ -47,7 +47,7 @@ import java.nio.file.Files;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.6.0-beta
+ * @version 2.0.0
  * @since 1.0.0
  */
 public class HttpClientWrapper {
@@ -365,7 +365,7 @@ public class HttpClientWrapper {
                         byte[] multipartData = buildMultipartBody(requestModel.getFormData(), boundary, requestModel,
                                 environment);
                         bodyPublisher = HttpRequest.BodyPublishers.ofByteArray(multipartData);
-                        if (!hasContentType) reqBuilder.header("Content-Type", "multipart/form-data; boundary=" + boundary);
+                        reqBuilder.setHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
                         resolvedBodyStr = "[Multipart/Form-Data Payload: " + multipartData.length + " bytes]";
                     } catch (Exception ex) {
                         resolvedBodyStr = "Error building multipart body: " + ex.getMessage();
@@ -378,13 +378,13 @@ public class HttpClientWrapper {
                         items = requestModel.getFormData();
                     }
                     if (items != null) {
-                        for (KeyValueItem item : items) {
-                            if (!item.isEnabled() || item.getKey() == null || item.getKey().isBlank())
+                            if (!item.isEnabled())
                                 continue;
                             if (formSb.length() > 0)
                                 formSb.append("&");
+                            String rawKey = item.getKey() != null ? item.getKey() : "";
                             formSb.append(java.net.URLEncoder.encode(
-                                    resolveVariables(item.getKey(), requestModel, environment), StandardCharsets.UTF_8))
+                                    resolveVariables(rawKey, requestModel, environment), StandardCharsets.UTF_8))
                                     .append("=")
                                     .append(java.net.URLEncoder
                                             .encode(resolveVariables(item.getValue() != null ? item.getValue() : "",
@@ -700,10 +700,11 @@ public class HttpClientWrapper {
         byte[] newline = "\r\n".getBytes(StandardCharsets.UTF_8);
 
         for (KeyValueItem item : items) {
-            if (!item.isEnabled() || item.getKey() == null || item.getKey().isBlank())
+            if (!item.isEnabled())
                 continue;
 
-            String key = resolveVariables(item.getKey(), requestModel, environment);
+            String rawKey = item.getKey() != null ? item.getKey() : "";
+            String key = resolveVariables(rawKey, requestModel, environment);
             String type = item.getType() != null ? item.getType() : "text";
 
             bos.write(("--" + boundary).getBytes(StandardCharsets.UTF_8));

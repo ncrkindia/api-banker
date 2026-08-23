@@ -28,7 +28,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 1.6.0-beta
+ * @version 2.0.0
  * @since 1.0.0
  */
 public class MainFrame extends JFrame {
@@ -146,6 +146,7 @@ public class MainFrame extends JFrame {
         sidebarPanel.refreshCollections(collections);
         setupZoom();
         setupSaveHotkey();
+        setupConsoleHotkey();
         applyTheme();
         updateFontSize(currentFontSize);
     }
@@ -3189,6 +3190,18 @@ public class MainFrame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 saveActiveTab();
+            }
+        });
+    }
+
+    private void setupConsoleHotkey() {
+        JComponent root = getRootPane();
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK), "openConsole");
+        root.getActionMap().put("openConsole", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ConsoleDialog.showConsole(MainFrame.this);
             }
         });
     }
