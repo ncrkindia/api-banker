@@ -77,6 +77,7 @@ jpackage --type app-image ^
     --name ApiBanker ^
     --main-jar apibanker-app.jar ^
     --main-class in.slpro.apibanker.App ^
+    --icon src\main\resources\icon.ico ^
     --app-version %APP_VERSION_MSI%
 if %errorlevel% neq 0 ( echo [ERROR] app-image creation failed. & exit /b 1 )
 

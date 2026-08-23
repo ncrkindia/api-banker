@@ -1,3 +1,5 @@
+<img src="src/main/resources/banner.png" alt="ApiBanker Banner" width="100%">
+
 # ApiBanker - The Offline-First API Toolkit (v2.0.0)
 
 ## 🚀 Getting Started

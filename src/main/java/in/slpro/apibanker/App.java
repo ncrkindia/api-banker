@@ -62,6 +62,85 @@ public class App {
         }
 
         SwingUtilities.invokeLater(() -> {
+            JWindow splash = new JWindow();
+            splash.setBackground(new Color(0, 0, 0, 0)); // Transparent window
+            try {
+                java.awt.Image splashImg = javax.imageio.ImageIO.read(App.class.getResource("/icon.png"));
+                JPanel splashPanel = new JPanel() {
+                    float angle = 0;
+                    Timer animTimer;
+                    {
+                        setOpaque(false);
+                        animTimer = new Timer(20, ev -> {
+                            angle += 0.05f;
+                            repaint();
+                        });
+                        animTimer.start();
+                    }
+                    
+                    @Override
+                    public void removeNotify() {
+                        super.removeNotify();
+                        if (animTimer != null) animTimer.stop();
+                    }
+
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        super.paintComponent(g);
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        // Improve rendering quality
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                        
+                        int w = getWidth();
+                        int h = getHeight();
+                        int arc = 120; // Increased to 120 for much rounder corners
+                        
+                        // Clip to outer rounded rectangle
+                        g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, w, h, arc, arc));
+                        
+                        // Draw rotating multi-color gradient
+                        java.awt.geom.AffineTransform oldT = g2.getTransform();
+                        g2.translate(w / 2.0, h / 2.0);
+                        g2.rotate(angle);
+                        
+                        // Richer gradient using LinearGradientPaint
+                        float[] fractions = {0.0f, 0.33f, 0.66f, 1.0f};
+                        Color[] colors = {new Color(0, 255, 204), new Color(0, 102, 255), new Color(153, 0, 255), new Color(0, 255, 204)};
+                        java.awt.LinearGradientPaint lgp = new java.awt.LinearGradientPaint(-w, -h, w, h, fractions, colors);
+                        
+                        g2.setPaint(lgp);
+                        g2.fillRect(-w * 2, -h * 2, w * 4, h * 4);
+                        g2.setTransform(oldT);
+                        
+                        // Draw inner rounded rectangle for the background
+                        int bThick = 6; // Thicker border
+                        g2.setColor(new Color(25, 25, 30));
+                        g2.fill(new java.awt.geom.RoundRectangle2D.Float(bThick, bThick, w - 2 * bThick, h - 2 * bThick, arc - bThick, arc - bThick));
+                        
+                        // Draw image
+                        if (splashImg != null) {
+                            int imgPad = bThick + 10;
+                            g2.setClip(new java.awt.geom.RoundRectangle2D.Float(imgPad, imgPad, w - 2 * imgPad, h - 2 * imgPad, arc - imgPad, arc - imgPad));
+                            g2.drawImage(splashImg, imgPad, imgPad, w - 2 * imgPad, h - 2 * imgPad, this);
+                        }
+                        g2.dispose();
+                    }
+
+                    @Override
+                    public Dimension getPreferredSize() {
+                        return new Dimension(240, 240);
+                    }
+                };
+                splash.getContentPane().add(splashPanel);
+                splash.pack();
+                splash.setLocationRelativeTo(null); // Center on screen
+                splash.setVisible(true);
+            } catch (Exception ex) {
+                // Ignore if icon is missing
+            }
+
             MainFrame frame = new MainFrame();
 
             in.slpro.apibanker.model.AppSettings settings = in.slpro.apibanker.storage.StorageManager.getInstance()
@@ -72,9 +151,14 @@ public class App {
                 frame.setLocation(0, 0); // Top-left corner
             }
 
-            frame.setVisible(true);
-            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_START", "System",
-                    "ApiBanker Version " + getVersion() + " launched.");
+            Timer splashTimer = new Timer(5000, e -> {
+                splash.dispose();
+                frame.setVisible(true);
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_START", "System",
+                        "ApiBanker Version " + getVersion() + " launched.");
+            });
+            splashTimer.setRepeats(false);
+            splashTimer.start();
         });
     }
 

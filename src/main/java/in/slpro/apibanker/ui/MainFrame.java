@@ -114,6 +114,22 @@ public class MainFrame extends JFrame {
 
         setTitle("ApiBanker - Offline API Client");
 
+        try {
+            java.net.URL iconUrl = getClass().getResource("/icon.png");
+            if (iconUrl != null) {
+                java.awt.Image appIcon = javax.imageio.ImageIO.read(iconUrl);
+                setIconImage(appIcon);
+
+                // For modern macOS/Linux taskbars (optional but good practice)
+                if (java.awt.Taskbar.isTaskbarSupported()
+                        && java.awt.Taskbar.getTaskbar().isSupported(java.awt.Taskbar.Feature.ICON_IMAGE)) {
+                    java.awt.Taskbar.getTaskbar().setIconImage(appIcon);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not load application icon: " + e.getMessage());
+        }
+
         // Read saved font size
         int savedFontSize = storage.getSettings().getFontSize();
         if (savedFontSize >= 10 && savedFontSize <= 30) {
@@ -3197,7 +3213,8 @@ public class MainFrame extends JFrame {
     private void setupConsoleHotkey() {
         JComponent root = getRootPane();
         root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK), "openConsole");
+                KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK),
+                "openConsole");
         root.getActionMap().put("openConsole", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
