@@ -160,26 +160,31 @@ public class MainFrame extends JFrame {
             if (collectionUndoStack.size() > 50) {
                 collectionUndoStack.remove(0);
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
     public void undoCollectionTree() {
         if (!collectionUndoStack.isEmpty()) {
             if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
-                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to undo the last action?", "Confirm Undo", JOptionPane.YES_NO_OPTION);
-                if (confirm != JOptionPane.YES_OPTION) return;
+                int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to undo the last action?",
+                        "Confirm Undo", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION)
+                    return;
             }
             String state = collectionUndoStack.pop();
             try {
                 com.google.gson.Gson gson = new com.google.gson.Gson();
-                java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<List<CollectionModel>>(){}.getType();
+                java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<List<CollectionModel>>() {
+                }.getType();
                 List<CollectionModel> restored = gson.fromJson(state, listType);
                 if (restored != null) {
                     this.collections.clear();
                     this.collections.addAll(restored);
                     saveCollections();
                     sidebarPanel.refreshCollections(this.collections);
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("UNDO_COLLECTION_ACTION", "User", "Restored previous collection state.");
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("UNDO_COLLECTION_ACTION",
+                            "User", "Restored previous collection state.");
                     showToast(this, "Undo successful");
                 }
             } catch (Exception e) {
@@ -341,14 +346,14 @@ public class MainFrame extends JFrame {
         mockServerItem.addActionListener(e -> openMockServer());
         JMenuItem compareItem = new JMenuItem("Data Comparator");
         compareItem.addActionListener(e -> openDataComparator());
-        
+
         JMenuItem jwtItem = new JMenuItem("JWT Decoder");
         jwtItem.addActionListener(e -> openJwtDecoder());
         JMenuItem dataToolsItem = new JMenuItem("Data Tools");
         dataToolsItem.addActionListener(e -> openDataTools());
         JMenuItem cookieJarItem = new JMenuItem("Cookie Jar Manager...");
         cookieJarItem.addActionListener(e -> openCookieJarManager());
-        
+
         toolsMenu.add(mockServerItem);
         toolsMenu.add(compareItem);
         toolsMenu.addSeparator();
@@ -363,6 +368,9 @@ public class MainFrame extends JFrame {
         JMenuItem featuresItem = new JMenuItem("Features");
         featuresItem.addActionListener(e -> openFeaturesPanel());
         helpMenu.add(featuresItem);
+        JMenuItem licenseItem = new JMenuItem("License & Copyright");
+        licenseItem.addActionListener(e -> openLicensePanel());
+        helpMenu.add(licenseItem);
         helpMenu.addSeparator();
         JMenuItem aboutItem = new JMenuItem("About Us");
         aboutItem.addActionListener(e -> openAboutUsPanel());
@@ -372,10 +380,10 @@ public class MainFrame extends JFrame {
         bar.add(viewMenu);
         bar.add(toolsMenu);
         bar.add(helpMenu);
-        
+
         bar.add(Box.createHorizontalGlue());
         bar.add(buildEnvSelector());
-        
+
         return bar;
     }
 
@@ -569,8 +577,11 @@ public class MainFrame extends JFrame {
             return;
         }
         if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
-            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete collection '" + col.getName() + "'?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
-            if (confirm != JOptionPane.YES_OPTION) return;
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to delete collection '" + col.getName() + "'?", "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION)
+                return;
         } else {
             showToast(this, "Deleted collection '" + col.getName() + "'");
         }
@@ -630,8 +641,11 @@ public class MainFrame extends JFrame {
 
     public void deleteRequest(RequestModel req) {
         if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
-            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete request '" + req.getName() + "'?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
-            if (confirm != JOptionPane.YES_OPTION) return;
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to delete request '" + req.getName() + "'?", "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION)
+                return;
         } else {
             showToast(this, "Deleted request '" + req.getName() + "'");
         }
@@ -654,10 +668,14 @@ public class MainFrame extends JFrame {
     }
 
     public void deleteMultiple(List<Object> items) {
-        if (items == null || items.isEmpty()) return;
+        if (items == null || items.isEmpty())
+            return;
         if (in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().isStricterEditing()) {
-            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + items.size() + " item(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
-            if (confirm != JOptionPane.YES_OPTION) return;
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to delete " + items.size() + " item(s)?", "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION)
+                return;
         } else {
             showToast(this, "Deleted " + items.size() + " item(s)");
         }
@@ -665,9 +683,11 @@ public class MainFrame extends JFrame {
         boolean changed = false;
         for (Object item : items) {
             if (item instanceof CollectionModel col) {
-                if (OTHERS_COLLECTION_ID.equals(col.getId())) continue;
+                if (OTHERS_COLLECTION_ID.equals(col.getId()))
+                    continue;
                 closeTabsForCollectionRecursive(col);
-                if (deleteCollectionRecursive(collections, col)) changed = true;
+                if (deleteCollectionRecursive(collections, col))
+                    changed = true;
             } else if (item instanceof RequestModel req) {
                 closeTabForRequest(req);
                 for (CollectionModel c : collections) {
@@ -943,12 +963,14 @@ public class MainFrame extends JFrame {
 
         pane.addHyperlinkListener(e -> {
             if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
-                if (e.getURL() != null) {
+                String desc = e.getDescription();
+                if ("paypal-contribute".equals(desc)) {
+                    showPayPalContributionDialog();
+                } else if (e.getURL() != null) {
                     try {
                         java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
                     } catch (Exception ex) {
                         try {
-                            String desc = e.getDescription();
                             if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
                                 java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
                             }
@@ -1259,7 +1281,7 @@ public class MainFrame extends JFrame {
         }
         JLabel titleLabel = new JLabel(displayTitle);
         titleLabel.setToolTipText(title);
-        
+
         if ("☁".equals(title) || "🌐".equals(title) || "⚙".equals(title)) {
             titleLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, currentFontSize + 2));
             if ("☁".equals(title)) {
@@ -1683,7 +1705,9 @@ public class MainFrame extends JFrame {
                     collections.add(col);
                     int totalRequests = countRequestsRecursive(col);
                     importedCollections.add(col.getName() + " (" + totalRequests + " requests)");
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_COLLECTION", "User", "Format: Postman, Status: Success, Collection: [" + col.getName() + " / " + col.getId() + "], Requests: " + totalRequests + ", Imported From: " + file.getAbsolutePath());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_COLLECTION", "User",
+                            "Format: Postman, Status: Success, Collection: [" + col.getName() + " / " + col.getId()
+                                    + "], Requests: " + totalRequests + ", Imported From: " + file.getAbsolutePath());
                 } else if (root.has("environments") && root.get("environments").isJsonArray()) {
                     // Postman Data Export containing multiple environments
                     for (com.google.gson.JsonElement envEl : root.getAsJsonArray("environments")) {
@@ -1705,9 +1729,11 @@ public class MainFrame extends JFrame {
                         env.setVariables(vars);
                         environments.add(env);
                         importedEnvironments.add(env.getName());
-                        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: Postman, Status: Success, Environment: [" + env.getName() + " / " + env.getId() + "], Imported From: " + file.getAbsolutePath());
+                        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT",
+                                "User", "Format: Postman, Status: Success, Environment: [" + env.getName() + " / "
+                                        + env.getId() + "], Imported From: " + file.getAbsolutePath());
                     }
-                    
+
                     // Also import global variables as a separate environment if they exist
                     if (root.has("values") && root.get("values").isJsonArray()) {
                         EnvironmentModel globals = new EnvironmentModel();
@@ -1725,7 +1751,10 @@ public class MainFrame extends JFrame {
                             globals.setVariables(globalVars);
                             environments.add(globals);
                             importedEnvironments.add(globals.getName());
-                            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: Postman Globals, Status: Success, Environment: [" + globals.getName() + " / " + globals.getId() + "], Imported From: " + file.getAbsolutePath());
+                            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT",
+                                    "User",
+                                    "Format: Postman Globals, Status: Success, Environment: [" + globals.getName()
+                                            + " / " + globals.getId() + "], Imported From: " + file.getAbsolutePath());
                         }
                     }
                 } else if (root.has("values")) {
@@ -1748,14 +1777,20 @@ public class MainFrame extends JFrame {
                     env.setVariables(vars);
                     environments.add(env);
                     importedEnvironments.add(env.getName());
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: Postman, Status: Success, Environment: [" + env.getName() + " / " + env.getId() + "], Imported From: " + file.getAbsolutePath());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User",
+                            "Format: Postman, Status: Success, Environment: [" + env.getName() + " / " + env.getId()
+                                    + "], Imported From: " + file.getAbsolutePath());
                 } else {
                     failedFiles.add(file.getName() + " (unrecognized Postman format)");
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: Postman, Status: Failed (unrecognized format), Imported From: " + file.getAbsolutePath());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User",
+                            "Format: Postman, Status: Failed (unrecognized format), Imported From: "
+                                    + file.getAbsolutePath());
                 }
             } catch (Exception e) {
                 failedFiles.add(file.getName() + " (" + e.getMessage() + ")");
-                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: Postman, Status: Error (" + e.getMessage() + "), Imported From: " + file.getAbsolutePath());
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User",
+                        "Format: Postman, Status: Error (" + e.getMessage() + "), Imported From: "
+                                + file.getAbsolutePath());
             }
         }
 
@@ -1827,20 +1862,28 @@ public class MainFrame extends JFrame {
                     col.setId(UUID.randomUUID().toString()); // new ID to avoid clash
                     collections.add(col);
                     importedCollections.add(col.getName());
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_COLLECTION", "User", "Format: ApiBanker, Status: Success, Collection: [" + col.getName() + " / " + col.getId() + "], Imported From: " + file.getAbsolutePath());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_COLLECTION", "User",
+                            "Format: ApiBanker, Status: Success, Collection: [" + col.getName() + " / " + col.getId()
+                                    + "], Imported From: " + file.getAbsolutePath());
                 } else if (root.has("variables")) {
                     EnvironmentModel env = gson.fromJson(root, EnvironmentModel.class);
                     env.setId(UUID.randomUUID().toString());
                     environments.add(env);
                     importedEnvironments.add(env.getName());
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User", "Format: ApiBanker, Status: Success, Environment: [" + env.getName() + " / " + env.getId() + "], Imported From: " + file.getAbsolutePath());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_ENVIRONMENT", "User",
+                            "Format: ApiBanker, Status: Success, Environment: [" + env.getName() + " / " + env.getId()
+                                    + "], Imported From: " + file.getAbsolutePath());
                 } else {
                     failedFiles.add(file.getName() + " (Unknown format)");
-                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: ApiBanker, Status: Failed (Unknown format), Imported From: " + file.getAbsolutePath());
+                    in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User",
+                            "Format: ApiBanker, Status: Failed (Unknown format), Imported From: "
+                                    + file.getAbsolutePath());
                 }
             } catch (Exception e) {
                 failedFiles.add(file.getName() + " (" + e.getMessage() + ")");
-                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User", "Format: ApiBanker, Status: Error (" + e.getMessage() + "), Imported From: " + file.getAbsolutePath());
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("IMPORT_FAILED", "User",
+                        "Format: ApiBanker, Status: Error (" + e.getMessage() + "), Imported From: "
+                                + file.getAbsolutePath());
             }
         }
 
@@ -2102,7 +2145,9 @@ public class MainFrame extends JFrame {
 
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: Postman, Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: " + chooser.getSelectedFile().getAbsolutePath());
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User",
+                    "Format: Postman, Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: "
+                            + chooser.getSelectedFile().getAbsolutePath());
             showToast(this, "Collection exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -2260,7 +2305,9 @@ public class MainFrame extends JFrame {
                     new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new java.util.Date()));
             root.add("_metadata", metadata);
             java.nio.file.Files.writeString(chooser.getSelectedFile().toPath(), gson.toJson(root));
-            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: ApiBanker, Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: " + chooser.getSelectedFile().getAbsolutePath());
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User",
+                    "Format: ApiBanker, Source: [" + col.getName() + " / " + col.getId() + "] -> Exported to: "
+                            + chooser.getSelectedFile().getAbsolutePath());
             showToast(this, "ApiBanker Collection exported successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Export failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -2308,6 +2355,8 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
+    private static final String PAYPAL_CONTRIBUTE_URL = "https://paypal.me/ncrk";
+
     private void openAboutUsPanel() {
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             if ("About Us".equals(workspaceTabs.getTitleAt(i))) {
@@ -2328,12 +2377,14 @@ public class MainFrame extends JFrame {
 
         pane.addHyperlinkListener(e -> {
             if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
-                if (e.getURL() != null) {
+                String desc = e.getDescription();
+                if ("paypal-contribute".equals(desc)) {
+                    showPayPalContributionDialog();
+                } else if (e.getURL() != null) {
                     try {
                         java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
                     } catch (Exception ex) {
                         try {
-                            String desc = e.getDescription();
                             if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
                                 java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
                             }
@@ -2354,28 +2405,91 @@ public class MainFrame extends JFrame {
         workspaceTabs.setSelectedIndex(idx);
     }
 
+    /**
+     * Displays a confirmation dialog before redirecting the user to PayPal for
+     * a voluntary contribution. This ensures the user has explicitly opted in
+     * before being taken to an external payment page.
+     */
+    private void showPayPalContributionDialog() {
+        boolean dk = com.formdev.flatlaf.FlatLaf.isLafDark();
+        Color accentColor = UIManager.getColor("AccentColor");
+        if (accentColor == null)
+            accentColor = new Color(26, 115, 232);
+        String acHex = String.format("#%02x%02x%02x", accentColor.getRed(), accentColor.getGreen(),
+                accentColor.getBlue());
+        String bgHex = dk ? "#2b2b2b" : "#ffffff";
+        String fgHex = dk ? "#cccccc" : "#333333";
+        String mutedHex = dk ? "#999999" : "#666666";
+
+        String htmlMessage = "<html><body style='font-family: Segoe UI, Arial, sans-serif; width: 360px; padding: 5px;'>"
+                + "<div style='text-align: center; margin-bottom: 12px;'>"
+                + "<span style='font-size: 36px;'>💙</span>"
+                + "</div>"
+                + "<p style='font-size: 14px; font-weight: bold; color: " + acHex
+                + "; text-align: center; margin: 0 0 8px 0;'>"
+                + "Support ApiBanker Development</p>"
+                + "<p style='font-size: 12px; color: " + fgHex
+                + "; text-align: center; line-height: 1.6; margin: 0 0 12px 0;'>"
+                + "ApiBanker is <b>free to use</b> software. "
+                + "Your voluntary contribution helps fund ongoing development, bug fixes, and new features.</p>"
+                + "<p style='font-size: 12px; color: " + mutedHex
+                + "; text-align: center; line-height: 1.5; margin: 0 0 8px 0;'>"
+                + "You will be redirected to <b>PayPal</b> in your default browser to complete the contribution.<br>"
+                + "No amount is required — any support is appreciated!</p>"
+                + "<hr style='border: none; border-top: 1px solid " + (dk ? "#444" : "#e0e0e0") + "; margin: 12px 0;'>"
+                + "<p style='font-size: 11px; color: " + mutedHex + "; text-align: center; margin: 0;'>"
+                + "© 2024–2026 NCRK</p>"
+                + "</body></html>";
+
+        JLabel messageLabel = new JLabel(htmlMessage);
+
+        Object[] options = { "Open PayPal", "Cancel" };
+        int result = JOptionPane.showOptionDialog(
+                this,
+                messageLabel,
+                "Contribute via PayPal",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        if (result == JOptionPane.YES_OPTION) {
+            try {
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(PAYPAL_CONTRIBUTE_URL));
+                in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction(
+                        "PAYPAL_CONTRIBUTE", "User", "User opened PayPal contribution page.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Could not open PayPal in your default browser.\n"
+                                + "Please visit: " + PAYPAL_CONTRIBUTE_URL,
+                        "Browser Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private String loadAboutUsMarkdown() {
-        try (java.io.InputStream is = getClass().getResourceAsStream("/doc/AboutUs.md")) {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/docs/AboutUs.md")) {
             if (is != null) {
                 return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
         try {
-            java.io.File f = new java.io.File("doc/AboutUs.md");
+            java.io.File f = new java.io.File("docs/AboutUs.md");
             if (f.exists()) {
                 return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
         try {
-            java.io.File f = new java.io.File("../doc/AboutUs.md");
+            java.io.File f = new java.io.File("../docs/AboutUs.md");
             if (f.exists()) {
                 return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
-        return "# About ApiBanker\n\nAbout Us document could not be loaded from doc/AboutUs.md.";
+        return "# About ApiBanker\n\nAbout Us document could not be loaded from docs/AboutUs.md.";
     }
 
     private String renderAboutUsHtml(String markdown) {
@@ -2394,23 +2508,27 @@ public class MainFrame extends JFrame {
 
         org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().build();
         org.commonmark.node.Node document = parser.parse(markdown);
-        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder().build();
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder()
+                .build();
         String bodyHtml = renderer.render(document);
 
         if (dk) {
             bodyHtml = bodyHtml.replace("background-color: #ffffff;", "background-color: " + cardBg + ";")
-                               .replace("border: 1px solid #e2e8f0;", "border: 1px solid " + cardBdr + ";")
-                               .replace("color: #4a5568;", "color: " + cardFg + ";");
+                    .replace("border: 1px solid #e2e8f0;", "border: 1px solid " + cardBdr + ";")
+                    .replace("color: #4a5568;", "color: " + cardFg + ";");
         }
 
         StringBuilder css = new StringBuilder();
         css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
-           .append("; background-color: ").append(bg).append("; padding: 20px 30px; line-height: 1.6; }\n");
-        css.append("h1 { color: ").append(a).append("; font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 4px; }\n");
-        css.append("h3 { color: ").append(a).append("; font-size: 15px; margin-top: 0; margin-bottom: 8px; font-weight: bold; }\n");
+                .append("; background-color: ").append(bg).append("; padding: 20px 30px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a)
+                .append("; font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 4px; }\n");
+        css.append("h3 { color: ").append(a)
+                .append("; font-size: 15px; margin-top: 0; margin-bottom: 8px; font-weight: bold; }\n");
         css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
         css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
-        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(cardBdr).append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(cardBdr)
+                .append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
 
         return "<html><head><style>" + css.toString() + "</style></head><body>" + bodyHtml + "</body></html>";
     }
@@ -2419,6 +2537,137 @@ public class MainFrame extends JFrame {
      * Opens a Features panel that renders README.md with Markdown-to-HTML
      * conversion.
      */
+    /**
+     * Opens the License & Copyright panel that renders LICENSE.md with
+     * Markdown-to-HTML conversion, similar to the User Guide and Features panels.
+     */
+    private void openLicensePanel() {
+        for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
+            if ("License & Copyright".equals(workspaceTabs.getTitleAt(i))) {
+                workspaceTabs.setSelectedIndex(i);
+                return;
+            }
+        }
+
+        String markdown = loadLicenseMarkdown();
+        String html = renderLicenseHtml(markdown);
+
+        javax.swing.JEditorPane pane = new javax.swing.JEditorPane();
+        pane.setContentType("text/html");
+        pane.setEditable(false);
+        pane.setBackground(javax.swing.UIManager.getColor("Panel.background"));
+        pane.setText(html);
+        pane.setCaretPosition(0);
+
+        pane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                String desc = e.getDescription();
+                if (desc != null && desc.startsWith("#")) {
+                    String ref = desc.substring(1);
+                    pane.scrollToReference(ref);
+                } else if (e.getURL() != null) {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(e.getURL().toURI());
+                    } catch (Exception ex) {
+                        try {
+                            if (desc != null && (desc.startsWith("http://") || desc.startsWith("https://"))) {
+                                java.awt.Desktop.getDesktop().browse(new java.net.URI(desc));
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+        });
+
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(pane);
+        scroll.setBorder(null);
+        javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
+        wrapper.add(scroll, java.awt.BorderLayout.CENTER);
+        int idx = workspaceTabs.getTabCount();
+        workspaceTabs.addTab("License & Copyright", wrapper);
+        workspaceTabs.setTabComponentAt(idx, buildTabHeader("License & Copyright", idx, wrapper));
+        workspaceTabs.setSelectedIndex(idx);
+    }
+
+    private String loadLicenseMarkdown() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/docs/LICENSE.md")) {
+            if (is != null) {
+                return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("docs/LICENSE.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            java.io.File f = new java.io.File("../docs/LICENSE.md");
+            if (f.exists()) {
+                return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        return "# License & Copyright\n\nLicense document could not be loaded from docs/LICENSE.md.";
+    }
+
+    private String renderLicenseHtml(String markdown) {
+        Color ac = javax.swing.UIManager.getColor("AccentColor");
+        if (ac == null)
+            ac = new java.awt.Color(26, 115, 232);
+        String a = String.format("#%02x%02x%02x", ac.getRed(), ac.getGreen(), ac.getBlue());
+        boolean dk = com.formdev.flatlaf.FlatLaf.isLafDark();
+        String bg = dk ? "#1e1e1e" : "#ffffff";
+        String fg = dk ? "#cccccc" : "#333333";
+        String card = dk ? "#2b2b2b" : "#f8f9fa";
+        String bdr = dk ? "#3a3a3a" : "#e0e0e0";
+        String cbg = dk ? "#1a1a1a" : "#f0f4f8";
+        String linkColor = dk ? "#66b2ff" : "#0066cc";
+        String cardBg = dk ? "#2b2b2b" : "#ffffff";
+        String cardBdr = dk ? "#3a3a3a" : "#e2e8f0";
+        String cardFg = dk ? "#bbbbbb" : "#4a5568";
+
+        org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().build();
+        org.commonmark.node.Node document = parser.parse(markdown);
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder()
+                .build();
+        String bodyHtml = renderer.render(document);
+
+        if (dk) {
+            bodyHtml = bodyHtml.replace("background-color: #ffffff;", "background-color: " + cardBg + ";")
+                    .replace("border: 1px solid #e2e8f0;", "border: 1px solid " + cardBdr + ";")
+                    .replace("color: #4a5568;", "color: " + cardFg + ";");
+        }
+
+        StringBuilder css = new StringBuilder();
+        css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
+                .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a)
+                .append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
+        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr)
+                .append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
+        css.append("h3 { color: ").append(a).append("; font-size: 14px; margin-top: 18px; margin-bottom: 6px; }\n");
+        css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
+        css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr)
+                .append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append(
+                "; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
+        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a)
+                .append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
+        css.append("table { border-collapse: collapse; width: 100%; margin: 12px 0; }\n");
+        css.append("th { background-color: ").append(cbg).append("; color: ").append(a)
+                .append("; font-weight: bold; border: 1px solid ").append(bdr)
+                .append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
+        css.append("td { border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; }\n");
+        css.append("hr { border: none; border-top: 1px solid ").append(bdr).append("; margin: 25px 0; }\n");
+
+        return "<html><head><style>" + css.toString() + "</style></head><body>" + bodyHtml + "</body></html>";
+    }
+
     private void openFeaturesPanel() {
         for (int i = 0; i < workspaceTabs.getTabCount(); i++) {
             if ("Features".equals(workspaceTabs.getTitleAt(i))) {
@@ -2469,27 +2718,27 @@ public class MainFrame extends JFrame {
     }
 
     private String loadFeaturesMarkdown() {
-        try (java.io.InputStream is = getClass().getResourceAsStream("/doc/Features.md")) {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/docs/Features.md")) {
             if (is != null) {
                 return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
         try {
-            java.io.File f = new java.io.File("doc/Features.md");
+            java.io.File f = new java.io.File("docs/Features.md");
             if (f.exists()) {
                 return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
         try {
-            java.io.File f = new java.io.File("../doc/Features.md");
+            java.io.File f = new java.io.File("../docs/Features.md");
             if (f.exists()) {
                 return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
-        return "# ApiBanker Features\n\nFeatures document could not be loaded from doc/Features.md.";
+        return "# ApiBanker Features\n\nFeatures document could not be loaded from docs/Features.md.";
     }
 
     private String renderFeaturesHtml(String markdown) {
@@ -2505,25 +2754,34 @@ public class MainFrame extends JFrame {
         String cbg = dk ? "#1a1a1a" : "#f0f4f8";
         String linkColor = dk ? "#66b2ff" : "#0066cc";
 
-        java.util.List<org.commonmark.Extension> extensions = java.util.Arrays.asList(org.commonmark.ext.gfm.tables.TablesExtension.create());
+        java.util.List<org.commonmark.Extension> extensions = java.util.Arrays
+                .asList(org.commonmark.ext.gfm.tables.TablesExtension.create());
         org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().extensions(extensions).build();
         org.commonmark.node.Node document = parser.parse(markdown);
-        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder().extensions(extensions).build();
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder()
+                .extensions(extensions).build();
         String bodyHtml = renderer.render(document);
 
         StringBuilder css = new StringBuilder();
         css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
-           .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
-        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a).append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
-        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr).append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
+                .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a)
+                .append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
+        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr)
+                .append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
         css.append("h3 { color: ").append(a).append("; font-size: 14px; margin-top: 18px; margin-bottom: 6px; }\n");
         css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
         css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
-        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
-        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
-        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a).append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr)
+                .append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append(
+                "; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
+        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a)
+                .append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
         css.append("table { border-collapse: collapse; width: 100%; margin: 12px 0; }\n");
-        css.append("th { background-color: ").append(cbg).append("; color: ").append(a).append("; font-weight: bold; border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
+        css.append("th { background-color: ").append(cbg).append("; color: ").append(a)
+                .append("; font-weight: bold; border: 1px solid ").append(bdr)
+                .append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
         css.append("td { border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; }\n");
         css.append("hr { border: none; border-top: 1px solid ").append(bdr).append("; margin: 25px 0; }\n");
 
@@ -2540,7 +2798,8 @@ public class MainFrame extends JFrame {
                 workspaceTabs.setSelectedIndex(i);
                 Component comp = workspaceTabs.getComponentAt(i);
                 if (comp instanceof javax.swing.JPanel wrapper) {
-                    if (wrapper.getComponentCount() > 0 && wrapper.getComponent(0) instanceof javax.swing.JScrollPane scroll) {
+                    if (wrapper.getComponentCount() > 0
+                            && wrapper.getComponent(0) instanceof javax.swing.JScrollPane scroll) {
                         if (scroll.getViewport().getView() instanceof javax.swing.JEditorPane editor) {
                             targetPane = editor;
                         }
@@ -2586,13 +2845,14 @@ public class MainFrame extends JFrame {
             javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(targetPane);
             scroll.setBorder(null);
             javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
-            
+
             javax.swing.JPanel searchBar = buildDocSearchBar(targetPane);
             wrapper.add(searchBar, java.awt.BorderLayout.NORTH);
             wrapper.add(scroll, java.awt.BorderLayout.CENTER);
-            
+
             targetPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F, java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "openSearch");
+                    .put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F,
+                            java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "openSearch");
             targetPane.getActionMap().put("openSearch", new javax.swing.AbstractAction() {
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -2633,7 +2893,7 @@ public class MainFrame extends JFrame {
         JButton closeBtn = new JButton("X");
         closeBtn.setMargin(new java.awt.Insets(2, 5, 2, 5));
         closeBtn.setToolTipText("Close Search (Esc)");
-        
+
         JCheckBox exactCheck = new JCheckBox("Exact Match");
         JCheckBox fuzzyCheck = new JCheckBox("Fuzzy Search");
         JLabel countLabel = new JLabel("0/0");
@@ -2652,20 +2912,22 @@ public class MainFrame extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         rightPanel.setOpaque(false);
         rightPanel.add(closeBtn);
-        
+
         outerPanel.add(leftPanel, java.awt.BorderLayout.CENTER);
         outerPanel.add(rightPanel, java.awt.BorderLayout.EAST);
 
         List<int[]> matchRanges = new ArrayList<>();
-        int[] currentIndex = {-1};
-        
+        int[] currentIndex = { -1 };
+
         boolean isDark = com.formdev.flatlaf.FlatLaf.isLafDark();
         Color hlColor = isDark ? new Color(100, 100, 0, 150) : new Color(255, 255, 0, 150);
         Color currentHlColor = isDark ? new Color(150, 100, 0, 200) : new Color(255, 150, 0, 200);
 
-        javax.swing.text.Highlighter.HighlightPainter painter = new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(hlColor);
-        javax.swing.text.Highlighter.HighlightPainter currentPainter = new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(currentHlColor);
-        Object[] currentHighlightTag = {null};
+        javax.swing.text.Highlighter.HighlightPainter painter = new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(
+                hlColor);
+        javax.swing.text.Highlighter.HighlightPainter currentPainter = new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(
+                currentHlColor);
+        Object[] currentHighlightTag = { null };
 
         Runnable updateHighlight = () -> {
             try {
@@ -2675,14 +2937,16 @@ public class MainFrame extends JFrame {
                 }
                 if (currentIndex[0] >= 0 && currentIndex[0] < matchRanges.size()) {
                     int[] range = matchRanges.get(currentIndex[0]);
-                    currentHighlightTag[0] = editorPane.getHighlighter().addHighlight(range[0], range[1], currentPainter);
-                    
+                    currentHighlightTag[0] = editorPane.getHighlighter().addHighlight(range[0], range[1],
+                            currentPainter);
+
                     editorPane.setCaretPosition(range[0]);
                     countLabel.setText((currentIndex[0] + 1) + " / " + matchRanges.size());
                 } else {
                     countLabel.setText("0 / " + matchRanges.size());
                 }
-            } catch (Exception ex) {}
+            } catch (Exception ex) {
+            }
         };
 
         Runnable doSearch = () -> {
@@ -2717,8 +2981,8 @@ public class MainFrame extends JFrame {
                     java.util.regex.Pattern p = java.util.regex.Pattern.compile(regex.toString(), flags);
                     java.util.regex.Matcher m = p.matcher(text);
                     while (m.find()) {
-                        if (m.end() - m.start() <= q.length() * 3 + 15) { 
-                            matchRanges.add(new int[]{m.start(), m.end()});
+                        if (m.end() - m.start() <= q.length() * 3 + 15) {
+                            matchRanges.add(new int[] { m.start(), m.end() });
                             editorPane.getHighlighter().addHighlight(m.start(), m.end(), painter);
                         }
                     }
@@ -2727,7 +2991,7 @@ public class MainFrame extends JFrame {
                     String queryText = exact ? q : q.toLowerCase();
                     int idx = 0;
                     while ((idx = targetText.indexOf(queryText, idx)) >= 0) {
-                        matchRanges.add(new int[]{idx, idx + q.length()});
+                        matchRanges.add(new int[] { idx, idx + q.length() });
                         editorPane.getHighlighter().addHighlight(idx, idx + q.length(), painter);
                         idx += q.length();
                     }
@@ -2737,17 +3001,27 @@ public class MainFrame extends JFrame {
                     currentIndex[0] = 0;
                 }
                 updateHighlight.run();
-            } catch (Exception ex) {}
+            } catch (Exception ex) {
+            }
         };
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { doSearch.run(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { doSearch.run(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { doSearch.run(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                doSearch.run();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                doSearch.run();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                doSearch.run();
+            }
         });
-        
+
         searchField.addActionListener(e -> {
-            if (matchRanges.isEmpty()) return;
+            if (matchRanges.isEmpty())
+                return;
             currentIndex[0] = (currentIndex[0] + 1) % matchRanges.size();
             updateHighlight.run();
         });
@@ -2756,13 +3030,15 @@ public class MainFrame extends JFrame {
         fuzzyCheck.addActionListener(e -> doSearch.run());
 
         nextBtn.addActionListener(e -> {
-            if (matchRanges.isEmpty()) return;
+            if (matchRanges.isEmpty())
+                return;
             currentIndex[0] = (currentIndex[0] + 1) % matchRanges.size();
             updateHighlight.run();
         });
 
         prevBtn.addActionListener(e -> {
-            if (matchRanges.isEmpty()) return;
+            if (matchRanges.isEmpty())
+                return;
             currentIndex[0] = (currentIndex[0] - 1 + matchRanges.size()) % matchRanges.size();
             updateHighlight.run();
         });
@@ -2774,7 +3050,8 @@ public class MainFrame extends JFrame {
             editorPane.requestFocusInWindow();
         });
 
-        searchField.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "closeSearch");
+        searchField.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+                "closeSearch");
         searchField.getActionMap().put("closeSearch", new javax.swing.AbstractAction() {
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 closeBtn.doClick();
@@ -2796,27 +3073,27 @@ public class MainFrame extends JFrame {
     }
 
     private String loadUserGuideMarkdown() {
-        try (java.io.InputStream is = getClass().getResourceAsStream("/doc/UserGuide.md")) {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/docs/UserGuide.md")) {
             if (is != null) {
                 return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
         try {
-            java.io.File f = new java.io.File("doc/UserGuide.md");
+            java.io.File f = new java.io.File("docs/UserGuide.md");
             if (f.exists()) {
                 return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
         try {
-            java.io.File f = new java.io.File("../doc/UserGuide.md");
+            java.io.File f = new java.io.File("../docs/UserGuide.md");
             if (f.exists()) {
                 return java.nio.file.Files.readString(f.toPath(), java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception ignored) {
         }
-        return "# ApiBanker User Guide\n\nUser guide document could not be loaded from doc/UserGuide.md.";
+        return "# ApiBanker User Guide\n\nUser guide document could not be loaded from docs/UserGuide.md.";
     }
 
     private String renderUserGuideHtml(String markdown) {
@@ -2832,25 +3109,34 @@ public class MainFrame extends JFrame {
         String cbg = dk ? "#1a1a1a" : "#f0f4f8";
         String linkColor = dk ? "#66b2ff" : "#0066cc";
 
-        java.util.List<org.commonmark.Extension> extensions = java.util.Arrays.asList(org.commonmark.ext.gfm.tables.TablesExtension.create());
+        java.util.List<org.commonmark.Extension> extensions = java.util.Arrays
+                .asList(org.commonmark.ext.gfm.tables.TablesExtension.create());
         org.commonmark.parser.Parser parser = org.commonmark.parser.Parser.builder().extensions(extensions).build();
         org.commonmark.node.Node document = parser.parse(markdown);
-        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder().extensions(extensions).build();
+        org.commonmark.renderer.html.HtmlRenderer renderer = org.commonmark.renderer.html.HtmlRenderer.builder()
+                .extensions(extensions).build();
         String bodyHtml = renderer.render(document);
 
         StringBuilder css = new StringBuilder();
         css.append("body { font-family: 'Segoe UI', Arial, sans-serif; color: ").append(fg)
-           .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
-        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a).append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
-        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr).append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
+                .append("; background-color: ").append(bg).append("; padding: 25px 35px; line-height: 1.6; }\n");
+        css.append("h1 { color: ").append(a).append("; font-size: 26px; border-bottom: 2px solid ").append(a)
+                .append("; padding-bottom: 8px; margin-bottom: 20px; }\n");
+        css.append("h2 { color: ").append(a).append("; font-size: 18px; border-bottom: 1px solid ").append(bdr)
+                .append("; padding-bottom: 6px; margin-top: 30px; margin-bottom: 12px; }\n");
         css.append("h3 { color: ").append(a).append("; font-size: 14px; margin-top: 18px; margin-bottom: 6px; }\n");
         css.append("p, li { font-size: 13px; line-height: 1.6; }\n");
         css.append("a { color: ").append(linkColor).append("; text-decoration: underline; font-weight: bold; }\n");
-        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
-        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append("; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
-        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a).append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
+        css.append("code { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr)
+                .append("; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }\n");
+        css.append("pre { background-color: ").append(cbg).append("; border: 1px solid ").append(bdr).append(
+                "; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 12px; margin: 10px 0; }\n");
+        css.append("blockquote { background-color: ").append(card).append("; border-left: 4px solid ").append(a)
+                .append("; padding: 10px 16px; margin: 12px 0; font-size: 13px; }\n");
         css.append("table { border-collapse: collapse; width: 100%; margin: 12px 0; }\n");
-        css.append("th { background-color: ").append(cbg).append("; color: ").append(a).append("; font-weight: bold; border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
+        css.append("th { background-color: ").append(cbg).append("; color: ").append(a)
+                .append("; font-weight: bold; border: 1px solid ").append(bdr)
+                .append("; padding: 8px 12px; font-size: 13px; text-align: left; }\n");
         css.append("td { border: 1px solid ").append(bdr).append("; padding: 8px 12px; font-size: 13px; }\n");
         css.append("hr { border: none; border-top: 1px solid ").append(bdr).append("; margin: 25px 0; }\n");
 
@@ -2922,7 +3208,7 @@ public class MainFrame extends JFrame {
         }
     }
 
-    private void zoom(int increment) {
+    public void zoom(int increment) {
         currentFontSize += increment;
         if (currentFontSize < 10)
             currentFontSize = 10;
@@ -2990,13 +3276,16 @@ public class MainFrame extends JFrame {
             int width = Math.max(140, size * 9);
             envCombo.setPreferredSize(new Dimension(width, height));
             envCombo.setMaximumSize(new Dimension(width, height));
-            
+
             if (envSelectorPanel != null) {
                 envSelectorPanel.revalidate();
                 envSelectorPanel.repaint();
             }
         }
         FontScaleHelper.scaleFonts(this, size);
+        if (ConsoleDialog.getInstance() != null) {
+            ConsoleDialog.getInstance().updateFontSize(size);
+        }
         revalidate();
         repaint();
     }
@@ -3097,6 +3386,8 @@ public class MainFrame extends JFrame {
                 String title = workspaceTabs.getTitleAt(i);
                 if ("Welcome".equals(title)) {
                     type = "welcome";
+                } else if ("License & Copyright".equals(title)) {
+                    type = "license";
                 }
             }
 
@@ -3118,7 +3409,8 @@ public class MainFrame extends JFrame {
             storage.getSettings().setWindowY(getY());
         }
         storage.saveSettings();
-        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_CLOSE", "System", "ApiBanker Version " + App.getVersion() + " closed.");
+        in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("APP_CLOSE", "System",
+                "ApiBanker Version " + App.getVersion() + " closed.");
         System.exit(0);
     }
 
@@ -3199,6 +3491,8 @@ public class MainFrame extends JFrame {
             openEnvManager();
         } else if ("globalvars".equals(ts.getType())) {
             openGlobalVariables();
+        } else if ("license".equals(ts.getType())) {
+            openLicensePanel();
         }
     }
 
@@ -3348,7 +3642,8 @@ public class MainFrame extends JFrame {
 
     private boolean deleteCollectionRecursive(List<CollectionModel> list, CollectionModel target) {
         if (list.remove(target)) {
-            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("DELETE_COLLECTION", "User", "Deleted: [" + target.getName() + " / " + target.getId() + "]");
+            in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("DELETE_COLLECTION", "User",
+                    "Deleted: [" + target.getName() + " / " + target.getId() + "]");
             return true;
         }
         for (CollectionModel col : list) {

@@ -7,7 +7,7 @@
         <format>tar.gz</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>apibanker</baseDirectory>
+    <baseDirectory>apibanker-${project.version}</baseDirectory>
     <files>
         <file>
             <source>target/apibanker-${project.version}.jar</source>

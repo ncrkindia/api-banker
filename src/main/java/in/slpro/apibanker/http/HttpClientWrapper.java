@@ -203,14 +203,19 @@ public class HttpClientWrapper {
         // (Postman behavior — logs error but doesn't block request)
 
         try {
-            // 1. Resolve URL variables (after pre-request script may have modified env)
-            resolvedUrl = resolveVariables(requestModel.getUrl(), requestModel, environment);
+            // 1. Resolve Base URL variables (strip query string to avoid duplicates as they are rebuilt below)
+            String rawUrl = requestModel.getUrl() != null ? requestModel.getUrl() : "";
+            int qIdx = rawUrl.indexOf('?');
+            if (qIdx >= 0) {
+                rawUrl = rawUrl.substring(0, qIdx);
+            }
+            resolvedUrl = resolveVariables(rawUrl, requestModel, environment);
 
             // 2. Build URL with query params
             StringBuilder urlBuilder = new StringBuilder(resolvedUrl);
             List<KeyValueItem> params = requestModel.getParams();
             if (params != null && !params.isEmpty()) {
-                boolean first = urlBuilder.indexOf("?") < 0;
+                boolean first = true;
                 for (KeyValueItem param : params) {
                     if (!param.isEnabled() || param.getKey() == null || param.getKey().isBlank())
                         continue;
@@ -584,7 +589,7 @@ public class HttpClientWrapper {
 
         } catch (Exception e) {
             long executionTimeMs = System.currentTimeMillis() - startTime;
-            String errorMsg = getErrorMessage(e);
+            String errorMsg = getErrorMessage(e, resolvedUrl);
             if (!silentMode && ConsoleLogger.getInstance().isEnableLogging()) {
                 ConsoleLogger.getInstance().logRequest(requestModel.getMethod(), resolvedUrl, 0, executionTimeMs,
                         Map.of(), resolvedBodyStr, Map.of(), errorMsg);
@@ -633,16 +638,37 @@ public class HttpClientWrapper {
      * @param e The exception thrown during network execution.
      * @return A clear, descriptive error string (e.g. "Connection refused: ...").
      */
-    private String getErrorMessage(Exception e) {
-        if (e instanceof java.net.ConnectException)
-            return "Connection refused: " + e.getMessage();
-        if (e instanceof java.net.UnknownHostException)
-            return "Unknown host: " + e.getMessage();
-        if (e instanceof java.net.SocketTimeoutException)
-            return "Connection timed out: " + e.getMessage();
-        if (e instanceof javax.net.ssl.SSLException)
-            return "SSL/TLS error: " + e.getMessage();
-        return e.getClass().getSimpleName() + ": " + e.getMessage();
+    private String getErrorMessage(Exception e, String resolvedUrl) {
+        Throwable cause = e;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        String msg = cause.getMessage() != null ? cause.getMessage() : e.getMessage();
+        if (msg == null) msg = "";
+
+        if (msg.contains("{{") && msg.contains("}}")) {
+            return "Unresolved Variable Error: The request failed due to an undefined variable (" + msg + "). Please ensure it is defined and enabled in your Environment, Collection, or Global variables.";
+        }
+
+        if (cause instanceof java.net.ConnectException)
+            return "Connection Refused: Ensure the server is running, the port is correct, and there are no firewall issues. (" + msg + ")";
+        if (cause instanceof java.net.UnknownHostException)
+            return "Unknown Host: Could not resolve the server address. Check your internet connection, VPN, or DNS settings. (" + msg + ")";
+        if (cause instanceof java.net.SocketTimeoutException || cause.getClass().getSimpleName().contains("HttpTimeoutException"))
+            return "Connection Timed Out: The server took too long to respond. You can increase the timeout in the Request Settings tab. (" + msg + ")";
+        if (cause instanceof javax.net.ssl.SSLHandshakeException || cause instanceof javax.net.ssl.SSLPeerUnverifiedException || cause instanceof javax.net.ssl.SSLException) {
+            if (msg.contains("No name matching") || msg.contains("Certificate for") || msg.contains("does not match")) {
+                return "SSL Certificate Error: The domain name does not match the certificate. You can disable SSL Verification in the Request Settings tab to bypass this.";
+            } else if (msg.contains("unable to find valid certification path") || msg.contains("PKIX path building failed") || msg.contains("SunCertPathBuilderException")) {
+                return "SSL Certificate Error: Untrusted or self-signed certificate detected. You can disable SSL Verification in the Request Settings tab to bypass this.";
+            }
+            return "SSL/TLS Security Error: " + msg + ". You can disable SSL Verification in the Request Settings tab to bypass this.";
+        }
+        if (cause instanceof IllegalArgumentException && msg.contains("URI")) {
+             return "Invalid URL: Please check the URL format and ensure it includes the protocol (e.g., http:// or https://). (" + msg + ")";
+        }
+        
+        return cause.getClass().getSimpleName() + ": " + msg;
     }
 
     /**

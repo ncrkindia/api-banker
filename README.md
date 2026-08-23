@@ -141,7 +141,7 @@ apibanker/
 ├── build.bat                      # Windows build script (all profiles)
 ├── build.sh                       # Linux/macOS build script (all profiles)
 ├── pom.xml                        # Project dependencies (Gson, FlatLaf, RSyntaxTextArea)
-├── doc/                           # Comprehensive documentation (UserGuide.md, Features.md, AboutUs.md, release_plan.md, init.md, PROJECT_STATUS.md)
+├── docs/                          # Comprehensive documentation (UserGuide.md, Features.md, AboutUs.md, release_plan.md, init.md, PROJECT_STATUS.md)
 ├── scripts/
 │   ├── apibanker.bat              # Windows launcher script (bundled in ZIP)
 │   ├── apibanker.sh               # Linux/macOS launcher script (bundled in ZIP)

@@ -82,6 +82,22 @@
   </table>
 </div>
 
+<div style="margin: 10px 12px 25px 12px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+  <h3 style="margin-top: 0; margin-bottom: 12px; color: #1a73e8; font-size: 15px; font-weight: 700;">💙 Support ApiBanker</h3>
+  <p style="margin: 0 0 12px 0; font-size: 12.5px; line-height: 1.6; color: #4a5568;">
+    ApiBanker is <b>free and open source</b>. If this tool has been valuable to your workflow,
+    consider supporting its continued development with a voluntary contribution.
+    Your support helps fund ongoing feature development, bug fixes, and documentation.
+  </p>
+  <p style="margin: 0; text-align: center;">
+    <a href="paypal-contribute" style="display: inline-block; background-color: #0070BA; color: #ffffff; padding: 10px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; letter-spacing: 0.3px;">💳 Contribute via PayPal</a>
+  </p>
+  <p style="margin: 8px 0 0 0; text-align: center; font-size: 11px; color: #999;">
+    Licensed under the ApiBanker Proprietary License &mdash; Free to use for personal and commercial purposes.
+  </p>
+</div>
+
 <div style="text-align: center; margin-top: 30px; font-size: 11.5px; color: #888;">
-  &copy; 2026 ApiBanker by SL PRO. All Rights Reserved.
+  &copy; 2024&ndash;2026 NCRK. All Rights Reserved.<br>
+  <a href="https://github.com/ncrkindia/api-banker" style="color: #1a73e8; text-decoration: none;">GitHub</a> &middot; Free to Use &middot; Modification &amp; Redistribution Prohibited
 </div>

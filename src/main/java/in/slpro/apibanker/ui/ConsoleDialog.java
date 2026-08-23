@@ -42,6 +42,10 @@ import java.util.Map;
 public class ConsoleDialog extends JFrame implements ConsoleLogger.LogListener {
     private static ConsoleDialog instance = null;
 
+    public static ConsoleDialog getInstance() {
+        return instance;
+    }
+
     public static synchronized void showConsole(JFrame owner) {
         if (instance != null && instance.isDisplayable()) {
             if (instance.getState() == Frame.ICONIFIED) {
@@ -63,10 +67,10 @@ public class ConsoleDialog extends JFrame implements ConsoleLogger.LogListener {
 
     // --- Dynamic Styles & Theme Colors ---
     private final boolean isDark;
-    private final int fontSize;
-    private final Font uiFont;
-    private final Font uiFontBold;
-    private final Font monoFont;
+    private int fontSize;
+    private Font uiFont;
+    private Font uiFontBold;
+    private Font monoFont;
 
     private final Color colorBackground;
     private final Color colorText;
@@ -292,6 +296,51 @@ public class ConsoleDialog extends JFrame implements ConsoleLogger.LogListener {
 
         ConsoleLogger.getInstance().addListener(this);
         filterLogs();
+
+        // Setup Zoom KeyBindings
+        JRootPane root = getRootPane();
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_EQUALS, java.awt.event.InputEvent.CTRL_DOWN_MASK), "zoomIn");
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ADD, java.awt.event.InputEvent.CTRL_DOWN_MASK), "zoomIn");
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_MINUS, java.awt.event.InputEvent.CTRL_DOWN_MASK), "zoomOut");
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_SUBTRACT, java.awt.event.InputEvent.CTRL_DOWN_MASK), "zoomOut");
+
+        root.getActionMap().put("zoomIn", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (getOwner() instanceof MainFrame mf) {
+                    mf.zoom(1);
+                } else {
+                    int newSize = Math.min(24, fontSize + 1);
+                    updateFontSize(newSize);
+                }
+            }
+        });
+        root.getActionMap().put("zoomOut", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (getOwner() instanceof MainFrame mf) {
+                    mf.zoom(-1);
+                } else {
+                    int newSize = Math.max(10, fontSize - 1);
+                    updateFontSize(newSize);
+                }
+            }
+        });
+    }
+
+    public void updateFontSize(int size) {
+        if (this.fontSize == size) return;
+        this.fontSize = size;
+        this.uiFont = new Font("Segoe UI", Font.PLAIN, fontSize - 2);
+        this.uiFontBold = new Font("Segoe UI", Font.BOLD, fontSize - 2);
+        this.monoFont = new Font("JetBrains Mono", Font.PLAIN, fontSize - 2);
+
+        in.slpro.apibanker.ui.FontScaleHelper.scaleFonts(this, size);
+        filterLogs(); // This clears and rebuilds the log panels with the new fonts
     }
 
     private void saveLayout() {

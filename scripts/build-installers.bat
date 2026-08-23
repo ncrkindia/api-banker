@@ -88,11 +88,11 @@ jpackage --type msi ^
     --name ApiBanker ^
     --app-version %APP_VERSION_MSI% ^
     --description "ApiBanker - Offline-First API Toolkit" ^
-    --vendor "SL Pro" ^
+    --vendor "NCRK" ^
     --win-shortcut ^
     --win-shortcut-prompt ^
     --win-menu ^
-    --win-menu-group "SL Pro" ^
+    --win-menu-group "NCRK" ^
     --win-dir-chooser ^
     --win-upgrade-uuid 7e6c3b2a-4f1d-4a8e-9c5b-2d1e3f4a5b6c
 if %errorlevel% neq 0 ( echo [ERROR] .msi creation failed. Ensure WiX Toolset v3 is installed and in PATH. & exit /b 1 )

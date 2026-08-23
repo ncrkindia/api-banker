@@ -311,6 +311,7 @@ ApiBanker includes an advanced, multi-layered logging system designed for full o
 - **Independent Top-Level Window**: Open via **Tools → Live Console**. Operates as an independent window that can be minimized, maximized, and placed on separate displays.
 - **Single-Instance Focus**: Only one Console window exists at a time. Re-opening brings the active console window to focus.
 - **Live Level Filtering**: Filter log entries by level (`INFO`, `WARN`, `ERROR`, `DEBUG`) or search string.
+- **Dynamic Zoom Sync**: The console bidirectionally synchronizes its zoom level (using `Ctrl+`, `Ctrl-`) with the main workspace.
 - **Timestamped Downloads**: Export filtered logs to file with automated timestamp naming: `apibanker-live-log-yyyy-MM-dd-HH-mm-ss.log`.
 
 ### 9.2 Daily Action Audit Logs

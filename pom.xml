@@ -103,9 +103,9 @@
                 <directory>.</directory>
                 <includes>
                     <include>README.md</include>
-                    <include>doc/UserGuide.md</include>
-                    <include>doc/Features.md</include>
-                    <include>doc/AboutUs.md</include>
+                    <include>docs/UserGuide.md</include>
+                    <include>docs/Features.md</include>
+                    <include>docs/AboutUs.md</include>
                 </includes>
             </resource>
         </resources>
