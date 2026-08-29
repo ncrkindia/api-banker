@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ApiBanker User Guide. Detailed, comprehensive documentation covering every aspect of the API client.">
+    <title>User Guide | ApiBanker</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://apibanker.com/guide.html">
+    <meta property="og:title" content="User Guide | ApiBanker">
+    <meta property="og:description" content="ApiBanker User Guide. Detailed, comprehensive documentation covering every aspect of the API client.">
+    <meta property="og:image" content="https://apibanker.com/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://apibanker.com/guide.html">
+    <meta property="twitter:title" content="User Guide | ApiBanker">
+    <meta property="twitter:description" content="ApiBanker User Guide. Detailed, comprehensive documentation covering every aspect of the API client.">
+    <meta property="twitter:image" content="https://apibanker.com/og-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+    <header>
+        <div class="container nav-container">
+            <div class="logo">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+            <button class="mobile-menu-toggle" aria-label="Toggle Navigation">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <nav class="main-nav">
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="solutions.html">Solutions</a></li>
+                    <li><a href="guide.html">Guide</a></li>
+                    <li><a href="download.html" class="btn btn-primary" style="color: white; padding: 0.5rem 1rem;">Download</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container page-header text-left">
+        <h1 class="text-center animate-on-scroll">Comprehensive <span class="text-gradient">User Guide</span></h1>
+        
+        <div class="guide-layout mt-8">
+            <aside class="guide-nav glass-panel animate-on-scroll">
+                <h4 class="mb-4">Navigation</h4>
+                <ul>
+                    <li><a href="#intro" class="active">Introduction</a></li>
+                    <li><a href="#workspace">Workspace Setup</a></li>
+                    <li><a href="#env-manager">Environment Manager</a></li>
+                    <li><a href="#variables">Global Variables</a></li>
+                    <li><a href="#requests">Managing Requests</a></li>
+                    <li><a href="#auth">Authentication</a></li>
+                    <li><a href="#scripting">Scripting & Tests</a></li>
+                    <li><a href="#ssl">SSL Validation</a></li>
+                    <li><a href="#import">OpenAPI Imports</a></li>
+                    <li><a href="#stricter">Stricter Editing</a></li>
+                </ul>
+            </aside>
+            
+            <div class="content-block" style="margin: 0; max-width: 100%;">
+                <section id="intro" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2 style="margin-top: 0;">Introduction</h2>
+                    <p>Welcome to the comprehensive ApiBanker User Guide. This manual is designed to take you from a beginner to an advanced power user. ApiBanker is built natively on GraalVM to ensure millisecond startup times while offering robust safety paradigms for critical workflows.</p>
+                </section>
+
+                <section id="workspace" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Workspace Setup</h2>
+                    <p>When you launch ApiBanker, you are greeted with the animated splash screen and then dropped into your default Workspace.</p>
+                    <ul>
+                        <li><strong>Creating Collections:</strong> Group related API requests into Collections for better organization. Right-click the sidebar to create a new Collection.</li>
+                        <li><strong>Workspace Portability:</strong> Workspaces are saved as local JSON files, making them easily version-controlled via Git.</li>
+                    </ul>
+                </section>
+
+                <section id="env-manager" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Environment Manager</h2>
+                    <p>The Environment Manager acts as the central hub for defining environment-specific data like Base URLs, API keys, and staging endpoints. This avoids hardcoding sensitive or fluid values in your requests.</p>
+                    <ul>
+                        <li><strong>Switching Contexts:</strong> Use the dropdown in the top navigation bar to seamlessly switch between Development, Staging, and Production environments.</li>
+                        <li><strong>Scope Hierarchy:</strong> Environment variables take precedence over Collection variables, which in turn override Global variables.</li>
+                    </ul>
+                </section>
+
+                <section id="variables" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Global & Local Variables</h2>
+                    <p>Variables allow for dynamic data injection during request execution.</p>
+                    <p>Define variables using the mustache syntax: <code>{{variable_name}}</code> within your URLs, headers, or body data.</p>
+                    <h3>Recursive Resolution</h3>
+                    <p>ApiBanker features deep recursive variable resolution. If a Collection variable resolves to an Environment variable, the UI and the centralized script engine will evaluate it completely. Hover over any variable in the UI to see its deeply resolved value via a tooltip.</p>
+                </section>
+
+                <section id="requests" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Managing Requests</h2>
+                    <p>Configuring requests is fluid thanks to the auto-managing table model.</p>
+                    <ul>
+                        <li><strong>Params & Headers:</strong> The UI automatically appends empty rows dynamically as you type. Empty rows that lose focus are automatically pruned to reduce UI clutter.</li>
+                        <li><strong>Request Cancellation:</strong> If a request is hanging or taking too long, the "Send" button turns into a "Cancel" button, allowing you to safely abort the thread mid-flight.</li>
+                        <li><strong>Double-Click Protection:</strong> Built-in debounce mechanisms prevent accidental duplicate requests from being fired simultaneously.</li>
+                    </ul>
+                </section>
+
+                <section id="auth" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Authentication</h2>
+                    <p>ApiBanker supports various auth types out of the box:</p>
+                    <ul>
+                        <li><strong>Bearer Token:</strong> Automatically configures the <code>Authorization: Bearer &lt;token&gt;</code> header. Supports variable resolution.</li>
+                        <li><strong>Basic Auth:</strong> Safely encodes your username and password into a Base64 authorization header.</li>
+                        <li><strong>OAuth 2.0:</strong> Configure token endpoints, client IDs, and secrets to fetch and refresh tokens dynamically.</li>
+                    </ul>
+                </section>
+
+                <section id="scripting" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Scripting & Tests</h2>
+                    <p>ApiBanker allows you to run custom JavaScript code before a request is sent (Pre-request Script) and after a response is received (Tests). This is perfect for dynamically setting variables, hashing payloads, or asserting response data.</p>
+                    
+                    <h3>1. Pre-Request Script Examples</h3>
+                    <p>Use pre-request scripts to generate timestamps, calculate hashes, or dynamically assign variables before the payload is sent.</p>
+                    <pre><code class="language-javascript">
+// Set a global variable with the current timestamp
+apibanker.globals.set("current_time", new Date().toISOString());
+
+// Calculate a hash and set it as an environment variable
+const payloadHash = btoa("my_secret_payload");
+apibanker.environment.set("auth_hash", payloadHash);
+</code></pre>
+                    
+                    <h3>2. Test Script: Validating Response Status</h3>
+                    <p>Assert that the server responds with a success code.</p>
+                    <pre><code class="language-javascript">
+apibanker.test("Status code is 200", function () {
+    apibanker.response.to.have.status(200);
+});
+
+apibanker.test("Response is reasonably fast", function () {
+    apibanker.expect(apibanker.response.responseTime).to.be.below(500); // 500ms
+});
+</code></pre>
+
+                    <h3>3. Test Script: Validating JSON Body</h3>
+                    <p>Parse the JSON response and assert specific object properties exist and are correct.</p>
+                    <pre><code class="language-javascript">
+apibanker.test("User object is valid", function () {
+    var jsonData = apibanker.response.json();
+    
+    // Check if fields exist
+    apibanker.expect(jsonData).to.have.property("id");
+    apibanker.expect(jsonData).to.have.property("email");
+    
+    // Assert value
+    apibanker.expect(jsonData.status).to.eql("active");
+});
+</code></pre>
+
+                    <h3>4. Using Different Variables in Scripts</h3>
+                    <p>You can interact with different variable scopes dynamically based on your testing needs:</p>
+                    <pre><code class="language-javascript">
+// Fetch a value from the Environment scope
+var apiKey = apibanker.environment.get("api_key");
+
+// Fetch a value from the Collection scope
+var defaultTimeout = apibanker.collectionVariables.get("timeout");
+
+// Extract a token from response and save it Globally
+var jsonData = apibanker.response.json();
+apibanker.globals.set("session_token", jsonData.token);
+</code></pre>
+                </section>
+
+                <section id="ssl" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>SSL Validation</h2>
+                    <p>Ensure your connections are secure. During introspection, ApiBanker automatically validates the SSL certificate of the target endpoint.</p>
+                    <p>Hover over the security padlock icon next to your URL bar to view color-coded, bolded feedback regarding the SSL validation status, certificate expiration, and issuer details.</p>
+                </section>
+
+                <section id="import" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>OpenAPI Imports</h2>
+                    <p>ApiBanker fully supports OpenAPI 3.2 specs.</p>
+                    <p>Navigate to <strong>File &gt; Import</strong> to select an OpenAPI JSON or YAML file. ApiBanker will reconstruct the entire API tree as a Collection, generating all endpoints, query parameters, request bodies, and headers natively.</p>
+                </section>
+
+                <section id="stricter" class="guide-content-section glass-panel mb-8 animate-on-scroll">
+                    <h2>Stricter Editing Mode</h2>
+                    <p>To prevent accidental data loss, ApiBanker enforces a <strong>Stricter Editing Mode</strong> on destructive operations.</p>
+                    <p>Attempting to delete a request, collection, or environment will prompt a highly visible confirmation dialog. Additionally, undo/redo buffers are securely segregated per tab to ensure actions in one request do not affect another.</p>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo mb-4">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+                    <p>The ultimate API client for modern development.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="solutions.html">Solutions</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                        <li><a href="download.html">Download</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="guide.html">User Guide</a></li>
+                        <li><a href="setup.html">Setup & GitHub</a></li>
+                        <li><a href="contribute.html">Contribute</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="license.html">License & Copyright</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ApiBanker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <button id="scrollToTop" class="scroll-to-top" aria-label="Scroll to top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+    <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+</body>
+</html>

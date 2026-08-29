@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Download ApiBanker. Get the latest release for Windows, Linux, and macOS. Access previous versions from the archive.">
+    <title>Download | ApiBanker</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://apibanker.com/download.html">
+    <meta property="og:title" content="Download | ApiBanker">
+    <meta property="og:description" content="Download ApiBanker. Get the latest release for Windows, Linux, and macOS. Access previous versions from the archive.">
+    <meta property="og:image" content="https://apibanker.com/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://apibanker.com/download.html">
+    <meta property="twitter:title" content="Download | ApiBanker">
+    <meta property="twitter:description" content="Download ApiBanker. Get the latest release for Windows, Linux, and macOS. Access previous versions from the archive.">
+    <meta property="twitter:image" content="https://apibanker.com/og-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+    <header>
+        <div class="container nav-container">
+            <div class="logo">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+            <button class="mobile-menu-toggle" aria-label="Toggle Navigation">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <nav class="main-nav">
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="solutions.html">Solutions</a></li>
+                    <li><a href="guide.html">Guide</a></li>
+                    <li><a href="download.html" class="btn btn-primary" style="color: white; padding: 0.5rem 1rem;">Download</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container page-header">
+        <h1 class="animate-on-scroll">Download <span class="text-gradient">ApiBanker</span></h1>
+        <p class="animate-on-scroll" style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 3rem;">Get the latest version of the ultimate API development tool. Available for Windows, Linux, and macOS.</p>
+        
+        <div class="content-block animate-on-scroll text-left">
+            <div class="glass-panel version-card mb-8 text-center" style="border-left: 4px solid var(--accent-1)">
+                <h2 style="margin-top: 0;">Latest Release: v2.0.0 Stable</h2>
+                <p class="mb-4">Experience the new animated splash screen, enhanced environment manager, and improved request processing.</p>
+                
+                <div class="grid grid-cols-2 mt-8 text-left" style="gap: 1.5rem;">
+                    <!-- MSI Installer -->
+                    <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                        <h3 style="margin-top: 0; font-size: 1.2rem;">Windows Installer</h3>
+                        <a href="https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/ApiBanker-2.0.0.msi" class="btn btn-primary mt-4 mb-4" style="width: 100%; display: block; text-align: center;">Download .msi</a>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">The recommended installation method for Windows. Automatically configures shortcuts, PATH, and uninstaller.</p>
+                    </div>
+                    
+                    <!-- Portable with JRE -->
+                    <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                        <h3 style="margin-top: 0; font-size: 1.2rem;">Portable Windows (with JRE)</h3>
+                        <a href="https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/ApiBanker-2.0.0-jre21-winX64.zip" class="btn btn-outline mt-4 mb-4" style="width: 100%; display: block; text-align: center;">Download .zip</a>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">No installation required. Bundles the Java Runtime Environment so you can run it entirely from a flash drive.</p>
+                    </div>
+                    
+                    <!-- Universal ZIP -->
+                    <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                        <h3 style="margin-top: 0; font-size: 1.2rem;">Universal ZIP</h3>
+                        <a href="https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/apibanker.zip" class="btn btn-outline mt-4 mb-4" style="width: 100%; display: block; text-align: center;">Download .zip</a>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Cross-platform portable archive for Windows and Linux. Requires Java 21 to be installed on your system.</p>
+                    </div>
+
+                    <!-- Linux Tarball -->
+                    <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                        <h3 style="margin-top: 0; font-size: 1.2rem;">Linux Tarball</h3>
+                        <a href="https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/apibanker.tar.gz" class="btn btn-outline mt-4 mb-4" style="width: 100%; display: block; text-align: center;">Download .tar.gz</a>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Standard portable archive optimized for Linux systems. Requires Java 21 to be installed on your system.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="mb-4 text-center">Previous Releases</h3>
+            
+            <!-- v1.6.0-beta -->
+            <details class="animate-on-scroll hover-card">
+                <summary>v1.6.0-beta</summary>
+                <div class="details-content">
+                    <p class="mb-4">Modernized pipeline documentation, synchronized project structure.</p>
+                    <div class="grid grid-cols-2 text-left" style="gap: 1rem;">
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Windows Installer</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/ApiBanker-1.6.0-beta.msi" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.msi</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Portable (with JRE)</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/ApiBanker-1.6.0-beta-jre21-winX64.zip" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.zip</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Universal ZIP</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/apibanker.zip" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.zip</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Linux Tarball</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.6.0-beta/apibanker.tar.gz" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.tar.gz</a>
+                        </div>
+                    </div>
+                </div>
+            </details>
+            
+            <!-- v1.3.0-beta -->
+            <details class="animate-on-scroll hover-card">
+                <summary>v1.3.0-beta</summary>
+                <div class="details-content">
+                    <p class="mb-4">Automated release pipeline integration and critical security updates.</p>
+                    <div class="grid grid-cols-2 text-left" style="gap: 1rem;">
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Windows Installer</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/ApiBanker-1.3.0-beta.msi" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.msi</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Portable (with JRE)</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/ApiBanker-1.3.0-beta-jre21-winX64.zip" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.zip</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Universal ZIP</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/apibanker.zip" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.zip</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Linux Tarball</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.3.0-beta/apibanker.tar.gz" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.tar.gz</a>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- v1.1.0-beta -->
+            <details class="animate-on-scroll hover-card">
+                <summary>v1.1.0-beta</summary>
+                <div class="details-content">
+                    <p class="mb-4">GraalVM native support introduction and Swing UI stabilization.</p>
+                    <div class="grid grid-cols-2 text-left" style="gap: 1rem;">
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Windows Installer</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-1.1.0-beta.msi" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.msi</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Portable (with JRE)</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/ApiBanker-1.1.0-beta-jre21-winX64.zip" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.zip</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Universal ZIP</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/apibanker.zip" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.zip</a>
+                        </div>
+                        <div class="hover-card" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--glass-border);">
+                            <h4 style="margin-top: 0;">Linux Tarball</h4>
+                            <a href="https://github.com/ncrkindia/api-banker/releases/download/v1.1.0-beta/apibanker.tar.gz" class="btn btn-outline mt-2" style="width: 100%; display: block; text-align: center; padding: 0.5rem;">.tar.gz</a>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Support Popup Modal -->
+        <div id="supportModal" class="modal-overlay">
+            <div class="modal-content glass-panel text-center">
+                <button id="closeModal" class="modal-close" aria-label="Close">&times;</button>
+                <div style="font-size: 3.5rem; margin-bottom: 1rem; line-height: 1;">💙</div>
+                <h2 style="margin-top: 0; color: var(--accent-1);">Thank you for downloading!</h2>
+                <p style="font-size: 1.1rem; color: var(--text-primary);">ApiBanker is developed independently and is completely <strong>free to use</strong>.</p>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">If this tool saves you time, please consider supporting its continued development. Your contribution helps keep it free for everyone!</p>
+                
+                <a href="https://paypal.me/ncrk" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="background-color: #0070BA; border-color: #0070BA; width: 100%; display: block; font-size: 1.1rem; padding: 1rem; box-shadow: 0 4px 14px rgba(0, 112, 186, 0.4);">💳 Support via PayPal</a>
+                <button id="maybeLaterBtn" class="btn btn-outline mt-4" style="width: 100%; border: none;">Maybe Later</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo mb-4">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+                    <p>The ultimate API client for modern development.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="solutions.html">Solutions</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                        <li><a href="download.html">Download</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="guide.html">User Guide</a></li>
+                        <li><a href="setup.html">Setup & GitHub</a></li>
+                        <li><a href="contribute.html">Contribute</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="license.html">License & Copyright</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ApiBanker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <button id="scrollToTop" class="scroll-to-top" aria-label="Scroll to top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+    <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+</body>
+</html>

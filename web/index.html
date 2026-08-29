@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ApiBanker - The ultimate, high-performance API client and banking solution for modern developers. Build, test, and manage your APIs with ease.">
+    <title>ApiBanker | Modern API Client</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ApiBanker",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Windows, Linux, macOS",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://apibanker.com/index.html">
+    <meta property="og:title" content="ApiBanker | Modern API Client | ApiBanker">
+    <meta property="og:description" content="ApiBanker - The ultimate, high-performance API client and banking solution for modern developers. Build, test, and manage your APIs with ease.">
+    <meta property="og:image" content="https://apibanker.com/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://apibanker.com/index.html">
+    <meta property="twitter:title" content="ApiBanker | Modern API Client | ApiBanker">
+    <meta property="twitter:description" content="ApiBanker - The ultimate, high-performance API client and banking solution for modern developers. Build, test, and manage your APIs with ease.">
+    <meta property="twitter:image" content="https://apibanker.com/og-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+        <header>
+        <div class="container nav-container">
+            <div class="logo">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+            <button class="mobile-menu-toggle" aria-label="Toggle Navigation">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <nav class="main-nav">
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="solutions.html">Solutions</a></li>
+                    <li><a href="guide.html">Guide</a></li>
+                    <li><a href="download.html" class="btn btn-primary" style="color: white; padding: 0.5rem 1rem;">Download</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero text-center">
+            <div class="hero-glow"></div>
+            <div class="container">
+                <h1 class="animate-on-scroll">Supercharge Your <span class="text-gradient">API Development</span></h1>
+                <p class="animate-on-scroll">Experience a beautifully crafted, blazing-fast API client designed for the modern web. Test, manage, and collaborate seamlessly.</p>
+                <div class="hero-actions animate-on-scroll">
+                    <a href="download.html" class="btn btn-primary">Download Latest</a>
+                    <a href="setup.html" class="btn btn-outline">View on GitHub</a>
+                </div>
+                
+                <!-- Enhanced Animation Section: Floating Mockup -->
+                <div class="hero-mockup animate-on-scroll" style="transition-delay: 300ms; margin-top: 5rem; perspective: 1200px;">
+                    <div class="glass-panel" style="width: 100%; max-width: 900px; margin: 0 auto; height: 500px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; overflow: hidden; animation: float 6s ease-in-out infinite; transform-style: preserve-3d; background: rgba(11, 15, 25, 0.85); text-align: left;">
+                        <!-- Fake Mac Title Bar -->
+                        <div style="height: 40px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 1.25rem; gap: 0.5rem;">
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444;"></div>
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></div>
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: #10b981;"></div>
+                            <div style="margin-left: auto; font-size: 0.8rem; color: var(--text-secondary); font-family: 'Inter', sans-serif;">ApiBanker v2.0.0</div>
+                        </div>
+                        <!-- Fake Content -->
+                        <div style="display: flex; flex: 1; height: calc(100% - 40px);">
+                            <!-- Sidebar -->
+                            <div style="width: 260px; border-right: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; background: rgba(255,255,255,0.01);">
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: bold; margin-bottom: 0.5rem;">COLLECTIONS</div>
+                                <div style="height: 24px; background: rgba(99, 102, 241, 0.1); border-left: 2px solid var(--accent-1); border-radius: 0 0.25rem 0.25rem 0; width: 100%; display: flex; align-items: center; padding-left: 0.75rem; color: var(--text-primary); font-size: 0.8rem;">Auth Service</div>
+                                <div style="height: 16px; background: rgba(255,255,255,0.03); border-radius: 0.25rem; width: 60%; margin-left: 1rem;"></div>
+                                <div style="height: 16px; background: rgba(255,255,255,0.03); border-radius: 0.25rem; width: 85%; margin-left: 1rem;"></div>
+                                <div style="height: 16px; background: rgba(255,255,255,0.03); border-radius: 0.25rem; width: 70%; margin-left: 1rem;"></div>
+                            </div>
+                            <!-- Main Area -->
+                            <div style="flex: 1; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem;">
+                                <!-- URL bar -->
+                                <div style="display: flex; gap: 1rem;">
+                                    <div style="width: 90px; height: 42px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; color: #10b981; font-weight: 700; font-family: monospace;">POST</div>
+                                    <div style="flex: 1; height: 42px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; display: flex; align-items: center; padding: 0 1rem; color: var(--text-primary); font-family: monospace;">{{base_url}}/api/v1/login</div>
+                                    <div style="width: 120px; height: 42px; background: linear-gradient(135deg, var(--accent-1), var(--accent-3)); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer;">Send</div>
+                                </div>
+                                <!-- Tabs -->
+                                <div style="display: flex; gap: 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Params</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Headers <span style="background: rgba(255,255,255,0.1); padding: 0.1rem 0.4rem; border-radius: 1rem; font-size: 0.7rem;">3</span></div>
+                                    <div style="color: var(--accent-1); font-weight: 600; border-bottom: 2px solid var(--accent-1); padding-bottom: 0.5rem; margin-bottom: -0.6rem; font-size: 0.9rem;">Body</div>
+                                </div>
+                                <!-- Body Content -->
+                                <div style="flex: 1; background: rgba(0,0,0,0.4); border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-family: monospace; color: #e2e8f0;">
+                                    <div><span style="color: #cbd5e1;">{</span></div>
+                                    <div style="padding-left: 1.5rem;"><span style="color: #93c5fd;">"username"</span><span style="color: #cbd5e1;">: </span><span style="color: #fca5a5;">"admin"</span><span style="color: #cbd5e1;">,</span></div>
+                                    <div style="padding-left: 1.5rem;"><span style="color: #93c5fd;">"password"</span><span style="color: #cbd5e1;">: </span><span style="color: #fca5a5;">"{{secret_pwd}}"</span></div>
+                                    <div><span style="color: #cbd5e1;">}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section container">
+            <div class="grid grid-cols-3">
+                <div class="glass-panel animate-on-scroll">
+                    <h3 class="mb-4">⚡ Blazing Fast</h3>
+                    <p>Built with performance in mind. GraalVM native support ensures startup times in milliseconds with minimal resource footprint.</p>
+                </div>
+                <div class="glass-panel animate-on-scroll" style="transition-delay: 100ms;">
+                    <h3 class="mb-4">🔒 Secure by Design</h3>
+                    <p>Automated security scans in our CI/CD pipeline ensure that your API workflows are protected against the latest vulnerabilities.</p>
+                </div>
+                <div class="glass-panel animate-on-scroll" style="transition-delay: 200ms;">
+                    <h3 class="mb-4">🎨 Stunning UI</h3>
+                    <p>A beautifully crafted dark mode interface featuring glassmorphism, fluid animations, and a distraction-free environment.</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Deep Dive Features Section -->
+        <section class="section container">
+            
+            <!-- Feature 1: Pre & Test Scripts -->
+            <div class="grid grid-cols-2 animate-on-scroll mb-8" style="align-items: center; gap: 4rem;">
+                <div>
+                    <h2 class="mb-4" style="font-size: 2.5rem;">Powerful <span class="text-gradient">Scripting</span></h2>
+                    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 2rem;">Write advanced Pre-request and Test scripts using modern JavaScript. Validate JSON responses, extract dynamic tokens into environment variables, and chain complex workflows together effortlessly.</p>
+                    <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                        <li style="margin-bottom: 1rem;">✅ <strong>Rhino Engine:</strong> ES6 compatible syntax</li>
+                        <li style="margin-bottom: 1rem;">✅ <strong>Built-in Assertions:</strong> pm.expect() out of the box</li>
+                        <li style="margin-bottom: 1rem;">✅ <strong>Dynamic State:</strong> Seamlessly mutate global variables</li>
+                    </ul>
+                </div>
+                <div class="glass-panel" style="padding: 0; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                    <div style="background: rgba(255,255,255,0.05); padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 1rem; font-size: 0.85rem;">
+                        <span style="color: var(--text-secondary);">Pre-request</span>
+                        <span style="color: var(--accent-1); border-bottom: 2px solid var(--accent-1);">Tests</span>
+                    </div>
+                    <pre style="margin: 0; background: transparent !important; border: none !important; padding: 1.5rem !important;"><code class="language-javascript">
+// Validate Status Code
+pm.test("Status code is 200", function () {
+    pm.response.to.have.status(200);
+});
+
+// Parse and Extract Token
+const jsonData = pm.response.json();
+pm.test("Token is present", function () {
+    pm.expect(jsonData.access_token).to.be.a("string");
+});
+
+pm.environment.set("auth_token", jsonData.access_token);
+                    </code></pre>
+                </div>
+            </div>
+
+            <!-- Feature 2: Console Logs -->
+            <div class="grid grid-cols-2 animate-on-scroll mb-8" style="align-items: center; gap: 4rem;">
+                <div class="glass-panel" style="padding: 0; overflow: hidden; background: #0d1117; font-family: monospace; font-size: 0.85rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                    <div style="background: rgba(255,255,255,0.05); padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-secondary);">
+                        Terminal Console
+                    </div>
+                    <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div class="log-line log-line-1"><span style="color: #60a5fa; margin-right: 0.5rem;">[INFO]</span> Preparing to execute request: Get User Profile</div>
+                        <div class="log-line log-line-2"><span style="color: #f59e0b; margin-right: 0.5rem;">[WARN]</span> Header 'X-Api-Key' is missing, falling back to Environment var</div>
+                        <div class="log-line log-line-3"><span style="color: #34d399; margin-right: 0.5rem;">[NETWORK]</span> GET https://api.example.com/v1/user - 200 OK (142ms)</div>
+                        <div class="log-line log-line-4"><span style="color: #60a5fa; margin-right: 0.5rem;">[INFO]</span> Test 'Status code is 200' passed.</div>
+                        <div class="log-line log-line-5"><span style="color: #a78bfa; margin-right: 0.5rem;">[DEBUG]</span> Extracted variable 'user_id' = 98452</div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="mb-4" style="font-size: 2.5rem;">Real-time <span class="text-gradient">Console Logs</span></h2>
+                    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 2rem;">Stop guessing what happened behind the scenes. ApiBanker's built-in console gives you x-ray vision into every request, script execution, and network anomaly.</p>
+                    <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                        <li style="margin-bottom: 1rem;">✅ Deep network introspection (headers, SSL handshakes)</li>
+                        <li style="margin-bottom: 1rem;">✅ Color-coded logging (INFO, WARN, ERROR, DEBUG)</li>
+                        <li style="margin-bottom: 1rem;">✅ Print custom variables using <code>console.log()</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Feature 3: Collection Runner -->
+            <div class="grid grid-cols-2 animate-on-scroll" style="align-items: center; gap: 4rem;">
+                <div>
+                    <h2 class="mb-4" style="font-size: 2.5rem;">Automated <span class="text-gradient">Runner</span></h2>
+                    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 2rem;">Execute entire collections of API requests sequentially with a single click. Chain requests together by passing data through environment variables to simulate full user journeys.</p>
+                    <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                        <li style="margin-bottom: 1rem;">✅ Configurable delays between requests</li>
+                        <li style="margin-bottom: 1rem;">✅ Live execution progress and metrics</li>
+                        <li style="margin-bottom: 1rem;">✅ Comprehensive test reporting</li>
+                    </ul>
+                </div>
+                <div class="glass-panel" style="padding: 1.5rem; background: rgba(11, 15, 25, 0.8); box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h4 style="margin: 0; font-family: 'Inter', sans-serif;">Running: E2E Checkout Flow</h4>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div class="run-item run-item-1" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 500;">1. Authenticate User</span>
+                            <span class="run-success-icon" style="font-family: monospace; font-weight: bold;">200 OK</span>
+                        </div>
+                        <div class="run-item run-item-2" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 500;">2. Create Cart</span>
+                            <span class="run-success-icon" style="font-family: monospace; font-weight: bold;">201 Created</span>
+                        </div>
+                        <div class="run-item run-item-3" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 500;">3. Process Payment</span>
+                            <span class="run-success-icon" style="font-family: monospace; font-weight: bold;">200 OK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    
+        
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo mb-4">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+                    <p>The ultimate API client for modern development.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="solutions.html">Solutions</a></li>
+                        <li><a href="download.html">Download</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="guide.html">User Guide</a></li>
+                        <li><a href="setup.html">Setup & GitHub</a></li>
+                        <li><a href="contribute.html">Contribute</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="license.html">License & Copyright</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ApiBanker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <button id="scrollToTop" class="scroll-to-top" aria-label="Scroll to top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+
+    <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+</body>
+</html>

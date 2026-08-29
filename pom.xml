@@ -234,6 +234,8 @@
                                         <argument>--name</argument><argument>ApiBanker-installer</argument>
                                         <argument>--main-jar</argument><argument>apibanker.jar</argument>
                                         <argument>--main-class</argument><argument>in.slpro.apibanker.App</argument>
+                                        <argument>--vendor</argument><argument>NCRK</argument>
+                                        <argument>--description</argument><argument>ApiBanker - Offline-First API Toolkit</argument>
                                         <argument>--win-shortcut</argument>
                                         <argument>--win-menu</argument>
                                         <argument>--win-dir-chooser</argument>

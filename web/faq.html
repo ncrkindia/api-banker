@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ApiBanker FAQ. Get answers to frequently asked questions about the ultimate API client.">
+    <title>FAQ | ApiBanker</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://apibanker.com/faq.html">
+    <meta property="og:title" content="FAQ | ApiBanker">
+    <meta property="og:description" content="ApiBanker FAQ. Get answers to frequently asked questions.">
+    <meta property="og:image" content="https://apibanker.com/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://apibanker.com/faq.html">
+    <meta property="twitter:title" content="FAQ | ApiBanker">
+    <meta property="twitter:description" content="ApiBanker FAQ. Get answers to frequently asked questions.">
+    <meta property="twitter:image" content="https://apibanker.com/og-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+    <header>
+        <div class="container nav-container">
+            <div class="logo">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+            <button class="mobile-menu-toggle" aria-label="Toggle Navigation">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <nav class="main-nav">
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="solutions.html">Solutions</a></li>
+                    <li><a href="guide.html">Guide</a></li>
+                    <li><a href="download.html" class="btn btn-primary" style="color: white; padding: 0.5rem 1rem;">Download</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container page-header">
+        <h1 class="animate-on-scroll">Frequently Asked <span class="text-gradient">Questions</span></h1>
+        
+        <div class="content-block animate-on-scroll mt-8 text-left">
+            <details class="hover-card">
+                <summary>Is ApiBanker free to use?</summary>
+                <div class="details-content">Yes, ApiBanker is a proprietary software but is completely free to use.</div>
+            </details>
+            <details class="hover-card">
+                <summary>What platforms are supported?</summary>
+                <div class="details-content">We provide native executables and installers for Windows, macOS, and Linux.</div>
+            </details>
+            <details class="hover-card">
+                <summary>Does it support syncing between devices?</summary>
+                <div class="details-content">Workspaces are saved locally as JSON files. You can easily sync them via Git or any cloud storage drive.</div>
+            </details>
+            <details class="hover-card">
+                <summary>How does the Stricter Editing Mode work?</summary>
+                <div class="details-content">It acts as a safeguard. Any destructive operation (like deleting a request or a collection) requires explicit confirmation to prevent data loss.</div>
+            </details>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo mb-4">ApiBanker<span style="color: var(--accent-1)">.</span></div>
+                    <p>The ultimate API client for modern development.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="solutions.html">Solutions</a></li>
+                        <li><a href="download.html">Download</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="guide.html">User Guide</a></li>
+                        <li><a href="setup.html">Setup & GitHub</a></li>
+                        <li><a href="contribute.html">Contribute</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="license.html">License & Copyright</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ApiBanker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <button id="scrollToTop" class="scroll-to-top" aria-label="Scroll to top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+    <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+</body>
+</html>
