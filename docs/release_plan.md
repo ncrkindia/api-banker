@@ -15,7 +15,20 @@ ApiBanker's transition to the `2.0.1` pre-release phase aims to achieve the foll
 
 ---
 
-### v2.0.1 Release Summary
+### v2.0.1 Patch Summary
+
+This patch resolves critical OutOfMemory bottlenecks in the Collection Runner and finalizes the JMeter export pipeline.
+
+**Performance & Fixes:**
+- **JMeter JMX Export**: Modernized the exporter to correctly resolve dynamic variables during JMX generation and intelligently format URLs into paths to bypass JMeter illegal host character crashes.
+- **Collection Runner Thread Pool**: Replaced unbounded queue with `CallerRunsPolicy` bounded ExecutorService, preventing memory exhaustion when queueing millions of iterations.
+- **Collection Runner Real-Time Metrics**: Relocated `RequestStats` storage from `CopyOnWriteArrayList` into real-time streaming temporary disk files, enabling perfectly flat memory usage during extreme load tests.
+- **Results Table Pagination**: Added 2000-row automatic truncation to the GUI Results Table to prevent Swing thread hangs during fast iteration loops.
+- **Runner Queue Multiplier**: Added advanced tuning configuration to `SettingsPanel` for customizing the background thread pool queue scale.
+
+---
+
+### v2.0.0 Release Summary
 
 This release focuses on documentation accessibility and script automation enhancements.
 
