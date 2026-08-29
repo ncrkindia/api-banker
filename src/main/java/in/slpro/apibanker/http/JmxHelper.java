@@ -17,8 +17,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.io.StringWriter;
-import java.net.URI;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +32,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class JmxHelper {
@@ -99,7 +98,7 @@ public class JmxHelper {
      * @throws Exception If the XML Document cannot be generated or transformed to
      *                   the output file.
      */
-    public static void exportJmx(CollectionModel col, RequestModel runnerModel, File file) throws Exception {
+    public static void exportJmx(CollectionModel col, List<RequestModel> selectedRequests, RequestModel runnerModel, File file, in.slpro.apibanker.model.EnvironmentModel env) throws Exception {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
         Document doc = db.newDocument();
@@ -138,6 +137,46 @@ public class JmxHelper {
         userVarsColl.setAttribute("name", "Arguments.arguments");
         userVars.appendChild(userVarsColl);
         testPlan.appendChild(userVars);
+        
+        java.util.Set<String> usedVars = new java.util.HashSet<>();
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\{\\{([^}]+)\\}\\}");
+        for (RequestModel req : selectedRequests) {
+            java.util.List<String> texts = new ArrayList<>();
+            texts.add(req.getUrl());
+            texts.add(req.getBodyRawContent());
+            if (req.getHeaders() != null) for (KeyValueItem kv : req.getHeaders()) { texts.add(kv.getKey()); texts.add(kv.getValue()); }
+            if (req.getParams() != null) for (KeyValueItem kv : req.getParams()) { texts.add(kv.getKey()); texts.add(kv.getValue()); }
+            if (req.getFormData() != null) for (KeyValueItem kv : req.getFormData()) { texts.add(kv.getKey()); texts.add(kv.getValue()); }
+            if (req.getUrlencodedData() != null) for (KeyValueItem kv : req.getUrlencodedData()) { texts.add(kv.getKey()); texts.add(kv.getValue()); }
+            
+            for (String t : texts) {
+                if (t != null) {
+                    java.util.regex.Matcher m = p.matcher(t);
+                    while (m.find()) usedVars.add(m.group(1));
+                }
+            }
+        }
+        
+        for (String v : usedVars) {
+            String val = in.slpro.apibanker.model.VariableHelper.resolveVariables("{{" + v + "}}", col, env);
+            if (val == null) val = "";
+            Element arg = doc.createElement("elementProp");
+            arg.setAttribute("name", v);
+            arg.setAttribute("elementType", "Argument");
+            Element argName = doc.createElement("stringProp");
+            argName.setAttribute("name", "Argument.name");
+            argName.setTextContent(v);
+            Element argVal = doc.createElement("stringProp");
+            argVal.setAttribute("name", "Argument.value");
+            argVal.setTextContent(val);
+            Element argMeta = doc.createElement("stringProp");
+            argMeta.setAttribute("name", "Argument.metadata");
+            argMeta.setTextContent("=");
+            arg.appendChild(argName);
+            arg.appendChild(argVal);
+            arg.appendChild(argMeta);
+            userVarsColl.appendChild(arg);
+        }
 
         Element planHash = doc.createElement("hashTree");
         rootHash.appendChild(planHash);
@@ -197,7 +236,7 @@ public class JmxHelper {
         planHash.appendChild(threadHash);
 
         // Add HTTP Samplers
-        for (RequestModel req : col.getRequests()) {
+        for (RequestModel req : selectedRequests) {
             if ("runner".equalsIgnoreCase(req.getType()))
                 continue;
 
@@ -208,25 +247,61 @@ public class JmxHelper {
             sampler.setAttribute("enabled", "true");
             threadHash.appendChild(sampler);
 
-            // Parse URL
-            String protocol = "http";
-            String domain = "localhost";
+            String jvarUrl = jmeterVar(req.getUrl());
+            if (jvarUrl == null) jvarUrl = "";
+            String protocol = "";
+            String domain = "";
             String port = "";
-            String path = "/";
-            try {
-                URI uri = new URI(req.getUrl());
-                if (uri.getScheme() != null)
-                    protocol = uri.getScheme();
-                if (uri.getHost() != null)
-                    domain = uri.getHost();
-                if (uri.getPort() != -1)
-                    port = String.valueOf(uri.getPort());
-                if (uri.getPath() != null)
-                    path = uri.getPath();
-                if (uri.getQuery() != null)
-                    path += "?" + uri.getQuery();
-            } catch (Exception ignored) {
+            String path = "";
+
+            String resolvedUrl = in.slpro.apibanker.model.VariableHelper.resolveVariables(req.getUrl(), col, env);
+            if (resolvedUrl == null) resolvedUrl = "";
+
+            if (jvarUrl.contains("${")) {
+                // If the URL contains variables, they might contain protocols, colons, or slashes.
+                // JMeter throws "Illegal character in host" if the Domain field evaluates to strings containing '/' or ':'.
+                // The most robust way to handle dynamic URLs in JMeter is to pass the FULL URL into the Path field.
+                protocol = "";
+                domain = "";
+                port = "";
+                
+                if (resolvedUrl.startsWith("http://") || resolvedUrl.startsWith("https://")) {
+                    path = jvarUrl; // JMeter will evaluate this to a full URL and route correctly.
+                } else {
+                    // If the variable doesn't contain a protocol, we must supply it so JMeter recognizes it as a full URL in Path.
+                    if (jvarUrl.startsWith("http://") || jvarUrl.startsWith("https://")) {
+                        path = jvarUrl;
+                    } else {
+                        path = "http://" + jvarUrl;
+                    }
+                }
+            } else {
+                // For static URLs, parse normally into JMeter's distinct UI fields
+                String u = jvarUrl;
+                if (u.contains("://")) {
+                    int idx = u.indexOf("://");
+                    protocol = u.substring(0, idx);
+                    u = u.substring(idx + 3);
+                }
+                int slashIdx = u.indexOf("/");
+                if (slashIdx == -1) {
+                    domain = u;
+                    path = "";
+                } else {
+                    domain = u.substring(0, slashIdx);
+                    path = u.substring(slashIdx);
+                }
+                int colonIdx = domain.indexOf(":");
+                if (colonIdx != -1) {
+                    port = domain.substring(colonIdx + 1);
+                    domain = domain.substring(0, colonIdx);
+                }
+                
+                if (protocol.isEmpty()) protocol = "http";
+                if (domain.isEmpty()) domain = "localhost";
+                if (path.isEmpty()) path = "/";
             }
+            if (path.isEmpty()) path = "/";
 
             addStringProp(doc, sampler, "HTTPSampler.domain", domain);
             addStringProp(doc, sampler, "HTTPSampler.port", port);
@@ -237,7 +312,7 @@ public class JmxHelper {
             addBoolProp(doc, sampler, "HTTPSampler.follow_redirects", true);
             addBoolProp(doc, sampler, "HTTPSampler.use_keepalive", true);
 
-            // empty args elem
+            // empty args elem (we could export params/body here if needed)
             Element argsElem = doc.createElement("elementProp");
             argsElem.setAttribute("name", "HTTPsampler.Arguments");
             argsElem.setAttribute("elementType", "Arguments");
@@ -253,6 +328,10 @@ public class JmxHelper {
             threadHash.appendChild(samplerHash);
         }
 
+        // Add Listeners (Disabled by default)
+        addResultCollector(doc, threadHash, "ViewResultsFullVisualizer", "View Results Tree");
+        addResultCollector(doc, threadHash, "TableVisualizer", "View Results in Table");
+
         // Save doc to file
         Transformer transformer = TransformerFactory.newInstance().newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -262,8 +341,14 @@ public class JmxHelper {
         transformer.transform(source, result);
     }
 
+    private static String jmeterVar(String input) {
+        if (input == null) return null;
+        return input.replace("{{", "${").replace("}}", "}");
+    }
+
     /**
      * Helper method to extract the value of a specific JMeter property node
+
      * (e.g., 'HTTPSampler.domain') from a given parent XML element.
      * 
      * @param parent   The parent XML Element node to search within.
@@ -312,6 +397,52 @@ public class JmxHelper {
         p.setAttribute("name", name);
         p.setTextContent(String.valueOf(val));
         parent.appendChild(p);
+    }
+
+    private static void addResultCollector(Document doc, Element parentHash, String guiClass, String name) {
+        Element rc = doc.createElement("ResultCollector");
+        rc.setAttribute("guiclass", guiClass);
+        rc.setAttribute("testclass", "ResultCollector");
+        rc.setAttribute("testname", name);
+        rc.setAttribute("enabled", "false");
+        
+        addBoolProp(doc, rc, "ResultCollector.error_logging", false);
+        
+        Element objProp = doc.createElement("objProp");
+        Element pName = doc.createElement("name");
+        pName.setTextContent("saveConfig");
+        objProp.appendChild(pName);
+        
+        Element value = doc.createElement("value");
+        value.setAttribute("class", "SampleSaveConfiguration");
+        
+        String[] trueProps = {"time", "latency", "timestamp", "success", "label", "code", "message", "threadName", "dataType", "assertions", "subresults", "fieldNames", "saveAssertionResultsFailureMessage", "bytes", "sentBytes", "url", "threadCounts", "idleTime", "connectTime"};
+        String[] falseProps = {"encoding", "responseData", "samplerData", "xml", "responseHeaders", "requestHeaders", "responseDataOnError"};
+        
+        for (String prop : trueProps) {
+            Element e = doc.createElement(prop);
+            e.setTextContent("true");
+            value.appendChild(e);
+        }
+        for (String prop : falseProps) {
+            Element e = doc.createElement(prop);
+            e.setTextContent("false");
+            value.appendChild(e);
+        }
+        
+        Element assertionsResults = doc.createElement("assertionsResultsToSave");
+        assertionsResults.setTextContent("0");
+        value.appendChild(assertionsResults);
+        
+        objProp.appendChild(value);
+        rc.appendChild(objProp);
+        
+        Element filename = doc.createElement("stringProp");
+        filename.setAttribute("name", "filename");
+        rc.appendChild(filename);
+        
+        parentHash.appendChild(rc);
+        parentHash.appendChild(doc.createElement("hashTree"));
     }
 }
 

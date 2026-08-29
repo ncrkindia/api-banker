@@ -28,7 +28,7 @@ import org.commonmark.node.Node;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class CollectionPanel extends JPanel {
@@ -1263,7 +1263,7 @@ public class CollectionPanel extends JPanel {
     private boolean isDarkTheme() {
         try {
             String theme = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme();
-            return "dark".equals(theme);
+            return "dark".equals(theme) || "gradient".equals(theme);
         } catch (Exception e) {
             return false;
         }

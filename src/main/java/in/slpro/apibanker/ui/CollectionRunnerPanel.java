@@ -52,7 +52,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class CollectionRunnerPanel extends JPanel {
@@ -129,8 +129,10 @@ public class CollectionRunnerPanel extends JPanel {
     private static class RequestStats {
         final String name;
         final String method;
-        final List<Long> latencies = new CopyOnWriteArrayList<>();
-        final List<Long> sizes = new CopyOnWriteArrayList<>();
+        private java.io.DataOutputStream dos;
+        private java.io.File tempFile;
+        int count = 0;
+
         int successCount = 0;
         int failCount = 0;
         int testPassedCount = 0;
@@ -141,6 +143,41 @@ public class CollectionRunnerPanel extends JPanel {
         RequestStats(String name, String method) {
             this.name = name;
             this.method = method;
+            try {
+                tempFile = java.io.File.createTempFile("apb_stats_", ".dat");
+                tempFile.deleteOnExit();
+                dos = new java.io.DataOutputStream(new java.io.BufferedOutputStream(new java.io.FileOutputStream(tempFile)));
+            } catch (Exception e) {}
+        }
+        
+        synchronized void addMetrics(long latency, long sizeBytes) {
+            count++;
+            if (dos != null) {
+                try {
+                    dos.writeLong(latency);
+                    dos.writeLong(sizeBytes);
+                } catch (Exception e) {}
+            }
+        }
+        
+        synchronized long[][] loadAndSortMetrics() {
+            if (dos != null) {
+                try { dos.close(); dos = null; } catch (Exception e) {}
+            }
+            long[] lats = new long[count];
+            long[] szs = new long[count];
+            if (tempFile != null && tempFile.exists()) {
+                try (java.io.DataInputStream dis = new java.io.DataInputStream(new java.io.BufferedInputStream(new java.io.FileInputStream(tempFile)))) {
+                    for (int i = 0; i < count; i++) {
+                        lats[i] = dis.readLong();
+                        szs[i] = dis.readLong();
+                    }
+                } catch (Exception e) {}
+                tempFile.delete();
+            }
+            java.util.Arrays.sort(lats);
+            java.util.Arrays.sort(szs);
+            return new long[][] { lats, szs };
         }
     }
 
@@ -296,7 +333,7 @@ public class CollectionRunnerPanel extends JPanel {
         JButton exportJmxBtn = new JButton("Export JMeter (.jmx)");
         exportJmxBtn.addActionListener(e -> exportJmx());
 
-        runBtn = new JButton("Run Collection");
+        runBtn = new AnimatedGradientButton("Run Collection");
         runBtn.setBackground(new Color(46, 204, 113));
         runBtn.setForeground(Color.WHITE);
         runBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -997,44 +1034,7 @@ public class CollectionRunnerPanel extends JPanel {
         runSamples.clear();
 
         final List<RequestModel> requests;
-        if (requestSelectionModel != null) {
-            List<RequestModel> temp = new ArrayList<>();
-            List<RequestModel> allReqs = new ArrayList<>();
-            collectRequestsRecursive(collection, allReqs);
-            
-            Set<String> seenKeys = new HashSet<>();
-            Set<String> duplicateKeys = new HashSet<>();
-            for (RequestModel req : allReqs) {
-                String key = req.getName() + "|" + req.getMethod();
-                if (!seenKeys.add(key)) {
-                    duplicateKeys.add(key);
-                }
-            }
-            
-            for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
-                boolean checked = (Boolean) requestSelectionModel.getValueAt(i, 0);
-                if (checked) {
-                    String reqMethod = (String) requestSelectionModel.getValueAt(i, 1);
-                    String reqName = (String) requestSelectionModel.getValueAt(i, 2);
-                    for (RequestModel r : allReqs) {
-                        String key = r.getName() + "|" + r.getMethod();
-                        String rDisplayName = r.getName();
-                        if (duplicateKeys.contains(key) && r.getId() != null && r.getId().length() >= 4) {
-                            rDisplayName += " -" + r.getId().substring(0, 4);
-                        }
-                        if (reqName.equals(rDisplayName) && reqMethod.equals(r.getMethod())) {
-                            temp.add(r);
-                            break;
-                        }
-                    }
-                }
-            }
-            requests = temp;
-        } else {
-            List<RequestModel> allReqs = new ArrayList<>();
-            collectRequestsRecursive(collection, allReqs);
-            requests = allReqs;
-        }
+        requests = getSelectedRequests();
 
         if (requests.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No selected requests to run.", "Warning", JOptionPane.WARNING_MESSAGE);
@@ -1128,7 +1128,15 @@ public class CollectionRunnerPanel extends JPanel {
             }
         }
 
-        executorService = Executors.newFixedThreadPool(vusers);
+        int multiplier = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getRunnerQueueMultiplier();
+        // Use a bounded queue to prevent OOM when running millions of iterations.
+        // CallerRunsPolicy will automatically throttle the task submission loop if the queue is full.
+        executorService = new java.util.concurrent.ThreadPoolExecutor(
+                vusers, vusers,
+                0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+                new java.util.concurrent.ArrayBlockingQueue<>(Math.max(vusers * multiplier, 100)),
+                new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
+        );
 
         SwingWorker<Void, Object[]> worker = new SwingWorker<>() {
             @Override
@@ -1229,8 +1237,7 @@ public class CollectionRunnerPanel extends JPanel {
                             RequestStats stats = aggregateStatsMap.computeIfAbsent(statsKey,
                                     k -> new RequestStats(displayName, req.getMethod()));
                             synchronized (stats) {
-                                stats.latencies.add(dur);
-                                stats.sizes.add(response.getSizeBytes());
+                                stats.addMetrics(dur, response.getSizeBytes());
                                 if (ok)
                                     stats.successCount++;
                                 else
@@ -1449,6 +1456,18 @@ public class CollectionRunnerPanel extends JPanel {
                         progressBar.setValue((Integer) row[0]);
                     }
                 }
+                
+                // Pagination / Log Truncation to prevent UI rendering hangs
+                int maxRows = 2000;
+                if (resultsTableModel.getRowCount() > maxRows) {
+                    java.util.Vector data = resultsTableModel.getDataVector();
+                    int excess = data.size() - maxRows;
+                    for (int i = 0; i < excess; i++) {
+                        data.remove(0);
+                    }
+                    resultsTableModel.fireTableDataChanged();
+                }
+                
                 int done = completedCount.get();
                 totalReqLabel.setText(String.valueOf(done));
                 passedLabel.setText(String.valueOf(passedCount.get()));
@@ -1502,45 +1521,49 @@ public class CollectionRunnerPanel extends JPanel {
         if (aggregateStatsMap.isEmpty())
             return;
 
-        List<Long> allLatencies = new ArrayList<>();
-        List<Long> allSizes = new ArrayList<>();
-        int totalPass = 0;
-        int totalFail = 0;
-        int totalTestPassed = 0;
-        int totalTestTotal = 0;
-        Set<Integer> allStatusCodes = new HashSet<>();
-        Set<String> allFormats = new HashSet<>();
+        int globalTotalPass = 0;
+        int globalTotalFail = 0;
+        int globalTestPassed = 0;
+        int globalTestTotal = 0;
+        
+        int totalMetricsCount = 0;
+        for (RequestStats stats : aggregateStatsMap.values()) {
+            totalMetricsCount += stats.count;
+        }
+        
+        long[] allLatencies = new long[totalMetricsCount];
+        long[] allSizes = new long[totalMetricsCount];
+        int allIdx = 0;
 
         for (RequestStats stats : aggregateStatsMap.values()) {
             synchronized (stats) {
-                if (stats.latencies.isEmpty())
-                    continue;
-                List<Long> lats = new ArrayList<>(stats.latencies);
-                Collections.sort(lats);
-                List<Long> szs = new ArrayList<>(stats.sizes);
-                Collections.sort(szs);
+                long[][] metrics = stats.loadAndSortMetrics();
+                long[] lats = metrics[0];
+                long[] szs = metrics[1];
+                
+                if (lats.length == 0) continue;
+                
+                System.arraycopy(lats, 0, allLatencies, allIdx, lats.length);
+                System.arraycopy(szs, 0, allSizes, allIdx, szs.length);
+                allIdx += lats.length;
 
-                allLatencies.addAll(lats);
-                allSizes.addAll(szs);
-                totalPass += stats.successCount;
-                totalFail += stats.failCount;
-                totalTestPassed += stats.testPassedCount;
-                totalTestTotal += stats.testTotalCount;
-                allStatusCodes.addAll(stats.statusCodes);
-                allFormats.addAll(stats.formats);
+                globalTotalPass += stats.successCount;
+                globalTotalFail += stats.failCount;
+                globalTestPassed += stats.testPassedCount;
+                globalTestTotal += stats.testTotalCount;
 
-                int samples = lats.size();
-                long min = lats.get(0);
-                long max = lats.get(samples - 1);
+                int samples = lats.length;
+                long min = lats[0];
+                long max = lats[samples - 1];
                 long sum = 0;
                 for (long l : lats)
                     sum += l;
                 long avg = sum / samples;
 
-                long p75 = lats.get((int) (samples * 0.75));
-                long p90 = lats.get((int) (samples * 0.90));
-                long p95 = lats.get((int) (samples * 0.95));
-                long p99 = lats.get((int) (samples * 0.99));
+                long p75 = lats[(int) (samples * 0.75)];
+                long p90 = lats[(int) (samples * 0.90)];
+                long p95 = lats[(int) (samples * 0.95)];
+                long p99 = lats[(int) (samples * 0.99)];
 
                 long sizeSum = 0;
                 for (long s : szs)
@@ -1577,39 +1600,39 @@ public class CollectionRunnerPanel extends JPanel {
         }
 
         // Add Grand Total Row
-        if (!allLatencies.isEmpty()) {
-            Collections.sort(allLatencies);
-            Collections.sort(allSizes);
-            int samples = allLatencies.size();
-            long min = allLatencies.get(0);
-            long max = allLatencies.get(samples - 1);
+        if (allIdx > 0) {
+            java.util.Arrays.sort(allLatencies, 0, allIdx);
+            java.util.Arrays.sort(allSizes, 0, allIdx);
+            int samples = allIdx;
+            long min = allLatencies[0];
+            long max = allLatencies[samples - 1];
             long sum = 0;
-            for (long l : allLatencies)
-                sum += l;
+            for (int i = 0; i < allIdx; i++)
+                sum += allLatencies[i];
             long avg = sum / samples;
 
-            long p75 = allLatencies.get((int) (samples * 0.75));
-            long p90 = allLatencies.get((int) (samples * 0.90));
-            long p95 = allLatencies.get((int) (samples * 0.95));
-            long p99 = allLatencies.get((int) (samples * 0.99));
+            long p75 = allLatencies[(int) (samples * 0.75)];
+            long p90 = allLatencies[(int) (samples * 0.90)];
+            long p95 = allLatencies[(int) (samples * 0.95)];
+            long p99 = allLatencies[(int) (samples * 0.99)];
 
             long sizeSum = 0;
-            for (long s : allSizes)
-                sizeSum += s;
+            for (int i = 0; i < allIdx; i++)
+                sizeSum += allSizes[i];
             long avgSize = sizeSum / samples;
 
-            double succPercent = (double) totalPass / samples * 100.0;
+            double succPercent = (double) globalTotalPass / samples * 100.0;
             
             String testsSummaryTotal = "-";
-            if (totalTestTotal > 0) {
-                testsSummaryTotal = totalTestPassed + "/" + totalTestTotal;
+            if (globalTestTotal > 0) {
+                testsSummaryTotal = globalTestPassed + "/" + globalTestTotal;
             }
 
             aggregateModel.addRow(new Object[] {
-                    "TOTAL",
+                    "Total",
                     "-",
                     samples,
-                    allStatusCodes.toString().replaceAll("[\\[\\]]", ""),
+                    "-",
                     avg,
                     min,
                     max,
@@ -1619,10 +1642,10 @@ public class CollectionRunnerPanel extends JPanel {
                     p99,
                     avgSize,
                     testsSummaryTotal,
-                    totalPass,
-                    totalFail,
+                    globalTotalPass,
+                    globalTotalFail,
                     String.format("%.1f%%", succPercent),
-                    String.join(", ", allFormats)
+                    "-"
             });
         }
     }
@@ -1668,7 +1691,7 @@ public class CollectionRunnerPanel extends JPanel {
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 saveConfig();
-                JmxHelper.exportJmx(collection, runnerModel, chooser.getSelectedFile());
+                in.slpro.apibanker.http.JmxHelper.exportJmx(collection, getSelectedRequests(), runnerModel, chooser.getSelectedFile(), resolveSelectedEnvironment());
                 in.slpro.apibanker.logger.ActionAuditLogger.getInstance().logAction("EXPORT_COLLECTION", "User", "Format: JMeter (.jmx), Source: [" + collection.getName() + " / " + collection.getId() + "] -> Exported to: " + chooser.getSelectedFile().getAbsolutePath());
                 showToast(this, "Successfully exported collection to JMeter plan!");
             } catch (Exception ex) {
@@ -1712,9 +1735,14 @@ public class CollectionRunnerPanel extends JPanel {
         }
 
         JFileChooser chooser = new JFileChooser();
-        String datetime = java.time.LocalDateTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
-        String safeName = sanitizeFilename(collection.getName()) + "-" + datetime + "." + format;
+        String safeName;
+        if (currentRunDir != null) {
+            safeName = currentRunDir.getParentFile().getName() + "-" + currentRunDir.getName() + "." + format;
+        } else {
+            String datetime = startTime != null ? startTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"))
+                    : java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
+            safeName = sanitizeFilename(collection.getName()) + "-" + sanitizeFilename(runnerModel.getName()) + "-" + datetime + "." + format;
+        }
         chooser.setSelectedFile(new File(safeName));
         chooser.setDialogTitle("Export Execution Report (" + format.toUpperCase() + ")");
 
@@ -1750,9 +1778,7 @@ public class CollectionRunnerPanel extends JPanel {
         }
 
         JFileChooser chooser = new JFileChooser();
-        String datetime = java.time.LocalDateTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS"));
-        String safeName = sanitizeFilename(collection.getName()) + "-" + datetime + "-" + type + ".log";
+        String safeName = currentRunDir.getParentFile().getName() + "-" + currentRunDir.getName() + "-" + type + ".log";
         chooser.setSelectedFile(new File(safeName));
         chooser.setDialogTitle("Export Logs (" + type.toUpperCase() + ")");
 
@@ -1807,7 +1833,10 @@ public class CollectionRunnerPanel extends JPanel {
 
         document.open();
 
-        boolean isDark = UIManager.getBoolean("FlatLaf.dark");
+        String theme = "";
+        try { theme = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme(); } catch (Exception e) {}
+        boolean isGradient = "gradient".equals(theme);
+        boolean isDark = UIManager.getBoolean("FlatLaf.dark") || isGradient;
         Color pdfFg = isDark ? new Color(220, 220, 220) : Color.BLACK;
 
         Color accentColor = UIManager.getColor("AccentColor");
@@ -1815,6 +1844,17 @@ public class CollectionRunnerPanel extends JPanel {
             accentColor = new Color(26, 115, 232);
 
         // Title block
+        java.net.URL bannerUrl = in.slpro.apibanker.App.class.getResource("/banner.png");
+        if (bannerUrl != null) {
+            try {
+                com.lowagie.text.Image banner = com.lowagie.text.Image.getInstance(bannerUrl);
+                banner.scaleToFit(document.getPageSize().getWidth() - document.leftMargin() - document.rightMargin(), 120);
+                banner.setAlignment(com.lowagie.text.Element.ALIGN_CENTER);
+                document.add(banner);
+                document.add(new com.lowagie.text.Paragraph("\n"));
+            } catch (Exception e) {}
+        }
+
         com.lowagie.text.Font titleFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 18,
                 com.lowagie.text.Font.BOLD, accentColor);
         com.lowagie.text.Paragraph title = new com.lowagie.text.Paragraph("ApiBanker Collection Performance Metrics",
@@ -2083,50 +2123,44 @@ public class CollectionRunnerPanel extends JPanel {
         byte[] latencyChart = getChartImageBytes(false);
         String codeBase64 = java.util.Base64.getEncoder().encodeToString(codeChart);
         String latencyBase64 = java.util.Base64.getEncoder().encodeToString(latencyChart);
+        
+        String bannerBase64 = "";
+        try (java.io.InputStream is = in.slpro.apibanker.App.class.getResourceAsStream("/banner.png")) {
+            if (is != null) {
+                byte[] bytes = is.readAllBytes();
+                bannerBase64 = java.util.Base64.getEncoder().encodeToString(bytes);
+            }
+        } catch (Exception e) {}
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
             EnvironmentModel env = resolveSelectedEnvironment();
             String sysUser = System.getProperty("user.name");
             String genAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-            boolean isDark = UIManager.getBoolean("FlatLaf.dark");
-            String bg = isDark ? "#2b2d31" : "#f8f9fa";
-            String fg = isDark ? "#e0e0e0" : "#333";
-            String cardBg = isDark ? "#313338" : "#fff";
-            String thBg = isDark ? "#2b2d31" : "#f1f3f5";
-            String totalBg = isDark ? "#404249" : "#eaeded";
-            String border = isDark ? "#444" : "#eee";
-
-            Color accentColor = UIManager.getColor("AccentColor");
-            if (accentColor == null)
-                accentColor = new Color(26, 115, 232);
-            String accentHex = String.format("#%02x%02x%02x", accentColor.getRed(), accentColor.getGreen(),
-                    accentColor.getBlue());
 
             pw.println(
                     "<!DOCTYPE html><html><head><title>ApiBanker Execution Report - " + collection.getName() + "</title>");
-            pw.println("<style>body{font-family:'Segoe UI',sans-serif;margin:20px;background:" + bg + ";color:" + fg
-                    + ";}");
-            pw.println(
-                    ".header{background:" + cardBg
-                            + ";padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin-bottom:20px;border-top: 4px solid "
-                            + accentHex + ";}");
+            pw.println("<style>");
+            pw.println("@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }");
+            pw.println("@keyframes gradient-x { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }");
+            pw.println("body{font-family:'Outfit','Segoe UI',sans-serif;margin:20px;background:#030712;color:#f9fafb;}");
+            pw.println(".text-gradient { background: linear-gradient(to right, #6366f1, #ec4899, #8b5cf6); background-size: 200% auto; color: transparent; -webkit-background-clip: text; animation: gradient-x 3s ease infinite; }");
+            pw.println(".header{background:rgba(255,255,255,0.03); backdrop-filter: blur(16px); padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);margin-bottom:20px;}");
             pw.println(".metrics{display:flex;gap:15px;margin-bottom:20px;}");
-            pw.println(
-                    ".card{background:" + cardBg
-                            + ";padding:15px;border-radius:6px;flex:1;box-shadow:0 1px 3px rgba(0,0,0,0.1);}");
-            pw.println(
-                    "table{width:100%;border-collapse:collapse;background:" + cardBg
-                            + ";box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:30px;}");
-            pw.println(
-                    "th,td{padding:10px;text-align:left;border-bottom:1px solid " + border + ";}th{background:" + thBg
-                            + ";} tr.total{font-weight:bold;background:" + totalBg + ";}</style></head><body>");
+            pw.println(".card{background:rgba(255,255,255,0.03);backdrop-filter: blur(16px);padding:15px;border-radius:12px;flex:1;border:1px solid rgba(255,255,255,0.08); transition: transform 0.4s ease, box-shadow 0.4s ease;}");
+            pw.println(".card:hover{transform: translateY(-10px) scale(1.05); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.4);}");
+            pw.println("table{width:100%;border-collapse:separate; border-spacing: 0; background:rgba(255,255,255,0.02);border-radius:12px;overflow:hidden;margin-bottom:30px;}");
+            pw.println("th,td{padding:12px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);} th{background:rgba(255,255,255,0.05);color:#f9fafb;} tr:hover td{background:rgba(255,255,255,0.05);} tr.total{font-weight:bold;background:rgba(99,102,241,0.1);}");
+            pw.println("</style></head><body>");
 
             pw.println(
                     "<div style='text-align:right; font-size:12px; color:#888; margin-bottom:10px;'>ApiBanker Studio &copy; 2024&ndash;2026 NCRK</div>");
 
-            pw.println("<div class='header'><h2 style='color:" + accentHex
-                    + "; margin-top:0;'>ApiBanker Collection Performance Metrics</h2>");
+            pw.println("<div class='header'>");
+            if (!bannerBase64.isEmpty()) {
+                pw.println("<div style='text-align:center; margin-bottom: 20px;'><img src='data:image/png;base64," + bannerBase64 + "' style='max-width:100%; max-height: 120px; border-radius: 8px;'/></div>");
+            }
+            pw.println("<h2 class='text-gradient' style='margin-top:0; font-size: 24px; font-weight: bold;'>ApiBanker Collection Performance Metrics</h2>");
             pw.println("<p><b>Collection:</b> " + collection.getName() + " | <b>Runner:</b> " + runnerModel.getName()
                     + " | <b>Run By:</b> " + sysUser + "</p>");
             pw.println("<p><b>Started At:</b> " + (startTime != null ? startTime : "-") + " | <b>Finished At:</b> "
@@ -2218,12 +2252,37 @@ public class CollectionRunnerPanel extends JPanel {
     private static class PDFBrandingEvent extends com.lowagie.text.pdf.PdfPageEventHelper {
         @Override
         public void onStartPage(com.lowagie.text.pdf.PdfWriter writer, com.lowagie.text.Document document) {
-            boolean isDark = UIManager.getBoolean("FlatLaf.dark");
+            String theme = "";
+            try { theme = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme(); } catch (Exception e) {}
+            boolean isGradient = "gradient".equals(theme);
+            boolean isDark = UIManager.getBoolean("FlatLaf.dark") || isGradient;
+            
             if (isDark) {
                 com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContentUnder();
                 cb.saveState();
-                cb.setColorFill(new Color(43, 45, 49));
+                if (isGradient) {
+                    cb.setColorFill(new Color(3, 7, 18));
+                } else {
+                    cb.setColorFill(new Color(43, 45, 49));
+                }
                 cb.rectangle(0, 0, document.getPageSize().getWidth(), document.getPageSize().getHeight());
+                cb.fill();
+                cb.restoreState();
+            }
+
+            if (isGradient) {
+                com.lowagie.text.pdf.PdfContentByte cb = writer.getDirectContent();
+                cb.saveState();
+                float w = document.getPageSize().getWidth();
+                float y = document.getPageSize().getHeight() - 4;
+                cb.setColorFill(new Color(99, 102, 241));
+                cb.rectangle(0, y, w / 3, 4);
+                cb.fill();
+                cb.setColorFill(new Color(236, 72, 153));
+                cb.rectangle(w / 3, y, w / 3, 4);
+                cb.fill();
+                cb.setColorFill(new Color(139, 92, 246));
+                cb.rectangle((w / 3) * 2, y, w / 3 + 1, 4);
                 cb.fill();
                 cb.restoreState();
             }
@@ -2357,6 +2416,45 @@ public class CollectionRunnerPanel extends JPanel {
                 collectRequestsRecursive(folder, list);
             }
         }
+    }
+
+    private List<RequestModel> getSelectedRequests() {
+        List<RequestModel> temp = new ArrayList<>();
+        if (requestSelectionModel != null) {
+            List<RequestModel> allReqs = new ArrayList<>();
+            collectRequestsRecursive(collection, allReqs);
+            
+            Set<String> seenKeys = new HashSet<>();
+            Set<String> duplicateKeys = new HashSet<>();
+            for (RequestModel req : allReqs) {
+                String key = req.getName() + "|" + req.getMethod();
+                if (!seenKeys.add(key)) {
+                    duplicateKeys.add(key);
+                }
+            }
+            
+            for (int i = 0; i < requestSelectionModel.getRowCount(); i++) {
+                boolean checked = (Boolean) requestSelectionModel.getValueAt(i, 0);
+                if (checked) {
+                    String reqMethod = (String) requestSelectionModel.getValueAt(i, 1);
+                    String reqName = (String) requestSelectionModel.getValueAt(i, 2);
+                    for (RequestModel r : allReqs) {
+                        String key = r.getName() + "|" + r.getMethod();
+                        String rDisplayName = r.getName();
+                        if (duplicateKeys.contains(key) && r.getId() != null && r.getId().length() >= 4) {
+                            rDisplayName += " -" + r.getId().substring(0, 4);
+                        }
+                        if (reqName.equals(rDisplayName) && reqMethod.equals(r.getMethod())) {
+                            temp.add(r);
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            collectRequestsRecursive(collection, temp);
+        }
+        return temp;
     }
 
     public RequestModel getRequestModel() {

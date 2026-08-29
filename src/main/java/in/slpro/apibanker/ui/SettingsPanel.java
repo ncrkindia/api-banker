@@ -15,7 +15,7 @@ import java.awt.*;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class SettingsPanel extends JPanel {
@@ -33,6 +33,7 @@ public class SettingsPanel extends JPanel {
     private JComboBox<String> redirectPolicyCombo;
     private JComboBox<String> timeoutPolicyCombo;
     private JTextField timeoutValueField;
+    private JTextField runnerQueueMultiplierField;
 
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -125,7 +126,7 @@ public class SettingsPanel extends JPanel {
 
         gbc.gridx = 1;
         gbc.weightx = 1;
-        themeCombo = new JComboBox<>(new String[] { "light", "dark" });
+        themeCombo = new JComboBox<>(new String[] { "light", "dark", "gradient" });
         themeCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         themeCombo.setSelectedItem(storage.getSettings().getTheme());
         contentPanel.add(themeCombo, gbc);
@@ -307,9 +308,43 @@ public class SettingsPanel extends JPanel {
         uiModeCombo.setSelectedItem(storage.getSettings().getUiMode());
         contentPanel.add(uiModeCombo, gbc);
 
-        // Empty space filler
+        // Runner Queue Multiplier row
         gbc.gridx = 0;
         gbc.gridy = 10;
+        gbc.weightx = 0;
+        JLabel queueMultLabel = new JLabel("Runner Queue Multiplier (Max 50):");
+        queueMultLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        queueMultLabel.setToolTipText("Scales the background task queue relative to VUsers. Higher values consume more memory but avoid stalling.");
+        contentPanel.add(queueMultLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        runnerQueueMultiplierField = new JTextField(String.valueOf(storage.getSettings().getRunnerQueueMultiplier()), 5);
+        runnerQueueMultiplierField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        runnerQueueMultiplierField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar())) e.consume();
+            }
+        });
+        runnerQueueMultiplierField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent e) {
+                try {
+                    int val = Integer.parseInt(runnerQueueMultiplierField.getText().trim());
+                    if (val < 1) runnerQueueMultiplierField.setText("10"); // Suggested minimum
+                    if (val > 50) runnerQueueMultiplierField.setText("50");
+                } catch (NumberFormatException ex) {
+                    runnerQueueMultiplierField.setText("10");
+                }
+            }
+        });
+        JPanel queuePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        queuePanel.setOpaque(false);
+        queuePanel.add(runnerQueueMultiplierField);
+        contentPanel.add(queuePanel, gbc);
+
+        // Empty space filler
+        gbc.gridx = 0;
+        gbc.gridy = 11;
         gbc.gridwidth = 3;
         gbc.weighty = 1.0;
         contentPanel.add(Box.createGlue(), gbc);
@@ -401,6 +436,13 @@ public class SettingsPanel extends JPanel {
             storage.getSettings().setGlobalTimeoutValue(120);
         }
 
+        try {
+            int mqVal = Integer.parseInt(runnerQueueMultiplierField.getText().trim());
+            storage.getSettings().setRunnerQueueMultiplier(mqVal);
+        } catch (NumberFormatException e) {
+            storage.getSettings().setRunnerQueueMultiplier(10);
+        }
+
         storage.saveSettings();
         MainFrame.showToast(this, "Settings saved. Restart ApiBanker to apply theme changes.");
     }
@@ -462,6 +504,15 @@ public class SettingsPanel extends JPanel {
                 return true;
         } catch (NumberFormatException e) {
             if (s.getGlobalTimeoutValue() != 120)
+                return true;
+        }
+
+        try {
+            int mqVal = Integer.parseInt(runnerQueueMultiplierField.getText().trim());
+            if (mqVal != s.getRunnerQueueMultiplier())
+                return true;
+        } catch (NumberFormatException e) {
+            if (s.getRunnerQueueMultiplier() != 10)
                 return true;
         }
 

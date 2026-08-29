@@ -8,7 +8,7 @@ package in.slpro.apibanker.model;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class AppSettings {
@@ -30,6 +30,7 @@ public class AppSettings {
     private boolean enableActionAuditLog = true;
     private boolean stricterEditing = false;
     private String uiMode = "Classic"; // Classic, Modern
+    private int runnerQueueMultiplier = 10;
 
     private java.util.List<OpenTabState> openTabs = new java.util.ArrayList<>();
     private java.util.List<String> expandedTreeNodes = new java.util.ArrayList<>();
@@ -272,6 +273,17 @@ public class AppSettings {
 
     public void setConsoleY(int consoleY) {
         this.consoleY = consoleY;
+    }
+
+    public int getRunnerQueueMultiplier() {
+        if (runnerQueueMultiplier < 1 || runnerQueueMultiplier > 50) {
+            runnerQueueMultiplier = 10;
+        }
+        return runnerQueueMultiplier;
+    }
+
+    public void setRunnerQueueMultiplier(int runnerQueueMultiplier) {
+        this.runnerQueueMultiplier = runnerQueueMultiplier;
     }
 
     public static class OpenTabState {

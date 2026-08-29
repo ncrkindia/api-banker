@@ -19,7 +19,7 @@ import java.awt.*;
  * </p>
  * 
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class App {
@@ -234,6 +234,56 @@ public class App {
                 UIManager.put("Sidebar.toolbarBackground", new Color(35, 39, 47));
                 UIManager.put("Sidebar.borderColor", borderColor);
                 UIManager.put("Sidebar.selectionBackground", selectBg);
+            } else if ("gradient".equals(theme)) {
+                if (isModern) {
+                    com.formdev.flatlaf.themes.FlatMacDarkLaf.setup();
+                } else {
+                    FlatDarkLaf.setup();
+                }
+
+                Color primaryAccentWebsite = new Color(99, 102, 241); // #6366f1 (Indigo)
+
+                UIManager.put("AccentColor", primaryAccentWebsite);
+
+                UIManager.put("Button.arc", 16);
+                UIManager.put("Component.arc", 16);
+                UIManager.put("TextComponent.arc", 16);
+                UIManager.put("ProgressBar.arc", 16);
+
+                // Focus rings and borders
+                UIManager.put("Component.focusColor", primaryAccentWebsite);
+                UIManager.put("Component.focusedBorderColor", primaryAccentWebsite);
+                UIManager.put("Button.focusColor", primaryAccentWebsite);
+                UIManager.put("Button.focusedBorderColor", primaryAccentWebsite);
+
+                UIManager.put("TabbedPane.showTabSeparators", true);
+                UIManager.put("TabbedPane.tabType", "underlined");
+                UIManager.put("TabbedPane.underlineColor", primaryAccentWebsite);
+                UIManager.put("TabbedPane.inactiveUnderlineColor", primaryAccentWebsite);
+                UIManager.put("TabbedPane.focusColor", new Color(0, 0, 0, 0));
+                UIManager.put("TabbedPane.showFocusIndicator", false);
+                UIManager.put("TabbedPane.tabHeight", 34);
+                UIManager.put("TabbedPane.selectedBackground", new Color(3, 7, 18));
+                UIManager.put("TabbedPane.hoverColor", new Color(31, 41, 55));
+                UIManager.put("TabbedPane.foreground", new Color(156, 163, 175)); // text-secondary
+                UIManager.put("TabbedPane.selectedForeground", new Color(249, 250, 251)); // text-primary
+
+                Color websiteBg = new Color(3, 7, 18); // #030712
+                Color websitePanel = new Color(3, 7, 18); 
+                Color websiteSelect = new Color(31, 41, 55); // gray-800
+                Color websiteBorder = new Color(31, 41, 55); // gray-800
+                Color websiteMetric = new Color(15, 23, 42); // slate-900
+
+                UIManager.put("Workspace.background", websiteBg);
+                UIManager.put("Workspace.panelBackground", websitePanel);
+                UIManager.put("Workspace.borderColor", websiteBorder);
+                UIManager.put("Workspace.metricCardBackground", websiteMetric);
+
+                UIManager.put("Sidebar.background", websitePanel);
+                UIManager.put("Sidebar.treeBackground", websitePanel);
+                UIManager.put("Sidebar.toolbarBackground", websiteMetric);
+                UIManager.put("Sidebar.borderColor", websiteBorder);
+                UIManager.put("Sidebar.selectionBackground", websiteSelect);
             } else {
                 if (isModern) {
                     com.formdev.flatlaf.themes.FlatMacLightLaf.setup();

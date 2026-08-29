@@ -21,7 +21,7 @@ import java.awt.event.ItemEvent;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class CodeSnippetDialog extends JDialog {
@@ -69,7 +69,8 @@ public class CodeSnippetDialog extends JDialog {
         codeArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         codeArea.setHighlightCurrentLine(false);
         try {
-            if ("dark".equals(in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme())) {
+            String appTheme = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme();
+            if ("dark".equals(appTheme) || "gradient".equals(appTheme)) {
                 org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(
                         getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/dark.xml"));
                 theme.apply(codeArea);

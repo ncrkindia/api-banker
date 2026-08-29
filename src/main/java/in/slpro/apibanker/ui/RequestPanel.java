@@ -32,7 +32,7 @@ import java.util.List;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.0
+ * @version 2.0.1
  * @since 1.0.0
  */
 public class RequestPanel extends JPanel {
@@ -198,7 +198,7 @@ public class RequestPanel extends JPanel {
 
         JPanel rightBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         rightBtns.setOpaque(false);
-        sendBtn = new JButton("Send");
+        sendBtn = new AnimatedGradientButton("Send");
         Color accent = UIManager.getColor("AccentColor");
         sendBtn.setBackground(accent != null ? accent : new Color(52, 152, 219));
         sendBtn.setForeground(Color.WHITE);

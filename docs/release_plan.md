@@ -1,12 +1,12 @@
-# ApiBanker Release Plan — v2.0.0
+# ApiBanker Release Plan — v2.0.1
 
-This document outlines the release plan for **ApiBanker (v2.0.0)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
+This document outlines the release plan for **ApiBanker (v2.0.1)**, the offline-first API client, detailing the beta entry criteria, verification methods, distribution strategy, and milestones for the first stable release following the massive project rebranding.
 
 ---
 
 ## 1. Release Goals
 
-ApiBanker's transition to the `2.0.0` pre-release phase aims to achieve the following:
+ApiBanker's transition to the `2.0.1` pre-release phase aims to achieve the following:
 * **Brand Migration**: Safely migrate all legacy user configurations, folders, and preferences from `.japi` to `.apibanker` on first boot.
 * **Feature Freeze**: Baseline core features including HTTP request builder, scripting, collection running, environments, zoom controls, and theme toggling.
 * **Local Sandboxing Validation**: Verify that the application functions 100% offline without local network leaks or internet requirements.
@@ -15,7 +15,7 @@ ApiBanker's transition to the `2.0.0` pre-release phase aims to achieve the foll
 
 ---
 
-### v2.0.0 Release Summary
+### v2.0.1 Release Summary
 
 This release focuses on documentation accessibility and script automation enhancements.
 
@@ -136,7 +136,7 @@ This release introduces comprehensive workflow enhancements and project stabiliz
 
 ## 2. Beta Feature Scope
  
-Here is the current implementation status of features included in the **v2.0.0** release:
+Here is the current implementation status of features included in the **v2.0.1** release:
  
 | Category | Feature Name | Description | Status |
 | :--- | :--- | :--- | :--- |
@@ -162,22 +162,22 @@ ApiBanker offers a professional, multi-tier distribution pipeline depending on u
 
 ### Option 1: Classic Portable Bundle (.zip / .tar.gz)
 The traditional portable archive containing a shaded fat JAR and cross-platform launcher scripts. Best for users who already have Java installed and prefer a portable folder.
-* **Target executable**: `apibanker-2.0.0.jar`
+* **Target executable**: `apibanker-2.0.1.jar`
 * **Launch scripts**: `scripts/apibanker.bat` (Windows), `scripts/apibanker.sh` (macOS/Linux).
 * **Generation Command**: `mvn clean package`
-* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/apibanker.tar.gz)
+* **Download**: [apibanker.zip](https://github.com/ncrkindia/api-banker/releases/download/v2.0.1/apibanker.zip) / [apibanker.tar.gz](https://github.com/ncrkindia/api-banker/releases/download/v2.0.1/apibanker.tar.gz)
 
 ### Option 2: Professional Native Installer (.msi)
 A complete standalone setup wizard for Windows. This format uses `jpackage` and the WiX toolset to bundle a custom, stripped-down JRE along with the application. Best for end-users who want a standard installation experience and do not have Java installed.
 * **Target executable**: `ApiBanker-installer.msi`
 * **Generation Command**: `mvn clean verify -DbuildNative`
-* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/ApiBanker-2.0.0.202608.msi)
+* **Download**: [ApiBanker-installer.msi](https://github.com/ncrkindia/api-banker/releases/download/v2.0.1/ApiBanker-2.0.1.202608.msi)
 
 ### Option 3: Portable JRE-Bundled ZIP (Windows x64)
 A self-contained portable archive that includes a stripped-down JRE 21 runtime alongside the application. No Java installation required — simply extract and run. Best for users who want portability without a system-level installer.
-* **Target archive**: `ApiBanker-2.0.0-jre21-winX64.zip`
+* **Target archive**: `ApiBanker-2.0.1-jre21-winX64.zip`
 * **Generation Command**: `scripts\build-installers.bat` (auto-generates after MSI build)
-* **Download**: [ApiBanker-2.0.0-jre21-winX64.zip](https://github.com/ncrkindia/api-banker/releases/download/v2.0.0/ApiBanker-2.0.0-jre21-winX64.zip)
+* **Download**: [ApiBanker-2.0.1-jre21-winX64.zip](https://github.com/ncrkindia/api-banker/releases/download/v2.0.1/ApiBanker-2.0.1-jre21-winX64.zip)
 
 
 ---
@@ -191,7 +191,7 @@ A self-contained portable archive that includes a stripped-down JRE 21 runtime a
 | **Beta Release (v1.1.0-beta)** | 2026-08-10 | Complete |
 | **Beta Release (v1.2.0-beta)** | 2026-08-09 | Complete |
 | **Beta Release (v1.5.0-beta)** | 2026-08-09 | Complete |
-| **Stable Release (v2.0.0)** | 2026-08-23 | Complete |
+| **Stable Release (v2.0.1)** | 2026-08-23 | Complete |
 | **v2.0.1 Patch Preparation** | 2026-08-25 | Pending |
 | **Feature Release v2.1.0** | 2026-09-01 | Pending |
 

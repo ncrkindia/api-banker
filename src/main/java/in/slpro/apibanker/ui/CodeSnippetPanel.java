@@ -58,7 +58,8 @@ public class CodeSnippetPanel extends JPanel {
         codeArea.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
         codeArea.setHighlightCurrentLine(false);
         try {
-            if ("dark".equals(in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme())) {
+            String appTheme = in.slpro.apibanker.storage.StorageManager.getInstance().getSettings().getTheme();
+            if ("dark".equals(appTheme) || "gradient".equals(appTheme)) {
                 org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(
                         getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/dark.xml"));
                 theme.apply(codeArea);
