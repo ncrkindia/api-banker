@@ -1,6 +1,6 @@
 <img src="src/main/resources/banner.png" alt="ApiBanker Banner" width="100%">
 
-# ApiBanker - The Offline-First API Toolkit (v2.0.1)
+# ApiBanker - The Offline-First API Toolkit (v2.0.2)
 
 ## 🚀 Getting Started
 
@@ -70,7 +70,7 @@ This is the standard, cross-platform Java package. It compiles the source code i
 mvn clean package
 ```
 **Output:**
-* `target/apibanker-2.0.1.jar` (Executable Fat JAR)
+* `target/apibanker-2.0.2.jar` (Executable Fat JAR)
 * `target/artifacts/apibanker.zip` & `target/artifacts/apibanker.tar.gz` (Portable distributions with launch scripts)
 
 ---
@@ -131,7 +131,7 @@ mvn compile exec:java -Dexec.mainClass="in.slpro.apibanker.App"
 
 Alternatively, run the compiled JAR directly:
 ```bash
-java -jar target/apibanker-2.0.1.jar
+java -jar target/apibanker-2.0.2.jar
 ```
 
 ---
@@ -165,7 +165,8 @@ apibanker/
 
 ## 📜 Version History
 
-* **v2.0.1 (Current)** — First stable release. Professionalized branding, added dynamic console zoom synchronization, hardened network error handling, and robust unresolved variable execution safeties.
+* **v2.0.2 (Current)** — Dynamic SSL details refresh on profile change, certificate serial number display, and comprehensive code snippet generation (headers, multipart form-data, urlencoded, graphql, DELETE body, and recursive auth inheritance).
+* **v2.0.1** — First stable release. Professionalized branding, added dynamic console zoom synchronization, hardened network error handling, and robust unresolved variable execution safeties.
 * **v1.5.0-beta** — Added GitHub actions workflows (`maven.yml` and `crda.yml`) for automated builds and security scanning. Updated internal dependencies to resolve potential vulnerabilities.
 * **v1.2.0-beta** — Workspace data integrity release. Adds global unsaved changes guard (Settings, MockServer), disambiguates duplicate request names in Collection Runner metrics exports, overhauls Environment & Variable UI with auto-managing tables, and consolidates all utility scripts under `scripts/`.
 * **v1.1.0-beta** - First official release under the ApiBanker rebranding. Includes massive UI/UX improvements, advanced clipboard protection, OpenAPI/Swagger Import with auto-generated Collection README documentation, complete JavaDoc coverage, and Native Executable support.

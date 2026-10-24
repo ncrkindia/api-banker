@@ -30,7 +30,7 @@ import java.util.Map;
  * </p>
  *
  * @author Naveen Chauhan (https://github.com/ncrkindia)
- * @version 2.0.1
+ * @version 2.0.2
  * @since 1.0.0
  */
 public class ResponsePanel extends JPanel {

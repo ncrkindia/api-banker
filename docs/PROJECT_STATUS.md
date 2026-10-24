@@ -66,8 +66,8 @@ Here is a list of features queued for future development iterations:
 
 ---
 
-## 4. Release Plan (v2.0.1)
+## 4. Release Plan (v2.0.2)
 
-* **Current Status**: Stable Release.
-* **Next Steps**: Code freeze, complete end-to-end user acceptance testing, resolve critical GitHub issues, and prepare for stable v1.0.0 public launch.
+* **Current Status**: Stable Release (v2.0.2).
+* **Next Steps**: Code freeze, complete end-to-end user acceptance testing, resolve critical GitHub issues, and prepare for feature release v2.1.0.
 
