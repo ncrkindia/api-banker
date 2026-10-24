@@ -524,6 +524,10 @@ public class HttpClientWrapper {
 
                         String subject = cert.getSubjectX500Principal().getName();
                         String issuer = cert.getIssuerX500Principal().getName();
+                        String certNumber = cert.getSerialNumber() != null ? cert.getSerialNumber().toString(16).toUpperCase() : "N/A";
+                        
+                        String protocol = httpResponse.sslSession().isPresent() ? httpResponse.sslSession().get().getProtocol() : null;
+                        String cipherSuite = httpResponse.sslSession().isPresent() ? httpResponse.sslSession().get().getCipherSuite() : null;
 
                         String color = dateValid ? "green" : "red";
                         String highlightedSubject = subject.replaceAll("(CN=)([^,]+)", "$1<font color='" + color + "'><b>$2</b></font>");
@@ -533,9 +537,16 @@ public class HttpClientWrapper {
                         highlightedIssuer = highlightedIssuer.replace(",", ",<br>&nbsp;&nbsp;");
 
                         StringBuilder sb = new StringBuilder(
-                                "<html><div style='width:350px;'><b style='font-size:11px'>SSL Certificate Details:</b><br><br>");
+                                "<html><div style='width:380px; word-wrap: break-word;'><b style='font-size:11px'>SSL Certificate Details:</b><br><br>");
                         sb.append("<b>Subject:</b><br>&nbsp;&nbsp;").append(highlightedSubject).append("<br><br>");
                         sb.append("<b>Issuer:</b><br>&nbsp;&nbsp;").append(highlightedIssuer).append("<br><br>");
+                        sb.append("<b>Certificate Number:</b> ").append(certNumber).append("<br><br>");
+                        if (protocol != null && !protocol.isBlank()) {
+                            sb.append("<b>Protocol:</b> ").append(protocol).append("<br>");
+                        }
+                        if (cipherSuite != null && !cipherSuite.isBlank()) {
+                            sb.append("<b>Cipher Suite:</b> ").append(cipherSuite).append("<br><br>");
+                        }
                         sb.append("<b>Valid From:</b> ").append(cert.getNotBefore()).append("<br>");
                         sb.append("<b>Valid Until:</b> ").append(cert.getNotAfter()).append("<br><br>");
 

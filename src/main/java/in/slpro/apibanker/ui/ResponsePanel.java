@@ -44,6 +44,7 @@ public class ResponsePanel extends JPanel {
     private final JPanel contentCard;
 
     private ResponseModel currentResponse;
+    private JPopupMenu sslPopup;
     private JTextField searchField;
     private JLabel matchCountLabel;
     private JButton prevSearchBtn;
@@ -82,18 +83,25 @@ public class ResponsePanel extends JPanel {
         sslLabel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
         sslLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sslLabel.addMouseListener(new java.awt.event.MouseAdapter() {
-            private JPopupMenu popup;
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 if (currentResponse != null && currentResponse.getSslDetails() != null && !currentResponse.getSslDetails().isBlank()) {
-                    if (popup == null) {
-                        popup = new JPopupMenu();
-                        JEditorPane ep = new JEditorPane("text/html", "<html><body style='font-family:\"JetBrains Mono\", monospace; font-size:11px; margin:5px;'>" + currentResponse.getSslDetails().replace("\n", "<br>") + "</body></html>");
-                        ep.setEditable(false);
-                        ep.setBackground(UIManager.getColor("PopupMenu.background"));
-                        popup.add(ep);
+                    if (sslPopup != null && sslPopup.isVisible()) {
+                        sslPopup.setVisible(false);
                     }
-                    popup.show(sslLabel, 0, sslLabel.getHeight());
+                    sslPopup = new JPopupMenu();
+                    String details = currentResponse.getSslDetails();
+                    String content;
+                    if (details.trim().startsWith("<html>")) {
+                        content = details;
+                    } else {
+                        content = "<html><body style='font-family:\"JetBrains Mono\", monospace; font-size:11px; margin:5px;'>" + details.replace("\n", "<br>") + "</body></html>";
+                    }
+                    JEditorPane ep = new JEditorPane("text/html", content);
+                    ep.setEditable(false);
+                    ep.setBackground(UIManager.getColor("PopupMenu.background"));
+                    sslPopup.add(ep);
+                    sslPopup.show(sslLabel, 0, sslLabel.getHeight());
                 }
             }
             @Override
@@ -304,6 +312,9 @@ public class ResponsePanel extends JPanel {
     public void showResponse(ResponseModel response) {
         if (response == null)
             return;
+        if (sslPopup != null && sslPopup.isVisible()) {
+            sslPopup.setVisible(false);
+        }
         this.currentResponse = response;
         if (searchField != null) {
             searchField.setText("");
@@ -498,6 +509,10 @@ public class ResponsePanel extends JPanel {
     }
 
     public void reset() {
+        this.currentResponse = null;
+        if (sslPopup != null && sslPopup.isVisible()) {
+            sslPopup.setVisible(false);
+        }
         statusLabel.setText("—");
         statusLabel.setForeground(new Color(100, 100, 100));
         timeLabel.setText("—");
@@ -603,6 +618,10 @@ public class ResponsePanel extends JPanel {
                         "Export Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    public ResponseModel getCurrentResponse() {
+        return currentResponse;
     }
 }
 

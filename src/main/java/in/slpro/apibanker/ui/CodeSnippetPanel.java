@@ -14,7 +14,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ItemEvent;
 
 public class CodeSnippetPanel extends JPanel {
-    private final RequestModel requestModel;
+    private RequestModel requestModel;
     private EnvironmentModel environment;
     private final RSyntaxTextArea codeArea;
     private final JComboBox<String> langCombo;
@@ -107,6 +107,11 @@ public class CodeSnippetPanel extends JPanel {
         generateCode();
     }
     
+    public void setRequestModel(RequestModel requestModel) {
+        this.requestModel = requestModel;
+        refreshSnippet();
+    }
+
     public void refreshSnippet() {
         this.environment = mainFrame.getActiveEnvironment();
         generateCode();
@@ -125,6 +130,7 @@ public class CodeSnippetPanel extends JPanel {
     }
 
     private void generateCode() {
+        this.environment = mainFrame.getActiveEnvironment();
         String lang = (String) langCombo.getSelectedItem();
         if (lang == null)
             return;

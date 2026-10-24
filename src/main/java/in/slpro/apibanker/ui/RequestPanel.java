@@ -1931,6 +1931,9 @@ public class RequestPanel extends JPanel {
 
     public void setRequestModel(RequestModel model) {
         this.requestModel = model;
+        if (codeSnippetPanel != null) {
+            codeSnippetPanel.setRequestModel(model);
+        }
         loadModel();
     }
 
@@ -2112,6 +2115,9 @@ public class RequestPanel extends JPanel {
     }
 
     public void triggerVariableRepaint() {
+        if (codeSnippetPanel != null) {
+            codeSnippetPanel.refreshSnippet();
+        }
         repaint();
     }
 }
